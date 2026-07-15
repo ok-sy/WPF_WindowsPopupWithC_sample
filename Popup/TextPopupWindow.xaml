@@ -91,37 +91,148 @@
         </Style>
 
         <!--
-        공통 버튼 Style
-        -->
+PopupButtonStyle
+
+목적
+팝업에서 사용하는 닫기 버튼의 모양을 공통으로 정의한다.
+
+왜 직접 만드는가
+기본 WPF 버튼 모양 대신
+둥근 모서리와 마우스 오버 효과를 적용하기 위해서다.
+-->
         <Style x:Key="PopupButtonStyle"
-               TargetType="Button">
+       TargetType="Button">
 
+            <!-- 버튼 너비 -->
             <Setter Property="Width"
-                    Value="110"/>
+            Value="110"/>
 
+            <!-- 버튼 높이 -->
             <Setter Property="Height"
-                    Value="38"/>
+            Value="38"/>
 
-            <Setter Property="Padding"
-                    Value="16,6"/>
-
+            <!-- 버튼 글자 크기 -->
             <Setter Property="FontSize"
-                    Value="14"/>
+            Value="14"/>
 
+            <!-- 버튼 글자 굵기 -->
             <Setter Property="FontWeight"
-                    Value="SemiBold"/>
+            Value="SemiBold"/>
 
+            <!-- 버튼 위에 마우스를 올리면 손가락 모양 표시 -->
             <Setter Property="Cursor"
-                    Value="Hand"/>
+            Value="Hand"/>
 
+            <!-- 버튼 기본 배경색 -->
             <Setter Property="Background"
-                    Value="#6B7280"/>
+            Value="#6B7280"/>
 
+            <!-- 버튼 글자색 -->
             <Setter Property="Foreground"
-                    Value="White"/>
+            Value="White"/>
 
+            <!-- 기본 테두리는 사용하지 않음 -->
             <Setter Property="BorderThickness"
-                    Value="0"/>
+            Value="0"/>
+
+            <!--
+    Template
+
+    Button의 실제 생김새를 직접 정의한다.
+
+    기본 WPF 버튼 템플릿을 사용하지 않고
+    Border와 ContentPresenter로 새 버튼을 만든다.
+    -->
+            <Setter Property="Template">
+
+                <Setter.Value>
+
+                    <!--
+            ControlTemplate
+
+            Button 타입을 위한 화면 틀이다.
+            -->
+                    <ControlTemplate TargetType="Button">
+
+                        <!--
+                Border
+
+                버튼의 배경, 둥근 모서리,
+                안쪽 여백을 담당한다.
+                -->
+                        <Border x:Name="ButtonBorder"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="6"
+                        Padding="16,6">
+
+                            <!--
+                    ContentPresenter
+
+                    Button의 Content 값을 화면에 출력한다.
+
+                    현재 버튼에서는
+                    Content="닫기"가 여기에 표시된다.
+                    -->
+                            <ContentPresenter
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
+
+                        </Border>
+
+                        <!--
+                ControlTemplate.Triggers
+
+                버튼 상태에 따라 모양을 바꾸는 영역이다.
+                -->
+                        <ControlTemplate.Triggers>
+
+                            <!--
+                    마우스를 버튼 위에 올렸을 때
+                    -->
+                            <Trigger Property="IsMouseOver"
+                             Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                Property="Background"
+                                Value="#4B5563"/>
+
+                            </Trigger>
+
+                            <!--
+                    버튼을 누르고 있는 동안
+                    -->
+                            <Trigger Property="IsPressed"
+                             Value="True">
+
+                                <Setter TargetName="ButtonBorder"
+                                Property="Background"
+                                Value="#374151"/>
+
+                            </Trigger>
+
+                            <!--
+                    버튼을 사용할 수 없는 상태
+                    -->
+                            <Trigger Property="IsEnabled"
+                             Value="False">
+
+                                <Setter TargetName="ButtonBorder"
+                                Property="Background"
+                                Value="#D1D5DB"/>
+
+                                <Setter Property="Foreground"
+                                Value="#9CA3AF"/>
+
+                            </Trigger>
+
+                        </ControlTemplate.Triggers>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+
+            </Setter>
+
         </Style>
 
         <!--
