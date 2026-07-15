@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\oso79\\source\\repos\\Popup\\Popup\\Popup.csproj": {}
+    "C:\\gitRepo\\Popup\\Popup\\Popup.csproj": {}
   },
   "projects": {
-    "C:\\Users\\oso79\\source\\repos\\Popup\\Popup\\Popup.csproj": {
+    "C:\\gitRepo\\Popup\\Popup\\Popup.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\oso79\\source\\repos\\Popup\\Popup\\Popup.csproj",
+        "projectUniqueName": "C:\\gitRepo\\Popup\\Popup\\Popup.csproj",
         "projectName": "Popup",
-        "projectPath": "C:\\Users\\oso79\\source\\repos\\Popup\\Popup\\Popup.csproj",
+        "projectPath": "C:\\gitRepo\\Popup\\Popup\\Popup.csproj",
         "packagesPath": "C:\\Users\\oso79\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\oso79\\source\\repos\\Popup\\Popup\\obj\\",
+        "outputPath": "C:\\gitRepo\\Popup\\Popup\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\oso79\\AppData\\Roaming\\NuGet\\NuGet.Config",

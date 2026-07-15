@@ -60,7 +60,7 @@ namespace Popup {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/Popup;component/textpopupwindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/Popup;V1.0.0.0;component/textpopupwindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\TextPopupWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);
