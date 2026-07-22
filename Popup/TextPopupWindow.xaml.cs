@@ -56,5 +56,32 @@ namespace Popup
              */
             Close();
         }
+        /*
+         * 직접 만든 상단바를 마우스로 눌렀을 때 실행된다.
+         *
+         * XAML의
+         * MouseLeftButtonDown="Header_MouseLeftButtonDown"
+         * 부분과 연결되어 있다.
+         */
+        private void Header_MouseLeftButtonDown(
+            object sender,
+            MouseButtonEventArgs e)
+        {
+            /*
+             * 마우스 왼쪽 버튼을 누른 상태인지 확인한다.
+             *
+             * 누른 상태가 아니라면 창을 이동시키지 않는다.
+             */
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                /*
+                 * 현재 Window를 마우스로 끌어서 이동시킨다.
+                 *
+                 * Windows 기본 제목 표시줄을 제거했기 때문에
+                 * 우리가 직접 DragMove를 호출해야 한다.
+                 */
+                DragMove();
+            }
+        }
     }
 }

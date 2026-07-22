@@ -17,10 +17,39 @@
     나중에는 API를 호출한 후
     이 버튼 대신 자동으로 팝업을 띄우게 된다.
     -->
-        <Button Width="180"
-            Height="45"
-            Content="텍스트 팝업 열기"
-            Click="OpenPopup_Click"/>
+        <StackPanel HorizontalAlignment="Center"
+            VerticalAlignment="Center">
+
+            <!--
+            기존 텍스트 팝업 열기 버튼
+            -->
+            <Button Content="텍스트 팝업 열기"
+            Width="160"
+            Height="42"
+            Margin="0,0,0,12"
+            Click="OpenPopupButton_Click"/>
+
+            <!--
+            이미지 팝업 열기 버튼
+            -->
+            <Button Content="이미지 팝업 열기"
+            Width="160"
+            Height="42"
+                    Margin="0,0,0,12"
+            Click="OpenImagePopupButton_Click"/>
+
+
+            <!--
+            비디오 팝업 열기 버튼
+            -->
+            <Button Content="비디오 팝업 열기"
+            Width="160"
+            Height="42"
+            Margin="0,0,0,12"
+            Click="BtnVideoPopup_Click"/>
+            
+            
+        </StackPanel>
 
     </Grid>
 </Window>
