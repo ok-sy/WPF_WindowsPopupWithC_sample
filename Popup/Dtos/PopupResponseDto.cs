@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System;
 
 namespace Popup.Dtos
 {
@@ -10,6 +11,23 @@ namespace Popup.Dtos
      */
     public class PopupResponseDto
     {
+         /*
+         * 팝업 노출 시작 일시
+         *
+         * null이면 시작 일시 제한 없이
+         * 바로 노출할 수 있다.
+         */
+        public DateTimeOffset? DisplayStartAt { get; set; }
+
+        /*
+         * 팝업 노출 종료 일시
+         *
+         * null이면 종료 일시 제한 없이
+         * 계속 노출할 수 있다.
+         */
+        public DateTimeOffset? DisplayEndAt { get; set; }
+
+
         /*
          * 팝업 고유 번호
          *

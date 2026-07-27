@@ -46,7 +46,7 @@ namespace Popup.Dtos
         /*
          * 사용자가 제출하기 전에
          * 모든 필수 문항에 응답해야 하는지 여부
-         *
+         * 
          * 현재 SurveyPopupView에서는
          * SurveyQuestionDto.IsRequired를 기준으로
          * 필수 문항 검증을 하고 있으므로
