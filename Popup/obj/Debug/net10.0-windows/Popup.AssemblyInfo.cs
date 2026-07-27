@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Popup")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7ac6c9ff3dfc6477f0082c87438b3398ec348638")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d8eee4e146dadd66b86e4a852861713df3c753fd")]
 [assembly: System.Reflection.AssemblyProductAttribute("Popup")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Popup")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

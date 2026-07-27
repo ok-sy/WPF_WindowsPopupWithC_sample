@@ -281,7 +281,8 @@
                     <!--
                     하단 Footer 높이
                     -->
-                    <RowDefinition Height="64"/>
+                    <RowDefinition x:Name="FooterRow"
+                                   Height="64"/>
 
                 </Grid.RowDefinitions>
 

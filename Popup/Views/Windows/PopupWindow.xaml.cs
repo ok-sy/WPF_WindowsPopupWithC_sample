@@ -70,12 +70,30 @@ namespace Popup.Views.Windows
                     : Visibility.Collapsed;
 
             /*
-             * 하단 Footer 표시 여부를 설정한다.
+             * Footer 표시 여부를 적용한다.
+             *
+             * Visibility만 Collapsed로 변경하면
+             * Footer 안의 버튼과 체크박스는 보이지 않지만,
+             * Grid의 Footer 행 높이 64는 그대로 남을 수 있다.
+             *
+             * 그래서 FooterArea의 표시 여부와
+             * FooterRow의 높이를 함께 변경해야 한다.
              */
-            FooterArea.Visibility =
-                _options.ShowFooter
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
+            FooterArea.Visibility = _options.ShowFooter
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            /*
+             * ShowFooter가 true면
+             * Footer가 사용할 높이 64를 유지한다.
+             *
+             * ShowFooter가 false면
+             * Footer 행 높이를 0으로 만들어
+             * Footer가 차지하던 빈 공간까지 완전히 제거한다.
+             */
+            FooterRow.Height = _options.ShowFooter
+            ? new GridLength(64)
+            : new GridLength(0);
 
             /*
              * '30일간 보지 않기' 체크박스
