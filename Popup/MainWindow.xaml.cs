@@ -269,8 +269,8 @@ namespace Popup
         }
 
         private void BtnVideoPopup_Click(
-    object sender,
-    RoutedEventArgs e)
+        object sender,
+        RoutedEventArgs e)
         {
             /*
              * 영상 팝업에 표시할 VideoPopupView를 생성한다.
@@ -312,5 +312,115 @@ namespace Popup
             popupWindow.Show();
         }
 
+
+        private void OpenSurveyPopupButton_Click(
+    object sender,
+    RoutedEventArgs e)
+        {
+            List<SurveyQuestion> questions = new List<SurveyQuestion>
+    {
+        new SurveyQuestion
+        {
+            QuestionId = 1,
+            Title = "교육 내용에 얼마나 만족하셨나요?",
+            Description = "전체 교육 내용을 기준으로 평가해주세요.",
+            QuestionType = SurveyQuestionType.Rating5,
+            IsRequired = true
+        },
+
+        new SurveyQuestion
+        {
+            QuestionId = 2,
+            Title = "교육을 알게 된 경로를 선택해주세요.",
+            QuestionType = SurveyQuestionType.SingleChoice,
+            IsRequired = true,
+
+            Options =
+            {
+                new SurveyOption
+                {
+                    Value = "EMAIL",
+                    Text = "이메일"
+                },
+                new SurveyOption
+                {
+                    Value = "NOTICE",
+                    Text = "사내 공지"
+                },
+                new SurveyOption
+                {
+                    Value = "RECOMMEND",
+                    Text = "동료 추천"
+                },
+                new SurveyOption
+                {
+                    Value = "ETC",
+                    Text = "기타"
+                }
+            }
+        },
+
+        new SurveyQuestion
+        {
+            QuestionId = 3,
+            Title = "도움이 되었던 내용을 선택해주세요.",
+            Description = "여러 항목을 선택할 수 있습니다.",
+            QuestionType = SurveyQuestionType.MultipleChoice,
+            IsRequired = false,
+
+            Options =
+            {
+                new SurveyOption
+                {
+                    Value = "THEORY",
+                    Text = "이론 설명"
+                },
+                new SurveyOption
+                {
+                    Value = "EXAMPLE",
+                    Text = "실습 예제"
+                },
+                new SurveyOption
+                {
+                    Value = "DOCUMENT",
+                    Text = "교육 자료"
+                },
+                new SurveyOption
+                {
+                    Value = "QNA",
+                    Text = "질의응답"
+                }
+            }
+        },
+
+        new SurveyQuestion
+        {
+            QuestionId = 4,
+            Title = "추가 의견을 작성해주세요.",
+            Description = "개선이 필요한 점이나 좋았던 점을 자유롭게 작성해주세요.",
+            QuestionType = SurveyQuestionType.Text,
+            IsRequired = false
+        }
+    };
+
+            SurveyPopupView surveyView = new SurveyPopupView(
+                "교육 만족도 설문",
+                "더 나은 교육을 위해 아래 문항에 응답해주세요.",
+                questions);
+
+            PopupOptions options = new PopupOptions
+            {
+                Title = "교육 만족도 설문",
+                Content = surveyView,
+                ShowCloseButton = true,
+
+                Width = 760,
+                Height = 720
+            };
+
+            PopupWindow popupWindow = new PopupWindow(options);
+
+            popupWindow.ShowDialog();
+        }
     }
 }

@@ -63,3 +63,5 @@ C:\gitRepo\Popup\Popup\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.WinForms
 C:\gitRepo\Popup\Popup\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Wpf.xml
 C:\gitRepo\Popup\Popup\obj\Debug\net10.0-windows\Popup.csproj.AssemblyReference.cache
 C:\gitRepo\Popup\Popup\obj\Debug\net10.0-windows\Popup.csproj.Up2Date
+C:\gitRepo\Popup\Popup\obj\Debug\net10.0-windows\Views\Contents\SurveyPopupView.baml
+C:\gitRepo\Popup\Popup\obj\Debug\net10.0-windows\Views\Contents\SurveyPopupView.g.cs
