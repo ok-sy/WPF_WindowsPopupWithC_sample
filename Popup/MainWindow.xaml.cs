@@ -1,9 +1,12 @@
-﻿using Popup.Models;
+﻿using Popup.Dtos;
+using Popup.Factories;
+using Popup.Models;
 using Popup.Views.Contents;
 using Popup.Views.Windows;
-using System.Security.Policy;
-using System.Windows;
 using System.Linq;
+using System.Security.Policy;
+using System.Text.Json;
+using System.Windows;
 
 namespace Popup
 {
@@ -21,104 +24,107 @@ namespace Popup
         }
 
         /*
-         * 팝업 열기 버튼 클릭 이벤트
-         *
-         * PopupOptions에 팝업 설정을 입력하고
-         * PopupWindow를 생성하여 화면에 표시한다.
-         */
+ * JSON 기반 TEXT 팝업 테스트
+ *
+ * 실제 서버 연동 전까지는
+ * JSON 문자열을 직접 작성해서 테스트한다.
+ */
         private void OpenPopupButton_Click(
             object sender,
             RoutedEventArgs e)
         {
             /*
-             * 팝업 가운데에 표시할
-             * 실제 내용 화면을 생성한다.
+             * 서버에서 전달받았다고 가정한
+             * 팝업 JSON 데이터다.
              */
-            TextPopupView popupContent =
-                new TextPopupView();
+            string popupJson =
+                """
+        {
+          "PopupId": 1,
+          "PopupType": "TEXT",
+          "Title": "서비스 이용 안내",
+
+          "SizeMode": "VIEWPORT_RATIO",
+
+          "Width": 760,
+          "Height": 750,
+
+          "WidthRatio": 0.55,
+          "HeightRatio": 0.70,
+
+          "MinimumWidth": 600,
+          "MinimumHeight": 500,
+
+          "MaximumWidth": 1000,
+          "MaximumHeight": 850,
+
+          "ShowHeader": true,
+          "ShowCloseButton": true,
+          "ShowFooter": true,
+          "ShowDoNotShowAgain": true,
+
+          "Content": {
+            "ContentTitle": "서비스 이용 안내",
+            "Description": "이 팝업은 JSON 데이터로 생성된 텍스트 팝업입니다.",
+
+            "LeftSectionTitle": "1. 주요 안내",
+            "LeftSectionBody": "서버에서 전달된 JSON 데이터를 DTO로 변환한 뒤 화면에 표시합니다.",
+
+            "HighlightText": "중요한 안내 내용은 이 영역에 강조해서 표시할 수 있습니다.",
+
+            "RightSectionTitle": "2. 이용 방법",
+            "RightSectionBody": "PopupFactory가 PopupType을 확인하여 알맞은 화면을 생성합니다.",
+
+            "AdditionalDescription": "현재는 MainWindow 내부 테스트 JSON이며 이후 API 응답으로 교체할 수 있습니다."
+          }
+        }
+        """;
 
             /*
-             * 팝업 생성에 필요한 설정 정보를 만든다.
-             *
-             * 설정하지 않은 속성은
-             * PopupOptions에 정의된 기본값을 사용한다.
+             * JSON 문자열을
+             * 공통 팝업 응답 DTO로 변환한다.
+             */
+            PopupResponseDto popupDto =
+                JsonSerializer.Deserialize<PopupResponseDto>(
+                    popupJson)
+                ?? throw new InvalidOperationException(
+                    "팝업 JSON 변환에 실패했습니다.");
+
+            /*
+             * PopupFactory가 PopupType을 확인하여
+             * TextPopupView와 PopupOptions를 생성한다.
              */
             PopupOptions popupOptions =
-                new PopupOptions
-                {
-                    /*
-                     * 팝업 상단바에 표시할 제목
-                     */
-                    Title = "",
-
-                    /*
-                     * PopupWindow의 ContentControl에
-                     * 표시할 실제 내용 화면
-                     */
-                    Content = popupContent,
-
-                    /*
-                     * 상단 X 닫기 버튼 표시 여부
-                     */
-                    ShowCloseButton = false,
-
-                    /*
-                     * 하단 Footer 전체 표시 여부
-                     */
-                    ShowFooter = true,
-
-                    /*
-                     * 30일간 보지 않기
-                     * 체크박스 표시 여부
-                     */
-                    ShowDoNotShowAgain = true,
-
-                    /*
-                     * 팝업 창 너비
-                     */
-                    Width = 760,
-
-                    /*
-                     * 팝업 창 높이
-                     */
-                    Height = 750
-                };
+                PopupFactory.Create(
+                    popupDto);
 
             /*
-             * 위에서 만든 옵션을 전달하여
-             * 새로운 PopupWindow 객체를 생성한다.
-             *
-             * new를 호출할 때
-             * PopupWindow 생성자가 실행된다.
+             * Factory에서 만들어진 PopupOptions로
+             * 실제 팝업 창을 생성한다.
              */
             PopupWindow popupWindow =
-                new PopupWindow(popupOptions);
+                new PopupWindow(
+                    popupOptions);
 
             /*
              * 현재 MainWindow를
              * 팝업의 부모 창으로 지정한다.
-             *
-             * PopupWindow의
-             * WindowStartupLocation="CenterOwner" 설정에 따라
-             * MainWindow 가운데에 팝업이 표시된다.
              */
-            popupWindow.Owner = this;
+            popupWindow.Owner =
+                this;
 
             /*
-             * 팝업을 일반 창 방식으로 표시한다.
-             *
-             * Show를 사용하면 팝업이 열려 있어도
-             * MainWindow를 계속 사용할 수 있다.
+             * 팝업을 화면에 표시한다.
              */
             popupWindow.Show();
         }
 
         /*
- * 이미지 팝업 열기 버튼 클릭 이벤트
- *
- * 외부 이미지를 표시하는 ImagePopupView를 생성하고,
- * 이미지 비율에 따라 PopupWindow 크기를 자동 변경한다.
- */
+         * 이미지 팝업 열기 버튼 클릭 이벤트
+         *
+         * 외부 이미지를 표시하는 ImagePopupView를 생성하고,
+         * 이미지 비율에 따라 PopupWindow 크기를 자동 변경한다.
+         */
         string imageUrl = "https://images.unsplash.com/photo-1784037076368-fb4a699076e5?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
         private void OpenImagePopupButton_Click(
             object sender,
