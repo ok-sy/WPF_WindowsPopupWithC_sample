@@ -144,10 +144,153 @@ namespace Popup.Views.Windows
                     : Visibility.Collapsed;
 
             /*
-             * 팝업 크기를 설정한다.
+             * PopupOptions의 SizeMode에 따라
+             * 팝업 크기를 계산해서 적용한다.
              */
-            Width = _options.Width;
-            Height = _options.Height;
+            ApplyWindowSize();
+        }
+
+        /*
+         * PopupOptions.SizeMode에 따라
+         * PopupWindow의 실제 크기를 결정한다.
+         */
+        private void ApplyWindowSize()
+        {
+            switch (_options.SizeMode)
+            {
+                /*
+                 * 기존 고정 크기 방식
+                 *
+                 * Width와 Height 값을 그대로 사용한다.
+                 */
+                case PopupSizeMode.Fixed:
+                    {
+                        SizeToContent =
+                            SizeToContent.Manual;
+
+                        Width =
+                            _options.Width;
+
+                        Height =
+                            _options.Height;
+
+                        break;
+                    }
+
+                /*
+                 * 모니터 작업 영역의 비율로
+                 * 팝업 크기를 계산한다.
+                 */
+                case PopupSizeMode.ViewportRatio:
+                    {
+                        SizeToContent =
+                            SizeToContent.Manual;
+
+                        Rect workArea =
+                            SystemParameters.WorkArea;
+
+                        /*
+                         * 잘못된 비율이 들어와도
+                         * 10%에서 100% 사이로 제한한다.
+                         */
+                        double widthRatio =
+                            Math.Clamp(
+                                _options.WidthRatio,
+                                0.1,
+                                1.0);
+
+                        double heightRatio =
+                            Math.Clamp(
+                                _options.HeightRatio,
+                                0.1,
+                                1.0);
+
+                        double calculatedWidth =
+                            workArea.Width *
+                            widthRatio;
+
+                        double calculatedHeight =
+                            workArea.Height *
+                            heightRatio;
+
+                        /*
+                         * 최대 크기는 설정값뿐 아니라
+                         * 실제 모니터 작업 영역도 넘지 않게 제한한다.
+                         */
+                        double maximumWidth =
+                            Math.Min(
+                                _options.MaximumWidth,
+                                workArea.Width);
+
+                        double maximumHeight =
+                            Math.Min(
+                                _options.MaximumHeight,
+                                workArea.Height);
+
+                        Width =
+                            Math.Clamp(
+                                calculatedWidth,
+                                _options.MinimumWidth,
+                                maximumWidth);
+
+                        Height =
+                            Math.Clamp(
+                                calculatedHeight,
+                                _options.MinimumHeight,
+                                maximumHeight);
+
+                        break;
+                    }
+
+                /*
+                 * 콘텐츠 크기에 맞춰
+                 * Window 크기를 자동으로 계산한다.
+                 */
+                case PopupSizeMode.Auto:
+                    {
+                        Rect workArea =
+                            SystemParameters.WorkArea;
+
+                        SizeToContent =
+                            SizeToContent.WidthAndHeight;
+
+                        MinWidth =
+                            _options.MinimumWidth;
+
+                        MinHeight =
+                            _options.MinimumHeight;
+
+                        MaxWidth =
+                            Math.Min(
+                                _options.MaximumWidth,
+                                workArea.Width * 0.9);
+
+                        MaxHeight =
+                            Math.Min(
+                                _options.MaximumHeight,
+                                workArea.Height * 0.9);
+
+                        break;
+                    }
+
+                /*
+                 * 정의되지 않은 값이 들어온 경우
+                 * 기존 고정 크기 방식으로 처리한다.
+                 */
+                default:
+                    {
+                        SizeToContent =
+                            SizeToContent.Manual;
+
+                        Width =
+                            _options.Width;
+
+                        Height =
+                            _options.Height;
+
+                        break;
+                    }
+            }
         }
 
         /*

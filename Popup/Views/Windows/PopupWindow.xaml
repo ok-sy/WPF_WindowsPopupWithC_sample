@@ -380,8 +380,12 @@
                 VideoPopupView 등이 이 자리에 표시된다.
                 -->
                 <ContentControl x:Name="PopupContent"
-                                Grid.Row="1"
-                                Margin="24"/>
+                Grid.Row="1"
+                Margin="24"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch"/>
 
                 <!--
                 공통 하단 Footer 영역

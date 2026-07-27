@@ -1,0 +1,114 @@
+﻿using System.Text.Json;
+
+namespace Popup.Dtos
+{
+    /*
+     * 서버에서 내려오는 팝업 조회 응답을 담는 DTO
+     *
+     * DTO는 JSON 데이터를 전달받기 위한 객체다.
+     * 화면을 직접 그리거나 팝업을 여는 역할은 하지 않는다.
+     */
+    public class PopupResponseDto
+    {
+        /*
+         * 팝업 고유 번호
+         *
+         * 나중에 조회, 로그 저장,
+         * 다시 보지 않기 처리 등에 사용한다.
+         */
+        public long PopupId { get; set; }
+
+        /*
+         * 팝업 종류
+         *
+         * 서버 JSON 예:
+         * TEXT
+         * IMAGE
+         * VIDEO
+         * SURVEY
+         * QUIZ
+         */
+        public string PopupType { get; set; } =
+            string.Empty;
+
+        /*
+         * PopupWindow 상단에 표시할 제목
+         */
+        public string Title { get; set; } =
+            string.Empty;
+
+        /*
+         * 팝업 크기 계산 방식
+         *
+         * 서버 JSON 예:
+         * FIXED
+         * VIEWPORT_RATIO
+         * AUTO
+         */
+        public string SizeMode { get; set; } =
+            "FIXED";
+
+        /*
+         * Fixed 모드에서 사용하는 고정 크기
+         */
+        public double Width { get; set; } =
+            900;
+
+        public double Height { get; set; } =
+            620;
+
+        /*
+         * ViewportRatio 모드에서 사용하는
+         * 모니터 작업 영역 대비 크기 비율
+         */
+        public double WidthRatio { get; set; } =
+            0.7;
+
+        public double HeightRatio { get; set; } =
+            0.75;
+
+        /*
+         * 동적 계산 결과에 적용할 최소 크기
+         */
+        public double MinimumWidth { get; set; } =
+            480;
+
+        public double MinimumHeight { get; set; } =
+            320;
+
+        /*
+         * 동적 계산 결과에 적용할 최대 크기
+         */
+        public double MaximumWidth { get; set; } =
+            1200;
+
+        public double MaximumHeight { get; set; } =
+            900;
+
+        /*
+         * PopupWindow 공통 영역 표시 옵션
+         */
+        public bool ShowHeader { get; set; } =
+            true;
+
+        public bool ShowCloseButton { get; set; } =
+            true;
+
+        public bool ShowFooter { get; set; } =
+            true;
+
+        public bool ShowDoNotShowAgain { get; set; }
+
+        /*
+         * 팝업 종류별 상세 데이터
+         *
+         * TEXT, IMAGE, VIDEO, SURVEY마다
+         * content 내부 구조가 다르므로
+         * 공통 DTO에서는 JsonElement로 받아둔다.
+         *
+         * 이후 PopupFactory에서 PopupType을 확인하고
+         * 각각의 ContentDto로 다시 변환한다.
+         */
+        public JsonElement Content { get; set; }
+    }
+}

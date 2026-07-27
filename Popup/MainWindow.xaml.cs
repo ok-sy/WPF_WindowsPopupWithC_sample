@@ -293,16 +293,59 @@ namespace Popup
              * Window 전체 XAML 구조가 교체되므로 사용하면 안 된다.
              */
             PopupOptions options =
-                new PopupOptions
-                {
-                    Title = "교육 영상",
-                    Content = videoPopupView,
-                    Width = 850,
-                    Height = 680,
-                    ShowCloseButton = true,
-                    ShowFooter = true,
-                    ShowDoNotShowAgain = false
-                };
+            new PopupOptions
+            {
+                Title = "교육 영상",
+                Content = videoPopupView,
+
+                /*
+                 * 모니터 작업 영역을 기준으로
+                 * 팝업 크기를 비율 계산한다.
+                 */
+                SizeMode =
+                    PopupSizeMode.ViewportRatio,
+
+                /*
+                 * 작업 영역 너비의 70%
+                 */
+                WidthRatio =
+                    0.7,
+
+                /*
+                 * 작업 영역 높이의 75%
+                 */
+                HeightRatio =
+                    0.75,
+
+                /*
+                 * 계산 결과가 지나치게 작아지지 않도록
+                 * 최소 크기를 제한한다.
+                 */
+                MinimumWidth =
+                    600,
+
+                MinimumHeight =
+                    450,
+
+                /*
+                 * 고해상도 모니터에서 팝업이
+                 * 지나치게 커지지 않도록 제한한다.
+                 */
+                MaximumWidth =
+                    1200,
+
+                MaximumHeight =
+                    900,
+
+                ShowCloseButton =
+                    true,
+
+                ShowFooter =
+                    true,
+
+                ShowDoNotShowAgain =
+                    false
+            };
 
             /*
              * PopupOptions를 전달하여 팝업 창을 생성하고 표시한다.
@@ -409,14 +452,45 @@ namespace Popup
             "더 나은 교육을 위해 아래 문항에 응답해주세요.",
             questions);
 
-            PopupOptions options = new PopupOptions
+            PopupOptions options =
+            new PopupOptions
             {
-                Title = "교육 만족도 설문",
-                Content = surveyView,
-                ShowHeader = false,
-                ShowFooter = false,
-                Width = 700,
-                Height = 670
+                Title =
+                    "교육 만족도 설문",
+
+                Content =
+                    surveyView,
+
+                ShowHeader =
+                    false,
+
+                ShowFooter =
+                    false,
+
+                /*
+                 * 화면 작업 영역을 기준으로
+                 * 설문 팝업 크기를 계산한다.
+                 */
+                SizeMode =
+                    PopupSizeMode.ViewportRatio,
+
+                WidthRatio =
+                    0.55,
+
+                HeightRatio =
+                    0.75,
+
+                MinimumWidth =
+                    600,
+
+                MinimumHeight =
+                    500,
+
+                MaximumWidth =
+                    900,
+
+                MaximumHeight =
+                    900
             };
 
             PopupWindow popupWindow =
@@ -621,15 +695,45 @@ namespace Popup
                     passingScore: 80);
 
             PopupOptions options =
-                new PopupOptions
-                {
-                    Title = "정보보안 교육 평가",
-                    Content = quizView,
-                    ShowHeader = false,
-                    ShowFooter = false,
-                    Width = 700,
-                    Height = 670
-                };
+            new PopupOptions
+            {
+                Title =
+                    "정보보안 교육 평가",
+
+                Content =
+                    quizView,
+
+                ShowHeader =
+                    false,
+
+                ShowFooter =
+                    false,
+
+                /*
+                 * 모니터 작업 영역을 기준으로
+                 * 퀴즈 팝업 크기를 계산한다.
+                 */
+                SizeMode =
+                    PopupSizeMode.ViewportRatio,
+
+                WidthRatio =
+                    0.55,
+
+                HeightRatio =
+                    0.75,
+
+                MinimumWidth =
+                    600,
+
+                MinimumHeight =
+                    500,
+
+                MaximumWidth =
+                    900,
+
+                MaximumHeight =
+                    900
+            };
 
             PopupWindow popupWindow =
                 new PopupWindow(options);

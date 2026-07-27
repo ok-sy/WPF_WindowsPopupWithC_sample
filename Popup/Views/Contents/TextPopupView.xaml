@@ -1,6 +1,10 @@
 ﻿<UserControl x:Class="Popup.Views.Contents.TextPopupView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             MinWidth="320"
+             MinHeight="240">
 
     <UserControl.Resources>
 
@@ -141,17 +145,21 @@
             <!--
             Grid를 사용해서 본문을 2개 단으로 나눈다.
             -->
-            <Grid>
+            <Grid MinWidth="560">
                 <Grid.ColumnDefinitions>
 
-                    <!-- 왼쪽 단 -->
-                    <ColumnDefinition Width="*"/>
+                    <!--
+                    왼쪽 카드와 오른쪽 카드가
+                    사용 가능한 공간을 같은 비율로 나눠 가진다.
+                    -->
+                    <ColumnDefinition Width="*"
+                          MinWidth="260"/>
 
                     <!-- 두 단 사이 간격 -->
                     <ColumnDefinition Width="18"/>
 
-                    <!-- 오른쪽 단 -->
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"
+                          MinWidth="260"/>
 
                 </Grid.ColumnDefinitions>
 

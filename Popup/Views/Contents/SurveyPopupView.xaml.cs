@@ -1,9 +1,11 @@
 ﻿using Popup.Models;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
-using System;
+
 
 namespace Popup.Views.Contents
 {
@@ -255,13 +257,17 @@ namespace Popup.Views.Contents
         /// 5점 평가 문항을 만든다.
         /// </summary>
         private FrameworkElement CreateRating5Control(
-            SurveyQuestion question)
+    SurveyQuestion question)
         {
-            StackPanel ratingPanel = new StackPanel
+            /*
+             * 5점 척도는 항상 항목이 5개이므로
+             * 사용 가능한 너비를 5개의 동일한 열로 나눈다.
+             */
+            UniformGrid ratingPanel = new UniformGrid
             {
                 Margin = new Thickness(0, 16, 0, 0),
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Center
+                Columns = 5,
+                HorizontalAlignment = HorizontalAlignment.Stretch
             };
 
             List<SurveyOption> ratingOptions =
@@ -271,17 +277,28 @@ namespace Popup.Views.Contents
             {
                 RadioButton radioButton = new RadioButton
                 {
-                    Margin = new Thickness(10, 0, 10, 0),
+                    Margin = new Thickness(4, 4, 4, 4),
+
+                    HorizontalAlignment =
+                        HorizontalAlignment.Center,
+
+                    VerticalAlignment =
+                        VerticalAlignment.Center,
+
+                    HorizontalContentAlignment =
+                        HorizontalAlignment.Center,
+
                     VerticalContentAlignment =
                         VerticalAlignment.Center,
 
-                    Content = option.Text,
+                    Content =
+                        option.Text,
 
-                    // 나중에 응답을 수집할 때 사용할 실제 값
-                    Tag = option.Value,
+                    Tag =
+                        option.Value,
 
-                    // 질문마다 다른 그룹 이름을 사용한다.
-                    GroupName = $"Question_{question.QuestionId}"
+                    GroupName =
+                        $"Question_{question.QuestionId}"
                 };
 
                 ratingPanel.Children.Add(radioButton);

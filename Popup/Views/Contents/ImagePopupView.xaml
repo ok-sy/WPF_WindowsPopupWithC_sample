@@ -160,8 +160,9 @@
                 이미지 비율이 유지된다.
                 -->
                 <Image x:Name="PopupImage"
-                       Stretch="Fill" 
-                       />
+                Stretch="Uniform"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"/>     
 
             </Border>
 

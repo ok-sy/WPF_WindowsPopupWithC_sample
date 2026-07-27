@@ -81,10 +81,12 @@
 
                 <!-- 필수 문항 안내 -->
                 <TextBlock Grid.Column="0"
-                           VerticalAlignment="Center"
-                           Text="* 표시된 문항은 필수 응답입니다."
-                           FontSize="13"
-                           Foreground="#6B7280"/>
+                   Margin="0,0,12,0"
+                   VerticalAlignment="Center"
+                   Text="* 표시된 문항은 필수 응답입니다."
+                   FontSize="13"
+                   Foreground="#6B7280"
+                   TextWrapping="Wrap"/>
 
                 <!-- 제출 버튼 -->
                 <Button x:Name="SubmitButton"

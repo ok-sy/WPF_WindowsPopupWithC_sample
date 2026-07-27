@@ -398,15 +398,13 @@
         <Border
             x:Name="VideoContainer"
             Grid.Row="1"
-            Width="720"
-            Height="405"
             Background="Black"
             BorderBrush="#D1D5DB"
             BorderThickness="1"
             CornerRadius="8"
             ClipToBounds="True"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
             MouseEnter="VideoContainer_MouseEnter"
             MouseLeave="VideoContainer_MouseLeave"
             MouseMove="VideoContainer_MouseMove">
