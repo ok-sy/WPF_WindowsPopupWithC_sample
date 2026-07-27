@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System;
 
 namespace Popup.Views.Contents
 {
@@ -28,7 +29,18 @@ namespace Popup.Views.Contents
          * 다시 찾기 위해 사용한다.
          */
         private readonly Dictionary<int, FrameworkElement>
-            _answerControls = new();
+        _answerControls = new();
+
+        /*
+         * 설문 제출이 정상적으로 완료됐을 때
+         * 외부로 응답 목록을 전달하는 이벤트다.
+         *
+         * MainWindow 또는 PopupWindow에서
+         * 이 이벤트를 구독하면
+         * 사용자가 제출한 SurveyAnswer 목록을 받을 수 있다.
+         */
+        public event EventHandler<List<SurveyAnswer>>?
+            SurveySubmitted;
 
         /// <summary>
         /// Visual Studio 미리보기와 기본 생성을 위한 생성자
@@ -506,31 +518,32 @@ namespace Popup.Views.Contents
                 CollectAnswers();
 
             /*
-             * 필수 문항 중 비어 있는 항목이 있으면
-             * 제출을 중단하고 안내 메시지를 표시한다.
+             * 필수 문항 검증까지 통과한 응답 목록을
+             * 외부로 전달한다.
+             *
+             * MainWindow 또는 API 연동 코드에서
+             * 이 이벤트를 받아 저장 처리할 수 있다.
              */
-            if (!ValidateRequiredQuestions(
-                answers,
-                out string validationMessage))
-            {
-                MessageBox.Show(
-                    validationMessage,
-                    "필수 문항 확인",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-
-                return;
-            }
+            SurveySubmitted?.Invoke(
+                this,
+                answers);
 
             /*
-             * 현재는 응답 수집이 정상적으로 되는지
-             * 확인하기 위한 임시 메시지다.
+             * answers.Count는 전체 질문 개수다.
              *
-             * 다음 단계에서 이벤트로 응답을 전달하고
-             * PopupWindow를 닫도록 변경한다.
+             * CollectAnswers()가 모든 질문마다
+             * SurveyAnswer 객체를 하나씩 만들기 때문이다.
+             *
+             * 실제로 사용자가 응답한 문항 수는
+             * 선택값 또는 주관식 내용이 들어 있는 항목만 세어야 한다.
              */
+            int answeredCount = answers.Count(answer =>
+                answer.SelectedValues.Count > 0 ||
+                !string.IsNullOrWhiteSpace(answer.TextAnswer));
+
             MessageBox.Show(
-                $"설문 응답 {answers.Count}건이 수집되었습니다.",
+                $"전체 {answers.Count}문항 중 " +
+                $"{answeredCount}문항에 응답했습니다.",
                 "설문 제출",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);

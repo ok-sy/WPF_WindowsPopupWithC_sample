@@ -3,6 +3,7 @@ using Popup.Views.Contents;
 using Popup.Views.Windows;
 using System.Security.Policy;
 using System.Windows;
+using System.Linq;
 
 namespace Popup
 {
@@ -404,24 +405,55 @@ namespace Popup
     };
 
             SurveyPopupView surveyView = new SurveyPopupView(
-                "교육 만족도 설문",
-                "더 나은 교육을 위해 아래 문항에 응답해주세요.",
-                questions);
+            "교육 만족도 설문",
+            "더 나은 교육을 위해 아래 문항에 응답해주세요.",
+            questions);
 
             PopupOptions options = new PopupOptions
             {
                 Title = "교육 만족도 설문",
                 Content = surveyView,
                 ShowHeader = false,
-                ShowCloseButton = true,
                 ShowFooter = false,
-                ShowDoNotShowAgain = false,
-
                 Width = 700,
-                Height = 800
+                Height = 670
             };
 
-            PopupWindow popupWindow = new PopupWindow(options);
+            PopupWindow popupWindow =
+                new PopupWindow(options);
+
+            /*
+             * SurveyPopupView에서 제출 이벤트가 발생하면
+             * 전달받은 응답 목록을 처리한다.
+             */
+            surveyView.SurveySubmitted +=
+                (surveySender, answers) =>
+                {
+                    /*
+                     * 현재는 API가 연결되지 않았으므로
+                     * 응답 개수만 확인한다.
+                     *
+                     * 나중에는 이 위치에서
+                     * API 호출 또는 DB 저장 처리를 한다.
+                     */
+                    int answeredCount = answers.Count(answer =>
+                        answer.SelectedValues.Count > 0 ||
+                        !string.IsNullOrWhiteSpace(
+                            answer.TextAnswer));
+
+                    MessageBox.Show(
+                        $"전체 {answers.Count}문항 중 " +
+                        $"{answeredCount}문항이 제출되었습니다.",
+                        "설문 제출 완료",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    /*
+                     * 제출 처리가 성공한 뒤
+                     * 설문 팝업을 닫는다.
+                     */
+                    popupWindow.Close();
+                };
 
             popupWindow.ShowDialog();
         }
