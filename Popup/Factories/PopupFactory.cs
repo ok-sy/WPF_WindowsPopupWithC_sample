@@ -76,6 +76,10 @@ namespace Popup.Factories
                 Content =
                     content,
 
+                DisplayMode =
+                ConvertPopupDisplayMode(
+                    popupDto.DisplayMode),
+
                 ShowHeader =
                     popupDto.ShowHeader,
 
@@ -384,6 +388,29 @@ namespace Popup.Factories
             };
         }
 
+        /*
+         * 서버에서 받은 팝업 표시 방식 문자열을
+         * 프로그램 내부 enum으로 변환한다.
+         */
+        private static PopupDisplayMode ConvertPopupDisplayMode(
+            string displayMode)
+        {
+            return displayMode
+                .Trim()
+                .ToUpperInvariant() switch
+            {
+                "SEQUENTIAL" =>
+                    PopupDisplayMode.Sequential,
+
+                "SIMULTANEOUS" =>
+                    PopupDisplayMode.Simultaneous,
+
+                _ =>
+                    throw new ArgumentException(
+                        $"지원하지 않는 팝업 표시 방식입니다: " +
+                        $"{displayMode}")
+            };
+        }
 
         /*
          * 서버에서 받은 문자열 크기 모드를

@@ -27,6 +27,25 @@ namespace Popup.Models
         Auto
     }
 
+    /*
+     * 여러 팝업이 조회됐을 때
+     * 팝업을 표시하는 방식이다.
+     */
+    public enum PopupDisplayMode
+    {
+        /*
+         * 앞 팝업이 닫힌 뒤
+         * 다음 팝업을 표시한다.
+         */
+        Sequential,
+
+        /*
+         * 기존 팝업의 종료 여부와 관계없이
+         * 즉시 화면에 표시한다.
+         */
+        Simultaneous
+    }
+
     public class PopupOptions
     {
         /*
@@ -42,6 +61,15 @@ namespace Popup.Models
          * 다양한 FrameworkElement를 받을 수 있다.
          */
         public FrameworkElement? Content { get; set; }
+
+        /*
+         * 여러 팝업을 표시하는 방식
+         *
+         * 기본값은 팝업이 겹치지 않도록
+         * 순차 표시로 설정한다.
+         */
+        public PopupDisplayMode DisplayMode { get; set; } =
+            PopupDisplayMode.Sequential;
 
         /*
          * 팝업 상단 Header 전체 표시 여부

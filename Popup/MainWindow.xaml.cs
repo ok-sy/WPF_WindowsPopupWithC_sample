@@ -7,11 +7,27 @@ using System.Linq;
 using System.Security.Policy;
 using System.Text.Json;
 using System.Windows;
+using Popup.Managers;
+using Popup.Services;
+
 
 namespace Popup
 {
     public partial class MainWindow : Window
     {
+
+        /*
+         * 
+         * 팝업을 순서대로 표시하는 관리자
+         */
+        private readonly PopupManager
+            _popupManager;
+
+        /*
+         * DTO를 PopupOptions로 변환하는 서비스
+         */
+        private readonly PopupService
+            _popupService;
         /*
          * MainWindow 생성자
          *
@@ -21,14 +37,28 @@ namespace Popup
         public MainWindow()
         {
             InitializeComponent();
+
+            /*
+             * MainWindow를 팝업의 부모 창으로 사용하는
+             * PopupManager를 생성한다.
+             */
+            _popupManager =
+                new PopupManager(
+                    this);
+
+            /*
+             * DTO 변환용 PopupService를 생성한다.
+             */
+            _popupService =
+                new PopupService();
         }
 
         /*
- * JSON 기반 TEXT 팝업 테스트
- *
- * 실제 서버 연동 전까지는
- * JSON 문자열을 직접 작성해서 테스트한다.
- */
+         * JSON 기반 TEXT 팝업 테스트
+         *
+         * 실제 서버 연동 전까지는
+         * JSON 문자열을 직접 작성해서 테스트한다.
+         */
         private void OpenPopupButton_Click(
             object sender,
             RoutedEventArgs e)
