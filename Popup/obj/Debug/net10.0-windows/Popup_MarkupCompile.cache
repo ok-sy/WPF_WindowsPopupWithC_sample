@@ -16,5 +16,5 @@ C:\gitRepo\Popup\Popup\App.xaml
 209-1916417046
 MainWindow.xaml;TextPopupWindow.xaml;Views\Contents\ImagePopupView.xaml;Views\Contents\SurveyPopupView.xaml;Views\Contents\TextPopupView.xaml;Views\Contents\VideoPopupView.xaml;Views\Windows\PopupWindow.xaml;
 
-True
+False
 

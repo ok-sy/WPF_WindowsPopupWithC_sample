@@ -2,9 +2,9 @@
 using Popup.Models;
 using Popup.Views.Contents;
 using System;
-using System.Text.Json;
 using System.Collections.Generic;
-
+using System.Text.Json;
+using System.Windows;
 
 namespace Popup.Factories
 {
@@ -31,7 +31,7 @@ namespace Popup.Factories
              * popupType에 따라
              * 실제 본문 View를 생성한다.
              */
-            var content =
+            FrameworkElement content =
             popupDto.PopupType
                 .Trim()
                 .ToUpperInvariant() switch
@@ -43,18 +43,20 @@ namespace Popup.Factories
                 "IMAGE" =>
                     CreateImagePopupView(
                         popupDto.Content),
+
                 "VIDEO" =>
                     CreateVideoPopupView(
                         popupDto.Content),
+
                 "SURVEY" =>
                     CreateSurveyPopupView(
                         popupDto.Content,
                         isQuizMode: false),
+
                 "QUIZ" =>
                     CreateSurveyPopupView(
                         popupDto.Content,
                         isQuizMode: true),
-
 
                 _ =>
                     throw new NotSupportedException(
