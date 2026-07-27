@@ -457,5 +457,218 @@ namespace Popup
 
             popupWindow.ShowDialog();
         }
+        /*
+ * 퀴즈 팝업 열기 버튼 클릭 이벤트
+ *
+ * SurveyPopupView를 QuizMode로 실행하여
+ * 객관식 문항을 채점하고 통과 점수를 확인한다.
+ */
+        private void OpenQuizPopupButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            /*
+             * 퀴즈에서 사용할 문항 목록을 만든다.
+             */
+            List<SurveyQuestion> questions =
+                new List<SurveyQuestion>
+                {
+            new SurveyQuestion
+            {
+                QuestionId = 1,
+                Title = "다음 중 개인정보에 해당하는 것은?",
+                Description = "정답을 하나 선택해주세요.",
+                QuestionType =
+                    SurveyQuestionType.SingleChoice,
+                IsRequired = true,
+
+                /*
+                 * 이 문항은 채점 대상이다.
+                 */
+                IsScored = true,
+
+                Options =
+                {
+                    new SurveyOption
+                    {
+                        Value = "PHONE",
+                        Text = "휴대전화 번호"
+                    },
+                    new SurveyOption
+                    {
+                        Value = "WEATHER",
+                        Text = "오늘의 날씨"
+                    },
+                    new SurveyOption
+                    {
+                        Value = "BUILDING",
+                        Text = "회사 건물 층수"
+                    }
+                },
+
+                /*
+                 * 정답은 SurveyOption.Text가 아니라
+                 * SurveyOption.Value 값을 사용한다.
+                 */
+                CorrectAnswers =
+                {
+                    "PHONE"
+                }
+            },
+
+            new SurveyQuestion
+            {
+                QuestionId = 2,
+                Title = "올바른 비밀번호 관리 방법을 모두 선택하세요.",
+                Description = "복수 선택 문항입니다.",
+                QuestionType =
+                    SurveyQuestionType.MultipleChoice,
+                IsRequired = true,
+                IsScored = true,
+
+                Options =
+                {
+                    new SurveyOption
+                    {
+                        Value = "LONG",
+                        Text = "충분히 긴 비밀번호를 사용한다."
+                    },
+                    new SurveyOption
+                    {
+                        Value = "REUSE",
+                        Text = "모든 사이트에서 같은 비밀번호를 사용한다."
+                    },
+                    new SurveyOption
+                    {
+                        Value = "MFA",
+                        Text = "다중 인증을 사용한다."
+                    },
+                    new SurveyOption
+                    {
+                        Value = "SHARE",
+                        Text = "동료와 비밀번호를 공유한다."
+                    }
+                },
+
+                CorrectAnswers =
+                {
+                    "LONG",
+                    "MFA"
+                }
+            },
+
+            new SurveyQuestion
+            {
+                QuestionId = 3,
+                Title = "의심스러운 이메일을 받았을 때 가장 적절한 행동은?",
+                QuestionType =
+                    SurveyQuestionType.SingleChoice,
+                IsRequired = true,
+                IsScored = true,
+
+                Options =
+                {
+                    new SurveyOption
+                    {
+                        Value = "CLICK",
+                        Text = "링크를 눌러 내용을 확인한다."
+                    },
+                    new SurveyOption
+                    {
+                        Value = "REPORT",
+                        Text = "링크를 누르지 않고 보안 담당자에게 신고한다."
+                    },
+                    new SurveyOption
+                    {
+                        Value = "FORWARD",
+                        Text = "동료들에게 그대로 전달한다."
+                    }
+                },
+
+                CorrectAnswers =
+                {
+                    "REPORT"
+                }
+            },
+
+            new SurveyQuestion
+            {
+                QuestionId = 4,
+                Title = "교육에 대한 의견을 작성해주세요.",
+                Description = "이 문항은 채점하지 않습니다.",
+                QuestionType =
+                    SurveyQuestionType.Text,
+                IsRequired = false,
+                IsScored = false
+            }
+                };
+
+            /*
+             * SurveyPopupView를 QuizMode로 생성한다.
+             *
+             * isQuizMode = true
+             * → 제출 버튼이 채점 버튼으로 변경된다.
+             *
+             * passingScore = 80
+             * → 80점 이상이어야 제출 완료 이벤트가 발생한다.
+             */
+            SurveyPopupView quizView =
+                new SurveyPopupView(
+                    "정보보안 교육 평가",
+                    "채점 문항에서 80점 이상이면 통과입니다.",
+                    questions,
+                    isQuizMode: true,
+                    passingScore: 80);
+
+            PopupOptions options =
+                new PopupOptions
+                {
+                    Title = "정보보안 교육 평가",
+                    Content = quizView,
+                    ShowHeader = false,
+                    ShowFooter = false,
+                    Width = 700,
+                    Height = 670
+                };
+
+            PopupWindow popupWindow =
+                new PopupWindow(options);
+
+            /*
+             * 사용자가 통과 점수 이상을 받아
+             * SurveySubmitted 이벤트가 발생하면 실행된다.
+             */
+            quizView.SurveySubmitted +=
+                (quizSender, answers) =>
+                {
+                    /*
+                     * 현재는 테스트 단계이므로
+                     * 제출된 문항 개수만 안내한다.
+                     *
+                     * 나중에는 이 위치에서
+                     * API 저장 처리를 한다.
+                     */
+                    int answeredCount =
+                        answers.Count(answer =>
+                            answer.SelectedValues.Count > 0 ||
+                            !string.IsNullOrWhiteSpace(
+                                answer.TextAnswer));
+
+                    MessageBox.Show(
+                        $"전체 {answers.Count}문항 중 " +
+                        $"{answeredCount}문항이 제출되었습니다.",
+                        "평가 제출 완료",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    /*
+                     * 통과 후 저장 처리가 완료되면
+                     * 퀴즈 팝업을 닫는다.
+                     */
+                    popupWindow.Close();
+                };
+
+            popupWindow.ShowDialog();
+        }
     }
 }

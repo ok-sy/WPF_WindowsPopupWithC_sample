@@ -51,7 +51,13 @@
             <Button Content="설문 팝업"
             Width="160"
             Height="40"
+            Margin="0,0,0,10"
             Click="OpenSurveyPopupButton_Click"/>
+
+            <Button Content="퀴즈 팝업"
+            Width="160"
+            Height="40"
+            Click="OpenQuizPopupButton_Click"/>
         </StackPanel>
 
     </Grid>
