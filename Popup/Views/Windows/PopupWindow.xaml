@@ -268,9 +268,21 @@
                 <Grid.RowDefinitions>
 
                     <!--
-                    상단바 높이
+                    공통 Header 전용 행
+
+                    PopupOptions.ShowHeader 값에 따라
+                    PopupWindow.xaml.cs에서 높이를 변경한다.
+
+                    ShowHeader = true
+                    → Header 높이를 48로 유지
+
+                    ShowHeader = false
+                    → Header 높이를 0으로 만들어
+                      제목과 닫기 버튼뿐 아니라
+                      Header가 차지하던 공간까지 제거
                     -->
-                    <RowDefinition Height="48"/>
+                    <RowDefinition x:Name="HeaderRow"
+                    Height="48"/>
 
                     <!--
                     실제 팝업 내용이
@@ -293,7 +305,14 @@
                 팝업 제목을 표시하고
                 창을 드래그할 수 있게 한다.
                 -->
-                <Border Grid.Row="0"
+                <!--
+                공통 상단 Header 영역
+
+                PopupOptions.ShowHeader 값에 따라
+                전체 영역을 표시하거나 숨긴다.
+                -->
+                <Border x:Name="HeaderArea"
+                        Grid.Row="0"
                         Background="White"
                         CornerRadius="12,12,0,0"
                         MouseLeftButtonDown="Header_MouseLeftButtonDown">

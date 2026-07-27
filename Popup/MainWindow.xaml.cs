@@ -412,13 +412,13 @@ namespace Popup
             {
                 Title = "교육 만족도 설문",
                 Content = surveyView,
-
+                ShowHeader = false,
                 ShowCloseButton = true,
                 ShowFooter = false,
                 ShowDoNotShowAgain = false,
 
                 Width = 700,
-                Height = 670
+                Height = 800
             };
 
             PopupWindow popupWindow = new PopupWindow(options);
