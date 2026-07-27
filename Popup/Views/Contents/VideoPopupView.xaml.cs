@@ -46,6 +46,23 @@ namespace Popup.Views.Contents
         private bool _isSeeking;
 
         /*
+         * 사용자가 음량 Slider를
+         * 드래그 중인지 나타낸다.
+         */
+        private bool _isChangingVolume;
+
+        /*
+         * 진행바를 드래그하기 전
+         * 영상이 재생 중이었는지 저장한다.
+         *
+         * true
+         * → 드래그 종료 후 다시 재생
+         *
+         * false
+         * → 드래그 종료 후 일시정지 유지
+         */
+        private bool _wasPlayingBeforeSeeking;
+        /*
          * 현재 음소거 상태인지 나타낸다.
          */
         private bool _isMuted;
@@ -478,11 +495,103 @@ namespace Popup.Views.Contents
                 return;
             }
 
+            /*
+             * 드래그 시작 전 재생 상태를 저장한다.
+             *
+             * 영상이 끝난 상태라면
+             * _isPlaying은 false이므로
+             * 드래그 후에도 일시정지 상태가 유지된다.
+             */
+            _wasPlayingBeforeSeeking =
+                _isPlaying;
+
             _isSeeking = true;
 
             _controlHideTimer.Stop();
-        }
 
+            /*
+             * 드래그 중에는 영상이 계속 흘러가지 않도록
+             * 일시정지한다.
+             */
+            PopupVideo.Pause();
+
+            ProgressSlider.CaptureMouse();
+
+            MoveProgressSliderByMouse(e);
+
+            e.Handled = true;
+        }
+        /*
+         * 사용자가 진행바를 누른 상태로 마우스를 이동하면
+         * 마우스 위치 비율에 맞춰 재생 위치를 계속 변경한다.
+         */
+        private void ProgressSlider_PreviewMouseMove(
+            object sender,
+            MouseEventArgs e)
+        {
+            /*
+             * 영상이 아직 열리지 않았거나
+             * 드래그 중이 아니라면 아무 작업도 하지 않는다.
+             */
+            if (!_isMediaOpened ||
+                !_isSeeking ||
+                e.LeftButton != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            MoveProgressSliderByMouse(e);
+        }
+        /*
+  * 진행바 위의 마우스 X좌표를 비율로 계산하여
+  * Slider 값과 화면의 시간 표시만 변경한다.
+  *
+  * 실제 영상 위치는 마우스를 놓았을 때만 변경한다.
+  */
+        private void MoveProgressSliderByMouse(
+            MouseEventArgs e)
+        {
+            double sliderWidth =
+                ProgressSlider.ActualWidth;
+
+            if (sliderWidth <= 0)
+            {
+                return;
+            }
+
+            Point mousePosition =
+                e.GetPosition(ProgressSlider);
+
+            double positionRatio =
+                mousePosition.X / sliderWidth;
+
+            positionRatio = Math.Clamp(
+                positionRatio,
+                0,
+                1);
+
+            double targetSeconds =
+                ProgressSlider.Minimum +
+                (
+                    ProgressSlider.Maximum -
+                    ProgressSlider.Minimum
+                ) * positionRatio;
+
+            /*
+             * 드래그 중에는 진행바 모양만 이동시킨다.
+             */
+            ProgressSlider.Value =
+                targetSeconds;
+
+            /*
+             * 실제 영상 위치는 건드리지 않고
+             * 사용자가 이동하려는 예상 시간만 표시한다.
+             */
+            CurrentTimeText.Text =
+                FormatTime(
+                    TimeSpan.FromSeconds(
+                        targetSeconds));
+        }
         private void ProgressSlider_PreviewMouseLeftButtonUp(
         object sender,
         MouseButtonEventArgs e)
@@ -490,9 +599,16 @@ namespace Popup.Views.Contents
             if (!_isMediaOpened)
             {
                 _isSeeking = false;
+
+                ProgressSlider.ReleaseMouseCapture();
+
                 return;
             }
 
+            /*
+             * 마우스를 놓은 최종 위치로
+             * 실제 영상 시간을 한 번만 이동한다.
+             */
             PopupVideo.Position =
                 TimeSpan.FromSeconds(
                     ProgressSlider.Value);
@@ -503,10 +619,37 @@ namespace Popup.Views.Contents
 
             _isSeeking = false;
 
+            ProgressSlider.ReleaseMouseCapture();
+
             /*
-             * 드래그가 영상 영역 밖에서 끝났다면
-             * 컨트롤바를 숨긴다.
+             * 드래그 전 영상이 재생 중이었던 경우에만
+             * 다시 재생한다.
+             *
+             * 영상이 끝난 뒤 드래그했거나
+             * 원래 일시정지 상태였다면
+             * 그대로 일시정지를 유지한다.
              */
+            if (_wasPlayingBeforeSeeking)
+            {
+                PlayVideo();
+            }
+            else
+            {
+                PopupVideo.Pause();
+
+                _isPlaying = false;
+
+                /*
+                 * 재생 버튼 아이콘을
+                 * 재생 모양으로 되돌린다.
+                 */
+                PlayPauseIcon.Text =
+                    "\uE768";
+
+                PlayPauseButton.ToolTip =
+                    "재생";
+            }
+
             if (!VideoContainer.IsMouseOver)
             {
                 LocalVideoControlArea.Visibility =
@@ -514,11 +657,13 @@ namespace Popup.Views.Contents
 
                 ShowVideoControls();
             }
+
+            e.Handled = true;
         }
         /*
- * 영상 영역에 마우스가 들어오면
- * 컨트롤바를 표시하고 숨김 시간을 다시 계산한다.
- */
+         * 영상 영역에 마우스가 들어오면
+         * 컨트롤바를 표시하고 숨김 시간을 다시 계산한다.
+         */
         private void VideoContainer_MouseEnter(
             object sender,
             MouseEventArgs e)
@@ -661,6 +806,101 @@ namespace Popup.Views.Contents
                 e.NewValue <= 0;
 
             UpdateVolumeIcon();
+        }
+        /*
+ * 음량 바를 클릭했을 때
+ * 클릭 위치 비율에 맞춰 음량을 변경한다.
+ */
+        private void VolumeSlider_PreviewMouseLeftButtonDown(
+            object sender,
+            MouseButtonEventArgs e)
+        {
+            _isChangingVolume = true;
+
+            VolumeSlider.CaptureMouse();
+
+            MoveVolumeSliderByMouse(e);
+
+            /*
+             * 기본 Slider의 +/- 이동 동작을 막는다.
+             */
+            e.Handled = true;
+        }
+
+        /*
+         * 음량 바를 누른 상태로 이동하면
+         * 마우스 위치에 맞춰 음량을 계속 변경한다.
+         */
+        private void VolumeSlider_PreviewMouseMove(
+            object sender,
+            MouseEventArgs e)
+        {
+            if (!_isChangingVolume ||
+                e.LeftButton != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            MoveVolumeSliderByMouse(e);
+
+            e.Handled = true;
+        }
+
+        /*
+         * 음량 드래그가 끝나면
+         * 마우스 캡처를 해제한다.
+         */
+        private void VolumeSlider_PreviewMouseLeftButtonUp(
+            object sender,
+            MouseButtonEventArgs e)
+        {
+            _isChangingVolume = false;
+
+            VolumeSlider.ReleaseMouseCapture();
+
+            e.Handled = true;
+        }
+
+        /*
+         * 마우스 X좌표를 음량 Slider 전체 폭의 비율로 계산한다.
+         *
+         * 왼쪽 끝
+         * → 음량 0
+         *
+         * 가운데
+         * → 음량 0.5
+         *
+         * 오른쪽 끝
+         * → 음량 1
+         */
+        private void MoveVolumeSliderByMouse(
+            MouseEventArgs e)
+        {
+            double sliderWidth =
+                VolumeSlider.ActualWidth;
+
+            if (sliderWidth <= 0)
+            {
+                return;
+            }
+
+            Point mousePosition =
+                e.GetPosition(VolumeSlider);
+
+            double volumeRatio =
+                mousePosition.X / sliderWidth;
+
+            volumeRatio = Math.Clamp(
+                volumeRatio,
+                0,
+                1);
+
+            VolumeSlider.Value =
+                VolumeSlider.Minimum +
+                (
+                    VolumeSlider.Maximum -
+                    VolumeSlider.Minimum
+                ) * volumeRatio;
         }
 
         private void MuteButton_Click(

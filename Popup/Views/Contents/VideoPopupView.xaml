@@ -72,6 +72,308 @@
                 </Setter.Value>
             </Setter>
         </Style>
+       
+        <!--
+        영상 재생 진행바 스타일
+
+        재생된 구간은
+        왼쪽의 밝은 흰색에서 오른쪽의 회색으로
+        부드럽게 이어지는 그라데이션으로 표시한다.
+
+        기본 Slider의 둥근 이동 버튼은 제거하고,
+        가느다란 막대만 표시한다.
+        -->
+        <Style x:Key="VideoProgressSliderStyle"
+       TargetType="Slider">
+
+            <!--
+            실제 막대보다 클릭 가능한 영역을 넓게 유지한다.
+            -->
+            <Setter Property="Height"
+            Value="16"/>
+
+            <Setter Property="FocusVisualStyle"
+            Value="{x:Null}"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Slider">
+
+                        <Grid VerticalAlignment="Center">
+
+                            <!--
+                            전체 진행바 배경
+
+                            아직 재생되지 않은 구간은
+                            어두운 반투명 회색으로 표시한다.
+                            -->
+                            <Border Height="5"
+                            VerticalAlignment="Center"
+                            Background="#55A0A0A0"
+                            CornerRadius="2.5"/>
+
+                            <!--
+                            Slider의 현재 값에 따라
+                            왼쪽 진행 영역의 너비가 자동으로 변경된다.
+                            -->
+                            <Track x:Name="PART_Track"
+                           IsDirectionReversed="False">
+
+                                <!--
+                                현재까지 재생된 구간
+                                -->
+                                <Track.DecreaseRepeatButton>
+
+                                    <RepeatButton
+                                Command="Slider.DecreaseLarge"
+                                IsTabStop="False">
+
+                                        <RepeatButton.Template>
+                                            <ControlTemplate
+                                        TargetType="RepeatButton">
+
+                                                <Border Height="5"
+                                                VerticalAlignment="Center"
+                                                CornerRadius="2.5">
+
+                                                    <Border.Background>
+                                                        <LinearGradientBrush
+                                                    StartPoint="0,0.5"
+                                                    EndPoint="1,0.5">
+
+                                                            <!-- 시작 부분 -->
+                                                            <GradientStop
+                                                        Offset="0"
+                                                        Color="#FFFFFFFF"/>
+
+                                                            <!-- 중간 부분 -->
+                                                            <GradientStop
+                                                        Offset="0.6"
+                                                        Color="#FFE5E7EB"/>
+
+                                                            <!-- 현재 재생 위치 부근 -->
+                                                            <GradientStop
+                                                        Offset="1"
+                                                        Color="#FF9CA3AF"/>
+
+                                                        </LinearGradientBrush>
+                                                    </Border.Background>
+
+                                                </Border>
+
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+
+                                    </RepeatButton>
+
+                                </Track.DecreaseRepeatButton>
+
+                                <!--
+                                아직 재생되지 않은 영역은
+                                위의 전체 배경 Border가 표시하므로
+                                별도 색상을 사용하지 않는다.
+                                -->
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton
+                                    Command="Slider.IncreaseLarge"
+                                    IsTabStop="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <!--
+                                                아직 재생되지 않은 오른쪽 영역
+
+                                                기본 상태는 기존 회색바와 비슷하게,
+                                                hover 상태에서는 아주 조금만 밝아진다.
+                                                -->
+                                                <Border
+                                                x:Name="RemainingTrack"
+                                                Height="5"
+                                                VerticalAlignment="Center"
+                                                Background="#55A0A0A0"
+                                                CornerRadius="2.5"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger
+                                                    Property="IsMouseOver"
+                                                    Value="True">
+                                                        <Setter
+                                                        TargetName="RemainingTrack"
+                                                        Property="Background"
+                                                        Value="#779A9A9A"/>
+
+                                                    </Trigger>
+                                                    <Trigger
+                                                    Property="IsPressed"
+                                                    Value="True">
+                                                        <Setter
+                                                        TargetName="RemainingTrack"
+                                                        Property="Background"
+                                                        Value="#888F8F8F"/>
+                                                    </Trigger> 
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <!--둥근 Thumb를 제거한다.
+                                크기가 0인 투명 Thumb를 사용하면
+                                Slider의 내부 구조와 드래그 동작은 유지하면서
+                                화면에는 도형이 보이지 않는다.
+                                -->
+                                <Track.Thumb>
+                                    <Thumb Width="0"
+                                           Height="0"
+                                           Background="Transparent"
+                                           BorderThickness="0"/>
+
+                                </Track.Thumb>
+
+                            </Track>
+
+                        </Grid>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!--
+        영상 음량 Slider 스타일
+
+        현재 음량 구간은
+        밝은 흰색에서 회색으로 이어지는
+        그라데이션 막대로 표시한다.
+
+        동그란 Thumb는 화면에서 제거한다.
+        -->
+        <Style x:Key="VideoVolumeSliderStyle"
+       TargetType="Slider">
+
+            <Setter Property="Height"
+            Value="16"/>
+
+            <Setter Property="FocusVisualStyle"
+            Value="{x:Null}"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+
+                    <ControlTemplate TargetType="Slider">
+
+                        <Grid VerticalAlignment="Center">
+
+                            <!-- 전체 음량 바 배경 -->
+                            <Border Height="5"
+                            VerticalAlignment="Center"
+                            Background="#55777777"
+                            CornerRadius="2.5"/>
+
+                            <Track x:Name="PART_Track"
+                           IsDirectionReversed="False">
+
+                                <!-- 현재 음량 구간 -->
+                                <Track.DecreaseRepeatButton>
+
+                                    <RepeatButton
+                                Command="Slider.DecreaseLarge"
+                                IsTabStop="False">
+
+                                        <RepeatButton.Template>
+                                            <ControlTemplate
+                                        TargetType="RepeatButton">
+
+                                                <Border Height="5"
+                                                VerticalAlignment="Center"
+                                                CornerRadius="2.5">
+
+                                                    <Border.Background>
+                                                        <LinearGradientBrush
+                                                    StartPoint="0,0.5"
+                                                    EndPoint="1,0.5">
+
+                                                            <GradientStop
+                                                        Offset="0"
+                                                        Color="#FFFFFFFF"/>
+
+                                                            <GradientStop
+                                                        Offset="0.65"
+                                                        Color="#FFE5E7EB"/>
+
+                                                            <GradientStop
+                                                        Offset="1"
+                                                        Color="#FF9CA3AF"/>
+
+                                                        </LinearGradientBrush>
+                                                    </Border.Background>
+
+                                                </Border>
+
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+
+                                    </RepeatButton>
+
+                                </Track.DecreaseRepeatButton>
+
+                                <!-- 남은 음량 영역 -->
+                                <Track.IncreaseRepeatButton>
+
+                                    <RepeatButton
+                                Command="Slider.IncreaseLarge"
+                                IsTabStop="False">
+
+                                        <RepeatButton.Template>
+                                            <ControlTemplate
+                                        TargetType="RepeatButton">
+
+                                                <Border
+                                            x:Name="RemainingVolumeTrack"
+                                            Height="5"
+                                            VerticalAlignment="Center"
+                                            Background="#55777777"
+                                            CornerRadius="2.5"/>
+
+                                                <ControlTemplate.Triggers>
+
+                                                    <Trigger
+                                                Property="IsMouseOver"
+                                                Value="True">
+
+                                                        <Setter
+                                                    TargetName="RemainingVolumeTrack"
+                                                    Property="Background"
+                                                    Value="#777F7F7F"/>
+
+                                                    </Trigger>
+
+                                                </ControlTemplate.Triggers>
+
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+
+                                    </RepeatButton>
+
+                                </Track.IncreaseRepeatButton>
+
+                                <!-- Thumb는 보이지 않게 처리 -->
+                                <Track.Thumb>
+
+                                    <Thumb Width="0"
+                                   Height="0"
+                                   Background="Transparent"
+                                   BorderThickness="0"/>
+
+                                </Track.Thumb>
+
+                            </Track>
+
+                        </Grid>
+
+                    </ControlTemplate>
+
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -219,19 +521,28 @@
                     Foreground="White"
                     Text="00:00"/>
 
-                        <!-- 재생 진행바 -->
+                        
+                        <!--
+                        영상 재생 위치 진행바
+
+                        왼쪽의 재생 완료 구간은
+                        VideoProgressSliderStyle의 그라데이션으로 표시한다.
+                        -->
                         <Slider
-                    x:Name="ProgressSlider"
-                    Grid.Column="2"
-                    Margin="6,0,10,0"
-                    VerticalAlignment="Center"
-                    Minimum="0"
-                    Maximum="1"
-                    Value="0"
-                    PreviewMouseLeftButtonDown=
-                        "ProgressSlider_PreviewMouseLeftButtonDown"
-                    PreviewMouseLeftButtonUp=
-                        "ProgressSlider_PreviewMouseLeftButtonUp"/>
+                        x:Name="ProgressSlider"
+                        Grid.Column="2"
+                        Margin="6,0,10,0"
+                        VerticalAlignment="Center"
+                        Minimum="0"
+                        Maximum="1"
+                        Value="0"
+                        Style="{StaticResource VideoProgressSliderStyle}"
+                        PreviewMouseLeftButtonDown=
+                            "ProgressSlider_PreviewMouseLeftButtonDown"
+                        PreviewMouseMove=
+                            "ProgressSlider_PreviewMouseMove"
+                        PreviewMouseLeftButtonUp=
+                            "ProgressSlider_PreviewMouseLeftButtonUp"/>     
 
                         <!-- 전체 시간 -->
                         <TextBlock
@@ -267,14 +578,22 @@
 
                         <!-- 음량 -->
                         <Slider
-                            x:Name="VolumeSlider"
-                            Grid.Column="5"
-                            Margin="4,0,0,0"
-                            VerticalAlignment="Center"
-                            Minimum="0"
-                            Maximum="1"
-                            Value="0.7"
-                            ValueChanged="VolumeSlider_ValueChanged"/>  
+                        x:Name="VolumeSlider"
+                        Grid.Column="5"
+                        Margin="4,0,0,0"
+                        VerticalAlignment="Center"
+                        Minimum="0"
+                        Maximum="1"
+                        Value="0.7"
+                        Style="{StaticResource VideoVolumeSliderStyle}"
+                        PreviewMouseLeftButtonDown=
+                            "VolumeSlider_PreviewMouseLeftButtonDown"
+                        PreviewMouseMove=
+                            "VolumeSlider_PreviewMouseMove"
+                        PreviewMouseLeftButtonUp=
+                            "VolumeSlider_PreviewMouseLeftButtonUp"
+                        ValueChanged=
+                            "VolumeSlider_ValueChanged"/>
 
                         <!-- 전체화면 -->
                         <Button
