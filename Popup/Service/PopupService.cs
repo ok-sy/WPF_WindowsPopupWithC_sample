@@ -12,13 +12,14 @@ namespace Popup.Services
     public class PopupService
     {
         /*
-         * 팝업을 화면에 표시할 수 있는지 검사하는 서비스
+         * 팝업을 현재 화면에 표시할 수 있는지
+         * 검사하는 정책 서비스
          *
          * 다음 조건을 검사한다.
          *
-         * 1. 노출 시작 일시가 되었는지
-         * 2. 노출 종료 일시가 지나지 않았는지
-         * 3. 사용자가 해당 PopupId를 숨김 처리했는지
+         * 1. 팝업 노출 시작 일시가 되었는지
+         * 2. 팝업 노출 종료 일시가 지나지 않았는지
+         * 3. 사용자가 PopupId를 숨김 처리했는지
          */
         private readonly PopupPolicyService
             _popupPolicyService;
@@ -26,13 +27,12 @@ namespace Popup.Services
         /*
          * PopupService 생성자
          *
-         * 프로그램 전체에서 공통으로 사용하는
-         * PopupStorageService.Instance를
+         * PopupWindow가 숨김 정보를 저장하는 것과
+         * 동일한 PopupStorageService.Instance를
          * PopupPolicyService에 전달한다.
          *
-         * PopupWindow도 동일한 Instance에
-         * 숨김 정보를 저장하기 때문에,
-         * 저장한 정보와 조회하는 정보가 서로 일치한다.
+         * 이렇게 해야 팝업 창에서 저장한 숨김 정보를
+         * PopupPolicyService가 같은 실행 중에 조회할 수 있다.
          */
         public PopupService()
         {
@@ -52,7 +52,7 @@ namespace Popup.Services
         {
             /*
              * 정책 검사를 통과한 팝업의
-             * PopupOptions를 저장할 결과 목록이다.
+             * PopupOptions를 저장할 결과 목록
              */
             List<PopupOptions> popupOptions =
                 new();
@@ -61,16 +61,16 @@ namespace Popup.Services
                      in popupDtos)
             {
                 /*
-                 * 현재 DTO가 표시 가능한 상태인지 확인한다.
+                 * 현재 팝업을 표시할 수 있는지 검사한다.
                  *
-                 * false인 경우:
+                 * false가 되는 경우:
                  *
-                 * - 아직 노출 시작 전
-                 * - 노출 기간 종료
-                 * - 사용자가 PopupId를 숨김 처리함
+                 * - 아직 노출 시작 일시가 되지 않음
+                 * - 노출 종료 일시가 이미 지남
+                 * - 사용자가 해당 PopupId를 숨김 처리함
                  *
-                 * 해당 팝업은 PopupOptions로 만들지 않고
-                 * 다음 DTO 검사를 계속한다.
+                 * 표시할 수 없는 팝업은 PopupOptions로 만들지 않고
+                 * 다음 DTO 검사로 넘어간다.
                  */
                 if (!_popupPolicyService.CanShow(
                         popupDto))
@@ -79,8 +79,9 @@ namespace Popup.Services
                 }
 
                 /*
-                 * 정책 검사를 통과한 DTO만
-                 * PopupFactory를 통해 PopupOptions로 변환한다.
+                 * 정책 검사를 통과한 팝업만
+                 * PopupFactory에서 실제 화면과
+                 * PopupOptions로 변환한다.
                  */
                 popupOptions.Add(
                     PopupFactory.Create(
@@ -88,7 +89,7 @@ namespace Popup.Services
             }
 
             /*
-             * 표시 가능한 팝업만 들어 있는
+             * 최종적으로 화면에 표시 가능한
              * PopupOptions 목록을 반환한다.
              */
             return popupOptions;

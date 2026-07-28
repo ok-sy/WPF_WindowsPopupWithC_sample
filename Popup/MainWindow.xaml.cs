@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Windows;
 using Popup.Managers;
 using Popup.Services;
-
+using System.Collections.Generic;
 
 namespace Popup
 {
@@ -67,12 +67,16 @@ namespace Popup
              * 서버에서 전달받았다고 가정한
              * 팝업 JSON 데이터다.
              */
-            string popupJson =
-                """
+        string popupJson =
+            """
         {
-          "PopupId": 1,
+          "PopupId": "TEXT_TEST_001",
           "PopupType": "TEXT",
           "Title": "서비스 이용 안내",
+
+          "DisplayStartAt": "2026-01-01T00:00:00",
+          "DisplayEndAt": "2026-12-31T23:59:59",
+          "DisplayMode": "SEQUENTIAL",
 
           "SizeMode": "VIEWPORT_RATIO",
 
@@ -121,32 +125,41 @@ namespace Popup
                     "팝업 JSON 변환에 실패했습니다.");
 
             /*
-             * PopupFactory가 PopupType을 확인하여
-             * TextPopupView와 PopupOptions를 생성한다.
-             */
-            PopupOptions popupOptions =
-                PopupFactory.Create(
-                    popupDto);
+              * 테스트용 DTO 한 개를 목록 형태로 만든다.
+              *
+              * 실제 서버 API에서는 여러 개의 PopupResponseDto가
+              * 목록으로 전달될 예정이므로,
+              * 테스트 코드도 같은 흐름을 사용한다.
+              */
+            List<PopupResponseDto> popupDtos =
+                new()
+                {
+            popupDto
+                };
 
             /*
-             * Factory에서 만들어진 PopupOptions로
-             * 실제 팝업 창을 생성한다.
+             * PopupService를 통해 표시 가능한 팝업만
+             * PopupOptions 목록으로 변환한다.
+             *
+             * 내부에서 다음 조건을 검사한다.
+             *
+             * 1. 노출 시작 일시
+             * 2. 노출 종료 일시
+             * 3. PopupId 숨김 여부
              */
-            PopupWindow popupWindow =
-                new PopupWindow(
-                    popupOptions);
+            List<PopupOptions> popupOptionsList =
+                _popupService.CreatePopupOptions(
+                    popupDtos);
 
             /*
-             * 현재 MainWindow를
-             * 팝업의 부모 창으로 지정한다.
+             * 정책 검사를 통과한 PopupOptions를
+             * PopupManager에 전달한다.
+             *
+             * PopupManager는 각 PopupOptions의 DisplayMode에 따라
+             * 순차 또는 동시 표시를 결정한다.
              */
-            popupWindow.Owner =
-                this;
-
-            /*
-             * 팝업을 화면에 표시한다.
-             */
-            popupWindow.Show();
+            _popupManager.ShowRange(
+                popupOptionsList);
         }
 
         /*
