@@ -48,6 +48,15 @@ namespace Popup.Models
 
     public class PopupOptions
     {
+
+        /*
+         * 팝업 고유 ID
+         *
+         * PopupResponseDto에서 전달받아
+         * "30일간 보지 않기" 등의
+         * 사용자 설정 저장에 사용한다.
+         */
+        public string PopupId { get; set; } = string.Empty;
         /*
          * 팝업 상단에 표시할 제목
          */

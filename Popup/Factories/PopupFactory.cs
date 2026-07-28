@@ -70,6 +70,8 @@ namespace Popup.Factories
              */
             return new PopupOptions
             {
+                PopupId = popupDto.PopupId,
+
                 Title =
                     popupDto.Title,
 

@@ -34,7 +34,7 @@ namespace Popup.Dtos
          * 나중에 조회, 로그 저장,
          * 다시 보지 않기 처리 등에 사용한다.
          */
-        public long PopupId { get; set; }
+        public string PopupId { get; set; } = string.Empty;
 
         /*
          * 팝업 종류
@@ -50,18 +50,19 @@ namespace Popup.Dtos
             string.Empty;
 
         /*
-         * 팝업 표시 방식
-         *
-         * 서버 JSON 예:
-         *
-         * SEQUENTIAL
-         * → 앞 팝업이 닫힌 뒤 표시
-         *
-         * SIMULTANEOUS
-         * → 다른 팝업과 동시에 표시
-         */
+       * 팝업 표시 방식
+       *
+       * 서버 JSON 예:
+       *
+       * SEQUENTIAL
+       * → 앞 팝업이 닫힌 뒤 표시
+       *
+       * SIMULTANEOUS
+       * → 다른 팝업과 동시에 표시
+       */
         public string DisplayMode { get; set; } =
             "SEQUENTIAL";
+
 
         /*
          * PopupWindow 상단에 표시할 제목

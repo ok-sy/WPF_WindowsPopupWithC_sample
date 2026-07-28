@@ -1,4 +1,5 @@
 ﻿using Popup.Models;
+using Popup.Services;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -316,25 +317,42 @@ namespace Popup.Views.Windows
          * 같은 메서드를 사용한다.
          */
         private void CloseButton_Click(
-            object sender,
-            RoutedEventArgs e)
+                object sender,
+                RoutedEventArgs e)
         {
-            /*
-             * 아직 실제 저장 기능은 만들지 않았다.
-             *
-             * 지금은 선택 여부만 확인한다.
-             */
-            if (DoNotShowAgainCheckBox.IsChecked == true)
+            SaveDoNotShowAgain();
+
+            Close();
+        }
+
+        /*
+        * "30일간 보지 않기" 체크 여부를 확인하여
+        * 숨김 정보를 저장한다.
+        */
+        private void SaveDoNotShowAgain()
+        {
+            if (!DoNotShowAgainCheckBox.IsChecked.GetValueOrDefault())
             {
-                MessageBox.Show(
-                    "30일간 보지 않기가 선택되었습니다.",
-                    "선택 확인");
+                return;
             }
 
-            /*
-             * 팝업 창을 닫는다.
-             */
-            Close();
+            if (_options == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                    _options.PopupId))
+            {
+                return;
+            }
+
+            PopupStorageService storageService =
+                new PopupStorageService();
+
+            storageService.HideUntil(
+                _options.PopupId,
+                DateTime.Now.AddDays(30));
         }
     }
 }
