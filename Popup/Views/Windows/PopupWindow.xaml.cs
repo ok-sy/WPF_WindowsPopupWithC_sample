@@ -326,31 +326,51 @@ namespace Popup.Views.Windows
         }
 
         /*
-        * "30일간 보지 않기" 체크 여부를 확인하여
-        * 숨김 정보를 저장한다.
-        */
+         * "30일간 보지 않기" 체크 여부를 확인하여
+         * 숨김 정보를 저장한다.
+         */
         private void SaveDoNotShowAgain()
         {
+            /*
+             * 체크박스가 선택되지 않았다면
+             * 숨김 정보를 저장하지 않는다.
+             */
             if (!DoNotShowAgainCheckBox.IsChecked.GetValueOrDefault())
             {
                 return;
             }
 
+            /*
+             * PopupOptions가 없다면
+             * 팝업 정보를 확인할 수 없으므로 종료한다.
+             *
+             * 현재 _options는 생성자에서 반드시 들어오므로
+             * 실제로 null이 될 가능성은 거의 없다.
+             */
             if (_options == null)
             {
                 return;
             }
 
+            /*
+             * PopupId가 없으면
+             * 어떤 팝업을 숨겨야 하는지 알 수 없으므로
+             * 저장하지 않는다.
+             */
             if (string.IsNullOrWhiteSpace(
                     _options.PopupId))
             {
                 return;
             }
 
-            PopupStorageService storageService =
-                new PopupStorageService();
-
-            storageService.HideUntil(
+            /*
+             * 프로그램 전체가 함께 사용하는
+             * PopupStorageService.Instance에 저장한다.
+             *
+             * 현재 시점으로부터 30일 뒤까지
+             * 해당 PopupId를 숨김 상태로 저장한다.
+             */
+            PopupStorageService.Instance.HideUntil(
                 _options.PopupId,
                 DateTime.Now.AddDays(30));
         }
