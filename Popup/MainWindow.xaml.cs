@@ -224,6 +224,257 @@ namespace Popup
                 "allowCloseBeforeCompletion": true
               }
             }
+                        ,
+            {
+              "popupId": "SURVEY_TEST_001",
+              "popupType": "SURVEY",
+              "title": "교육 만족도 설문",
+
+              "displayStartAt": "2026-01-01T00:00:00+09:00",
+              "displayEndAt": "2026-12-31T23:59:59+09:00",
+              "displayMode": "SEQUENTIAL",
+
+              "sizeMode": "VIEWPORT_RATIO",
+              "widthRatio": 0.55,
+              "heightRatio": 0.75,
+
+              "minimumWidth": 600,
+              "minimumHeight": 500,
+              "maximumWidth": 900,
+              "maximumHeight": 900,
+
+              "showHeader": false,
+              "showCloseButton": false,
+              "showFooter": false,
+              "showDoNotShowAgain": false,
+
+              "content": {
+                "surveyTitle": "교육 만족도 설문",
+                "description": "더 나은 교육을 위해 아래 문항에 응답해주세요.",
+
+                "passingScore": 0,
+                "validateRequiredQuestions": true,
+
+                "questions": [
+                  {
+                    "questionId": 1,
+                    "title": "교육 내용에 얼마나 만족하셨나요?",
+                    "description": "전체 교육 내용을 기준으로 평가해주세요.",
+                    "questionType": "RATING5",
+
+                    "isRequired": true,
+                    "isScored": false,
+
+                    "options": [],
+                    "correctAnswers": []
+                  },
+                  {
+                    "questionId": 2,
+                    "title": "교육을 알게 된 경로를 선택해주세요.",
+                    "description": "한 가지 항목을 선택해주세요.",
+                    "questionType": "SINGLE_CHOICE",
+
+                    "isRequired": true,
+                    "isScored": false,
+
+                    "options": [
+                      {
+                        "value": "EMAIL",
+                        "text": "이메일"
+                      },
+                      {
+                        "value": "NOTICE",
+                        "text": "사내 공지"
+                      },
+                      {
+                        "value": "RECOMMEND",
+                        "text": "동료 추천"
+                      },
+                      {
+                        "value": "ETC",
+                        "text": "기타"
+                      }
+                    ],
+
+                    "correctAnswers": []
+                  },
+                  {
+                    "questionId": 3,
+                    "title": "도움이 되었던 내용을 선택해주세요.",
+                    "description": "여러 항목을 선택할 수 있습니다.",
+                    "questionType": "MULTIPLE_CHOICE",
+
+                    "isRequired": false,
+                    "isScored": false,
+
+                    "options": [
+                      {
+                        "value": "THEORY",
+                        "text": "이론 설명"
+                      },
+                      {
+                        "value": "EXAMPLE",
+                        "text": "실습 예제"
+                      },
+                      {
+                        "value": "DOCUMENT",
+                        "text": "교육 자료"
+                      }
+                    ],
+
+                    "correctAnswers": []
+                  },
+                  {
+                    "questionId": 4,
+                    "title": "추가 의견을 작성해주세요.",
+                    "description": "자유롭게 작성할 수 있습니다.",
+                    "questionType": "TEXT",
+
+                    "isRequired": false,
+                    "isScored": false,
+
+                    "options": [],
+                    "correctAnswers": []
+                  }
+                ]
+              }
+            }
+                        ,
+            {
+              "popupId": "QUIZ_TEST_001",
+              "popupType": "QUIZ",
+              "title": "정보보안 교육 평가",
+
+              "displayStartAt": "2026-01-01T00:00:00+09:00",
+              "displayEndAt": "2026-12-31T23:59:59+09:00",
+              "displayMode": "SEQUENTIAL",
+
+              "sizeMode": "VIEWPORT_RATIO",
+              "widthRatio": 0.55,
+              "heightRatio": 0.75,
+
+              "minimumWidth": 600,
+              "minimumHeight": 500,
+              "maximumWidth": 900,
+              "maximumHeight": 900,
+
+              "showHeader": false,
+              "showCloseButton": false,
+              "showFooter": false,
+              "showDoNotShowAgain": false,
+
+              "content": {
+                "surveyTitle": "정보보안 교육 평가",
+                "description": "채점 대상 문항에서 80점 이상이면 통과입니다.",
+
+                "passingScore": 80,
+                "validateRequiredQuestions": true,
+
+                "questions": [
+                  {
+                    "questionId": 1,
+                    "title": "다음 중 개인정보에 해당하는 것은?",
+                    "description": "정답을 하나 선택해주세요.",
+                    "questionType": "SINGLE_CHOICE",
+
+                    "isRequired": true,
+                    "isScored": true,
+
+                    "options": [
+                      {
+                        "value": "PHONE",
+                        "text": "휴대전화 번호"
+                      },
+                      {
+                        "value": "WEATHER",
+                        "text": "오늘의 날씨"
+                      },
+                      {
+                        "value": "BUILDING",
+                        "text": "회사 건물 층수"
+                      }
+                    ],
+
+                    "correctAnswers": [
+                      "PHONE"
+                    ]
+                  },
+                  {
+                    "questionId": 2,
+                    "title": "올바른 비밀번호 관리 방법을 모두 선택하세요.",
+                    "description": "정답을 모두 선택해야 합니다.",
+                    "questionType": "MULTIPLE_CHOICE",
+
+                    "isRequired": true,
+                    "isScored": true,
+
+                    "options": [
+                      {
+                        "value": "LONG",
+                        "text": "충분히 긴 비밀번호를 사용한다."
+                      },
+                      {
+                        "value": "REUSE",
+                        "text": "모든 사이트에서 같은 비밀번호를 사용한다."
+                      },
+                      {
+                        "value": "MFA",
+                        "text": "다중 인증을 사용한다."
+                      },
+                      {
+                        "value": "SHARE",
+                        "text": "동료와 비밀번호를 공유한다."
+                      }
+                    ],
+
+                    "correctAnswers": [
+                      "LONG",
+                      "MFA"
+                    ]
+                  },
+                  {
+                    "questionId": 3,
+                    "title": "의심스러운 이메일을 받았을 때 가장 적절한 행동은?",
+                    "description": "정답을 하나 선택해주세요.",
+                    "questionType": "SINGLE_CHOICE",
+
+                    "isRequired": true,
+                    "isScored": true,
+
+                    "options": [
+                      {
+                        "value": "CLICK",
+                        "text": "링크를 눌러 내용을 확인한다."
+                      },
+                      {
+                        "value": "REPORT",
+                        "text": "링크를 누르지 않고 보안 담당자에게 신고한다."
+                      },
+                      {
+                        "value": "FORWARD",
+                        "text": "동료들에게 그대로 전달한다."
+                      }
+                    ],
+
+                    "correctAnswers": [
+                      "REPORT"
+                    ]
+                  },
+                  {
+                    "questionId": 4,
+                    "title": "교육에 대한 의견을 작성해주세요.",
+                    "description": "이 문항은 점수에 포함되지 않습니다.",
+                    "questionType": "TEXT",
+
+                    "isRequired": false,
+                    "isScored": false,
+
+                    "options": [],
+                    "correctAnswers": []
+                  }
+                ]
+              }
+            }
             ]
             """; 
 
