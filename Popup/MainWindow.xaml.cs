@@ -1,5 +1,4 @@
 ﻿using Popup.Dtos;
-using Popup.Factories;
 using Popup.Models;
 using Popup.Views.Contents;
 using Popup.Views.Windows;
@@ -146,6 +145,43 @@ namespace Popup
                   "additionalDescription": "여러 팝업 목록 처리 테스트입니다."
                 }
               }
+                ,
+                {
+                  "popupId": "IMAGE_TEST_001",
+                  "popupType": "IMAGE",
+                  "title": "이미지 공지",
+
+                  "displayStartAt": "2026-01-01T00:00:00+09:00",
+                  "displayEndAt": "2026-12-31T23:59:59+09:00",
+                  "displayMode": "SEQUENTIAL",
+
+                  "sizeMode": "VIEWPORT_RATIO",
+                  "widthRatio": 0.55,
+                  "heightRatio": 0.75,
+
+                  "minimumWidth": 500,
+                  "minimumHeight": 450,
+                  "maximumWidth": 900,
+                  "maximumHeight": 850,
+
+                  "showHeader": true,
+                  "showCloseButton": true,
+                  "showFooter": true,
+                  "showDoNotShowAgain": true,
+
+                  "content": {
+                    "imageTitle": "이미지 안내",
+                    "imageUrl": "https://images.unsplash.com/photo-1784037076368-fb4a699076e5?q=80&w=687&auto=format&fit=crop",
+                    "description": "TEXT 팝업 다음에 표시되는 IMAGE 팝업입니다.",
+                    "showDescription": true,
+
+                    "imageSizeMode": "ADAPTIVE",
+                    "imageWidth": 0,
+                    "imageHeight": 0,
+
+                    "linkUrl": ""
+                  }
+                }
             ]
             """; 
 

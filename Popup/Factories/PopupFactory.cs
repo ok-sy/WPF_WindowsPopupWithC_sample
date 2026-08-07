@@ -6,18 +6,21 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Windows;
 
-public static class PopupFactory
+namespace Popup.Factories
 {
-    /*
-     * content 내부 JSON을 종류별 DTO로 변환할 때
-     * camelCase와 PascalCase를 모두 허용한다.
-     */
-    private static readonly JsonSerializerOptions
-        JsonOptions =
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
+    public static class PopupFactory
+    {
+        /*
+         * content 내부 JSON을 종류별 DTO로 변환할 때
+         * camelCase와 PascalCase를 모두 허용한다.
+         */
+        private static readonly JsonSerializerOptions
+            JsonOptions =
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+      
 
         /*
          * 공통 DTO를 받아
@@ -450,4 +453,5 @@ public static class PopupFactory
             };
         }
     }
+
 }
