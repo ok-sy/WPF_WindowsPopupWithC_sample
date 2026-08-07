@@ -5,7 +5,13 @@ import com.oksy.popup.service.PopupService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.RequestParam;
+import com.oksy.popup.dto.PopupHideRequestDto;
+import com.oksy.popup.dto.PopupHideResponseDto;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import java.util.List;
 
 /*
@@ -47,13 +53,64 @@ public class PopupController {
      * Oracle 연결 후:
      * → 사용자에게 표시할 DB 팝업 목록을 반환
      */
+    /*
+     * GET /api/popups?userId=TEST_USER 요청을 처리한다.
+     *
+     * 사용자 ID를 기준으로
+     * 숨김 처리되지 않은 팝업 목록만 반환한다.
+     */
     @GetMapping
-    public List<PopupResponseDto> getPopups() {
+    public List<PopupResponseDto> getPopups(
+
+            /*
+             * URL Query Parameter에서
+             * 사용자 ID를 전달받는다.
+             */
+            @RequestParam
+            String userId) {
 
         /*
-         * PopupService에서 조회한 팝업 목록을
-         * 별도 변환 없이 JSON 응답으로 반환한다.
+         * 사용자 ID를 PopupService로 전달하여
+         * 사용자별 노출 가능 팝업을 조회한다.
          */
-        return popupService.getPopups();
+        return popupService.getPopups(
+                userId);
+    }
+    /*
+     * POST /api/popups/{popupId}/hide 요청을 처리한다.
+     *
+     * 사용자가 WPF에서 '30일간 보지 않기'를 선택하면
+     * 해당 사용자와 팝업의 숨김 만료 일시를 Oracle에 저장한다.
+     */
+    @PostMapping("/{popupId}/hide")
+    public PopupHideResponseDto hidePopup(
+
+            /*
+             * URL 경로에서 숨길 팝업 ID를 전달받는다.
+             *
+             * 예:
+             * /api/popups/JAVA_TEXT_TEST_001/hide
+             */
+            @PathVariable
+            String popupId,
+
+            /*
+             * HTTP 요청 본문의 JSON을
+             * PopupHideRequestDto로 변환한다.
+             *
+             * @Valid를 통해 userId와 hideDays의
+             * 유효성 검사를 실행한다.
+             */
+            @Valid
+            @RequestBody
+            PopupHideRequestDto requestDto) {
+
+        /*
+         * 실제 Oracle 저장 처리는
+         * PopupService에 위임한다.
+         */
+        return popupService.hidePopup(
+                popupId,
+                requestDto);
     }
 }

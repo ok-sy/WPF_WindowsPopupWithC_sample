@@ -114,54 +114,182 @@
     </resultMap>
 
     <!--
-        현재 노출 가능한 팝업 목록을 조회한다.
-
-        DISPLAY_START_AT 또는 DISPLAY_END_AT이 null이면
-        해당 방향의 기간 제한이 없는 것으로 처리한다.
-    -->
+    현재 시각과 사용자 숨김 상태를 기준으로
+    표시 가능한 팝업 목록을 조회한다.
+-->
     <select
             id="selectAvailablePopups"
             resultMap="popupEntityResultMap">
 
         SELECT
-        POPUP_ID,
-        POPUP_TYPE,
-        TITLE,
-        DISPLAY_START_AT,
-        DISPLAY_END_AT,
-        DISPLAY_MODE,
-        SIZE_MODE,
-        POPUP_WIDTH,
-        POPUP_HEIGHT,
-        WIDTH_RATIO,
-        HEIGHT_RATIO,
-        MINIMUM_WIDTH,
-        MINIMUM_HEIGHT,
-        MAXIMUM_WIDTH,
-        MAXIMUM_HEIGHT,
-        SHOW_HEADER_YN,
-        SHOW_CLOSE_BUTTON_YN,
-        SHOW_FOOTER_YN,
-        SHOW_DONT_SHOW_YN,
-        CONTENT_JSON,
-        DISPLAY_ORDER,
-        USE_YN
-        FROM POPUP_NOTICE
-        WHERE USE_YN = 'Y'
+        PN.POPUP_ID,
+        PN.POPUP_TYPE,
+        PN.TITLE,
+        PN.DISPLAY_START_AT,
+        PN.DISPLAY_END_AT,
+        PN.DISPLAY_MODE,
+        PN.SIZE_MODE,
+        PN.POPUP_WIDTH,
+        PN.POPUP_HEIGHT,
+        PN.WIDTH_RATIO,
+        PN.HEIGHT_RATIO,
+        PN.MINIMUM_WIDTH,
+        PN.MINIMUM_HEIGHT,
+        PN.MAXIMUM_WIDTH,
+        PN.MAXIMUM_HEIGHT,
+        PN.SHOW_HEADER_YN,
+        PN.SHOW_CLOSE_BUTTON_YN,
+        PN.SHOW_FOOTER_YN,
+        PN.SHOW_DONT_SHOW_YN,
+        PN.CONTENT_JSON,
+        PN.DISPLAY_ORDER,
+        PN.USE_YN
+        FROM POPUP_NOTICE PN
+        WHERE PN.USE_YN = 'Y'
+
+        <!--
+            노출 시작 일시가 없거나
+            현재 시각이 시작 일시 이후여야 한다.
+        -->
         AND
         (
-        DISPLAY_START_AT IS NULL
-        OR DISPLAY_START_AT &lt;= SYSTIMESTAMP
+        PN.DISPLAY_START_AT IS NULL
+        OR PN.DISPLAY_START_AT &lt;= SYSTIMESTAMP
         )
+
+        <!--
+            노출 종료 일시가 없거나
+            현재 시각이 종료 일시 이전이어야 한다.
+        -->
         AND
         (
-        DISPLAY_END_AT IS NULL
-        OR DISPLAY_END_AT &gt;= SYSTIMESTAMP
+        PN.DISPLAY_END_AT IS NULL
+        OR PN.DISPLAY_END_AT &gt;= SYSTIMESTAMP
         )
+
+        <!--
+            현재 사용자의 유효한 숨김 정보가 존재하면
+            해당 팝업을 조회 결과에서 제외한다.
+        -->
+        AND NOT EXISTS
+        (
+        SELECT
+        1
+        FROM USER_POPUP_STATE UPS
+        WHERE UPS.USER_ID = #{userId}
+        AND UPS.POPUP_ID = PN.POPUP_ID
+        AND
+        (
+        <!--
+            영구 숨김이면 만료 일시와 관계없이 제외한다.
+        -->
+        UPS.HIDE_TYPE = 'PERMANENT'
+
+        OR
+
+        <!--
+            기간 숨김이면 만료 일시가
+            현재보다 미래인 경우에만 제외한다.
+        -->
+        (
+        UPS.HIDE_TYPE = 'UNTIL'
+        AND UPS.HIDDEN_UNTIL &gt; SYSTIMESTAMP
+        )
+        )
+        )
+
         ORDER BY
-        DISPLAY_ORDER,
-        POPUP_ID
+        PN.DISPLAY_ORDER,
+        PN.POPUP_ID
 
     </select>
 
+    <!--
+    사용자별 팝업 숨김 상태를 저장한다.
+
+    동일한 USER_ID + POPUP_ID가 존재하면 UPDATE하고,
+    존재하지 않으면 INSERT한다.
+-->
+    <insert id="upsertPopupHide">
+
+        MERGE INTO USER_POPUP_STATE TARGET
+        USING
+        (
+        SELECT
+        #{userId} AS USER_ID,
+        #{popupId} AS POPUP_ID
+        FROM DUAL
+        ) SOURCE
+        ON
+        (
+        TARGET.USER_ID = SOURCE.USER_ID
+        AND TARGET.POPUP_ID = SOURCE.POPUP_ID
+        )
+
+        <!--
+            기존 숨김 정보가 존재하면
+            숨김 만료 일시를 현재 시각 기준으로 다시 계산한다.
+        -->
+        WHEN MATCHED THEN
+        UPDATE SET
+        TARGET.HIDE_TYPE =
+        'UNTIL',
+
+        TARGET.HIDDEN_UNTIL =
+        SYSTIMESTAMP
+        + NUMTODSINTERVAL(
+        #{hideDays},
+        'DAY'
+        ),
+
+        TARGET.UPDATED_AT =
+        SYSTIMESTAMP
+
+        <!--
+            기존 숨김 정보가 없다면
+            새로운 사용자 팝업 상태를 저장한다.
+        -->
+        WHEN NOT MATCHED THEN
+        INSERT
+        (
+        USER_ID,
+        POPUP_ID,
+        HIDE_TYPE,
+        HIDDEN_UNTIL,
+        CREATED_AT,
+        UPDATED_AT
+        )
+        VALUES
+        (
+        SOURCE.USER_ID,
+        SOURCE.POPUP_ID,
+        'UNTIL',
+
+        SYSTIMESTAMP
+        + NUMTODSINTERVAL(
+        #{hideDays},
+        'DAY'
+        ),
+
+        SYSTIMESTAMP,
+        SYSTIMESTAMP
+        )
+
+    </insert>
+
+    <!--
+        MERGE 처리 후 Oracle에 저장된
+        실제 숨김 만료 일시를 조회한다.
+    -->
+    <select
+            id="selectHiddenUntil"
+            resultType="java.time.OffsetDateTime">
+
+        SELECT
+        HIDDEN_UNTIL
+        FROM USER_POPUP_STATE
+        WHERE USER_ID = #{userId}
+        AND POPUP_ID = #{popupId}
+
+    </select>
 </mapper>
