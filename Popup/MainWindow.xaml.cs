@@ -182,6 +182,48 @@ namespace Popup
                     "linkUrl": ""
                   }
                 }
+                ,
+            {
+              "popupId": "VIDEO_TEST_001",
+              "popupType": "VIDEO",
+              "title": "교육 영상",
+
+              "displayStartAt": "2026-01-01T00:00:00+09:00",
+              "displayEndAt": "2026-12-31T23:59:59+09:00",
+              "displayMode": "SEQUENTIAL",
+
+              "sizeMode": "VIEWPORT_RATIO",
+              "widthRatio": 0.7,
+              "heightRatio": 0.75,
+
+              "minimumWidth": 600,
+              "minimumHeight": 450,
+              "maximumWidth": 1200,
+              "maximumHeight": 900,
+
+              "showHeader": true,
+              "showCloseButton": true,
+              "showFooter": true,
+              "showDoNotShowAgain": false,
+
+              "content": {
+                "videoTitle": "정보보안 교육 영상",
+                "videoUrl": "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
+                "description": "영상 재생 기능을 확인해주세요.",
+
+                "showDescription": true,
+                "showControls": true,
+                "allowFullScreen": true,
+                "allowPlaybackRateChange": true,
+
+                "autoPlay": false,
+                "isLoop": false,
+                "defaultVolume": 0.7,
+
+                "completionRatio": 0.9,
+                "allowCloseBeforeCompletion": true
+              }
+            }
             ]
             """; 
 

@@ -3,6 +3,8 @@ using Popup.Views.Windows;
 using System.Collections.Generic;
 using System.Windows;
 using System.Linq;
+using Popup.Views.Contents;
+
 
 namespace Popup.Managers
 {
@@ -120,66 +122,31 @@ namespace Popup.Managers
         }
 
         /*
-         * 여러 팝업을 동시에 표시한다.
-         *
-         * Queue에는 넣지 않고
-         * 전달받은 모든 팝업을 즉시 생성하여 표시한다.
-         */
-        public void ShowAll(
-            IEnumerable<PopupOptions> popupOptionsList)
-        {
-            int popupIndex =
-                0;
-
-            foreach (PopupOptions popupOptions
-                     in popupOptionsList)
-            {
-                PopupWindow popupWindow =
-                    new PopupWindow(
-                        popupOptions);
-
-                popupWindow.Owner =
-                    _owner;
-
-                /*
-                 * WindowStartupLocation이 CenterOwner로 설정되어 있으면
-                 * 모든 팝업이 같은 위치에 겹치므로
-                 * 직접 위치를 설정한다.
-                 */
-                popupWindow.WindowStartupLocation =
-                    WindowStartupLocation.Manual;
-
-                /*
-                 * 첫 팝업은 부모 창 근처에 표시하고
-                 * 다음 팝업부터 30픽셀씩 오른쪽 아래로 이동한다.
-                 */
-                popupWindow.Left =
-                    _owner.Left
-                    + 50
-                    + (popupIndex * 30);
-
-                popupWindow.Top =
-                    _owner.Top
-                    + 50
-                    + (popupIndex * 30);
-
-                popupWindow.Show();
-
-                popupIndex++;
-            }
-        }
-
-        /*
          * Queue를 사용하지 않고
          * 팝업을 즉시 표시한다.
          */
         private void ShowImmediately(
             PopupOptions popupOptions)
         {
+            /*
+             * 전달받은 옵션으로
+             * 즉시 표시할 PopupWindow를 생성한다.
+             */
             PopupWindow popupWindow =
                 new PopupWindow(
                     popupOptions);
-
+            /*
+             * 동시에 표시하는 설문 또는 퀴즈 팝업에서도
+             * 제출 완료 시 해당 창만 닫을 수 있도록
+             * 콘텐츠 이벤트를 팝업 창과 연결한다.
+             */
+            AttachContentEvents(
+                popupWindow,
+                popupOptions);
+            /*
+             * MainWindow를
+             * 팝업의 부모 창으로 지정한다.
+             */
             popupWindow.Owner =
                 _owner;
 
@@ -247,6 +214,21 @@ namespace Popup.Managers
                     popupOptions);
 
             /*
+             * 설문 또는 퀴즈 콘텐츠에서 발생하는
+             * 제출 완료 이벤트를 현재 팝업 창과 연결한다.
+             *
+             * 일반 설문
+             * → 제출 완료 후 팝업을 닫는다.
+             *
+             * 퀴즈
+             * → 통과 점수 이상일 때만 제출 이벤트가 발생하며
+             *   이벤트 발생 후 팝업을 닫는다.
+             */
+            AttachContentEvents(
+                _currentPopupWindow,
+                popupOptions);
+
+            /*
              * MainWindow를
              * 팝업의 부모 창으로 지정한다.
              */
@@ -292,6 +274,37 @@ namespace Popup.Managers
              * 이어서 표시한다.
              */
             ShowNext();
+        }
+
+        /*
+         * 팝업 콘텐츠에서 발생하는 완료 이벤트를
+         * 해당 PopupWindow와 연결한다.
+         */
+        private void AttachContentEvents(
+            PopupWindow popupWindow,
+            PopupOptions popupOptions)
+        {
+            /*
+             * 일반 설문 또는 퀴즈가 제출되면
+             * 해당 팝업 창을 닫는다.
+             *
+             * 퀴즈는 통과했을 때만
+             * SurveySubmitted 이벤트가 발생하므로
+             * 실패한 경우에는 창이 닫히지 않는다.
+             */
+            if (popupOptions.Content is
+                SurveyPopupView surveyPopupView)
+            {
+                surveyPopupView.SurveySubmitted +=
+                    (sender, answers) =>
+                    {
+                        /*
+                         * 나중에는 이 위치에서
+                         * 설문 응답 또는 퀴즈 결과를 서버에 저장한다.
+                         */
+                        popupWindow.Close();
+                    };
+            }
         }
     }
 }
