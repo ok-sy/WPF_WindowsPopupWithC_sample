@@ -60,94 +60,123 @@ namespace Popup
          * JSON 문자열을 직접 작성해서 테스트한다.
          */
         private void OpenPopupButton_Click(
-            object sender,
-            RoutedEventArgs e)
+         object sender,
+         RoutedEventArgs e)
         {
             /*
              * 서버에서 전달받았다고 가정한
              * 팝업 JSON 데이터다.
              */
-        string popupJson =
+            string popupJson =
             """
-        {
-          "PopupId": "TEXT_TEST_001",
-          "PopupType": "TEXT",
-          "Title": "서비스 이용 안내",
+            [
+              {
+                "popupId": "TEXT_TEST_001",
+                "popupType": "TEXT",
+                "title": "서비스 이용 안내",
 
-          "DisplayStartAt": "2026-01-01T00:00:00",
-          "DisplayEndAt": "2026-12-31T23:59:59",
-          "DisplayMode": "SEQUENTIAL",
+                "displayStartAt": "2026-01-01T00:00:00+09:00",
+                "displayEndAt": "2026-12-31T23:59:59+09:00",
+                "displayMode": "SEQUENTIAL",
 
-          "SizeMode": "VIEWPORT_RATIO",
+                "sizeMode": "VIEWPORT_RATIO",
+                "widthRatio": 0.55,
+                "heightRatio": 0.70,
 
-          "Width": 760,
-          "Height": 750,
+                "minimumWidth": 600,
+                "minimumHeight": 500,
+                "maximumWidth": 1000,
+                "maximumHeight": 850,
 
-          "WidthRatio": 0.55,
-          "HeightRatio": 0.70,
+                "showHeader": true,
+                "showCloseButton": true,
+                "showFooter": true,
+                "showDoNotShowAgain": true,
 
-          "MinimumWidth": 600,
-          "MinimumHeight": 500,
+                "content": {
+                  "contentTitle": "서비스 이용 안내",
+                  "description": "JSON 배열에서 생성된 텍스트 팝업입니다.",
 
-          "MaximumWidth": 1000,
-          "MaximumHeight": 850,
+                  "leftSectionTitle": "1. 주요 안내",
+                  "leftSectionBody": "서버에서는 여러 개의 팝업을 배열로 전달합니다.",
 
-          "ShowHeader": true,
-          "ShowCloseButton": true,
-          "ShowFooter": true,
-          "ShowDoNotShowAgain": true,
+                  "highlightText": "현재 팝업은 첫 번째 순차 팝업입니다.",
 
-          "Content": {
-            "ContentTitle": "서비스 이용 안내",
-            "Description": "이 팝업은 JSON 데이터로 생성된 텍스트 팝업입니다.",
+                  "rightSectionTitle": "2. 처리 흐름",
+                  "rightSectionBody": "DTO 변환 후 정책 검사를 거쳐 화면을 생성합니다.",
 
-            "LeftSectionTitle": "1. 주요 안내",
-            "LeftSectionBody": "서버에서 전달된 JSON 데이터를 DTO로 변환한 뒤 화면에 표시합니다.",
+                  "additionalDescription": "첫 팝업을 닫으면 다음 팝업이 표시됩니다."
+                }
+              },
+              {
+                "popupId": "TEXT_TEST_002",
+                "popupType": "TEXT",
+                "title": "두 번째 안내",
 
-            "HighlightText": "중요한 안내 내용은 이 영역에 강조해서 표시할 수 있습니다.",
+                "displayStartAt": "2026-01-01T00:00:00+09:00",
+                "displayEndAt": "2026-12-31T23:59:59+09:00",
+                "displayMode": "SEQUENTIAL",
 
-            "RightSectionTitle": "2. 이용 방법",
-            "RightSectionBody": "PopupFactory가 PopupType을 확인하여 알맞은 화면을 생성합니다.",
+                "sizeMode": "VIEWPORT_RATIO",
+                "widthRatio": 0.5,
+                "heightRatio": 0.65,
 
-            "AdditionalDescription": "현재는 MainWindow 내부 테스트 JSON이며 이후 API 응답으로 교체할 수 있습니다."
-          }
-        }
-        """;
+                "minimumWidth": 600,
+                "minimumHeight": 500,
+                "maximumWidth": 900,
+                "maximumHeight": 800,
 
-            /*
-             * JSON 문자열을
-             * 공통 팝업 응답 DTO로 변환한다.
-             */
-            PopupResponseDto popupDto =
-                JsonSerializer.Deserialize<PopupResponseDto>(
-                    popupJson)
-                ?? throw new InvalidOperationException(
-                    "팝업 JSON 변환에 실패했습니다.");
+                "showHeader": true,
+                "showCloseButton": true,
+                "showFooter": true,
+                "showDoNotShowAgain": false,
 
-            /*
-              * 테스트용 DTO 한 개를 목록 형태로 만든다.
-              *
-              * 실제 서버 API에서는 여러 개의 PopupResponseDto가
-              * 목록으로 전달될 예정이므로,
-              * 테스트 코드도 같은 흐름을 사용한다.
+                "content": {
+                  "contentTitle": "두 번째 팝업",
+                  "description": "첫 번째 팝업이 닫힌 후 표시됩니다.",
+
+                  "leftSectionTitle": "순차 표시",
+                  "leftSectionBody": "PopupManager의 Queue를 통해 순서대로 표시됩니다.",
+
+                  "highlightText": "DisplayMode가 SEQUENTIAL입니다.",
+
+                  "rightSectionTitle": "PopupManager",
+                  "rightSectionBody": "현재 창의 Closed 이벤트 후 다음 팝업을 엽니다.",
+
+                  "additionalDescription": "여러 팝업 목록 처리 테스트입니다."
+                }
+              }
+            ]
+            """; 
+
+        JsonSerializerOptions jsonOptions =
+         new JsonSerializerOptions
+         {
+             /*
+              * 서버 JSON이 camelCase이고
+              * C# 속성이 PascalCase여도 연결되게 한다.
               */
-            List<PopupResponseDto> popupDtos =
-                new()
-                {
-            popupDto
-                };
+             PropertyNameCaseInsensitive = true
+         };
 
-            /*
-             * PopupService를 통해 표시 가능한 팝업만
-             * PopupOptions 목록으로 변환한다.
-             *
-             * 내부에서 다음 조건을 검사한다.
-             *
-             * 1. 노출 시작 일시
-             * 2. 노출 종료 일시
-             * 3. PopupId 숨김 여부
-             */
-            List<PopupOptions> popupOptionsList =
+        List<PopupResponseDto> popupDtos =
+            JsonSerializer.Deserialize<List<PopupResponseDto>>(
+                popupJson,
+                jsonOptions)
+            ?? throw new InvalidOperationException(
+                "팝업 JSON 목록 변환에 실패했습니다.");
+
+        /*
+         * PopupService를 통해 표시 가능한 팝업만
+         * PopupOptions 목록으로 변환한다.
+         *
+         * 내부에서 다음 조건을 검사한다.
+         *
+         * 1. 노출 시작 일시
+         * 2. 노출 종료 일시
+         * 3. PopupId 숨김 여부
+         */
+        List<PopupOptions> popupOptionsList =
                 _popupService.CreatePopupOptions(
                     popupDtos);
 
@@ -160,7 +189,7 @@ namespace Popup
              */
             _popupManager.ShowRange(
                 popupOptionsList);
-        }
+         }
 
         /*
          * 이미지 팝업 열기 버튼 클릭 이벤트
