@@ -6,14 +6,19 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Windows;
 
-namespace Popup.Factories
+public static class PopupFactory
 {
     /*
-     * 서버에서 받은 PopupResponseDto를
-     * 실제 화면 생성용 PopupOptions로 변환한다.
+     * content 내부 JSON을 종류별 DTO로 변환할 때
+     * camelCase와 PascalCase를 모두 허용한다.
      */
-    public static class PopupFactory
-    {
+    private static readonly JsonSerializerOptions
+        JsonOptions =
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
         /*
          * 공통 DTO를 받아
          * 팝업 종류에 맞는 View와 PopupOptions를 생성한다.
@@ -132,12 +137,13 @@ namespace Popup.Factories
         private static TextPopupView CreateTextPopupView(
             JsonElement contentJson)
         {
-            TextPopupContentDto contentDto =
-                contentJson.Deserialize<TextPopupContentDto>()
-                ?? throw new InvalidOperationException(
-                    "TEXT 팝업 content 변환에 실패했습니다.");
+        TextPopupContentDto contentDto =
+         contentJson.Deserialize<TextPopupContentDto>(
+             JsonOptions)
+         ?? throw new InvalidOperationException(
+             "TEXT 팝업 content 변환에 실패했습니다.");
 
-            return new TextPopupView(
+        return new TextPopupView(
                 contentDto.ContentTitle,
                 contentDto.Description,
                 contentDto.LeftSectionTitle,
@@ -156,16 +162,17 @@ namespace Popup.Factories
         private static ImagePopupView CreateImagePopupView(
             JsonElement contentJson)
         {
-            ImagePopupContentDto contentDto =
-                contentJson.Deserialize<ImagePopupContentDto>()
-                ?? throw new InvalidOperationException(
-                    "IMAGE 팝업 content 변환에 실패했습니다.");
+        ImagePopupContentDto contentDto =
+            contentJson.Deserialize<ImagePopupContentDto>(
+                JsonOptions)
+            ?? throw new InvalidOperationException(
+                "IMAGE 팝업 content 변환에 실패했습니다.");
 
-            /*
-             * DTO에서는 이미지 크기 모드를 문자열로 받으므로
-             * 내부 enum으로 변환한다.
-             */
-            ImagePopupSizeMode imageSizeMode =
+        /*
+         * DTO에서는 이미지 크기 모드를 문자열로 받으므로
+         * 내부 enum으로 변환한다.
+         */
+        ImagePopupSizeMode imageSizeMode =
                 ConvertImagePopupSizeMode(
                     contentDto.ImageSizeMode);
 
@@ -215,7 +222,8 @@ namespace Popup.Factories
             JsonElement contentJson)
         {
             VideoPopupContentDto contentDto =
-                contentJson.Deserialize<VideoPopupContentDto>()
+                contentJson.Deserialize<VideoPopupContentDto>(
+                    JsonOptions)
                 ?? throw new InvalidOperationException(
                     "VIDEO 팝업 content 변환에 실패했습니다.");
 
@@ -249,7 +257,8 @@ namespace Popup.Factories
             bool isQuizMode)
         {
             SurveyPopupContentDto contentDto =
-                contentJson.Deserialize<SurveyPopupContentDto>()
+                contentJson.Deserialize<SurveyPopupContentDto>(
+                    JsonOptions)
                 ?? throw new InvalidOperationException(
                     "SURVEY 또는 QUIZ content 변환에 실패했습니다.");
 
