@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: popup-api
+
+  datasource:
+    url: jdbc:oracle:thin:@//localhost:1521/XEPDB1
+    username: POPUP_APP
+    password: admin
+    driver-class-name: oracle.jdbc.OracleDriver
+
+server:
+  port: 8080
+
+mybatis:
+  # resources/mapper 아래의 모든 XML을 검색한다.
+  mapper-locations: classpath*:mapper/*.xml

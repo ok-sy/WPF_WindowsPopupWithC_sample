@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    PopupMapper.java와 연결되는 SQL Mapper다.
+
+    namespace는 Mapper 인터페이스의
+    전체 패키지 경로와 정확히 같아야 한다.
+-->
+<mapper namespace="com.oksy.popup.mapper.PopupMapper">
+
+    <!--
+        Oracle POPUP_NOTICE 조회 결과를
+        PopupEntity record 생성자에 연결한다.
+
+        record는 setter가 없으므로
+        constructor 매핑을 명시적으로 사용한다.
+    -->
+    <resultMap
+            id="popupEntityResultMap"
+            type="com.oksy.popup.domain.PopupEntity">
+
+        <constructor>
+            <idArg
+                    column="POPUP_ID"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="POPUP_TYPE"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="TITLE"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="DISPLAY_START_AT"
+                    javaType="java.time.OffsetDateTime"/>
+
+            <arg
+                    column="DISPLAY_END_AT"
+                    javaType="java.time.OffsetDateTime"/>
+
+            <arg
+                    column="DISPLAY_MODE"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="SIZE_MODE"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="POPUP_WIDTH"
+                    javaType="java.math.BigDecimal"/>
+
+            <arg
+                    column="POPUP_HEIGHT"
+                    javaType="java.math.BigDecimal"/>
+
+            <arg
+                    column="WIDTH_RATIO"
+                    javaType="java.math.BigDecimal"/>
+
+            <arg
+                    column="HEIGHT_RATIO"
+                    javaType="java.math.BigDecimal"/>
+
+            <arg
+                    column="MINIMUM_WIDTH"
+                    javaType="java.math.BigDecimal"/>
+
+            <arg
+                    column="MINIMUM_HEIGHT"
+                    javaType="java.math.BigDecimal"/>
+
+            <arg
+                    column="MAXIMUM_WIDTH"
+                    javaType="java.math.BigDecimal"/>
+
+            <arg
+                    column="MAXIMUM_HEIGHT"
+                    javaType="java.math.BigDecimal"/>
+
+            <arg
+                    column="SHOW_HEADER_YN"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="SHOW_CLOSE_BUTTON_YN"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="SHOW_FOOTER_YN"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="SHOW_DONT_SHOW_YN"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="CONTENT_JSON"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="DISPLAY_ORDER"
+                    javaType="_int"/>
+
+            <arg
+                    column="USE_YN"
+                    javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+
+    <!--
+        현재 노출 가능한 팝업 목록을 조회한다.
+
+        DISPLAY_START_AT 또는 DISPLAY_END_AT이 null이면
+        해당 방향의 기간 제한이 없는 것으로 처리한다.
+    -->
+    <select
+            id="selectAvailablePopups"
+            resultMap="popupEntityResultMap">
+
+        SELECT
+        POPUP_ID,
+        POPUP_TYPE,
+        TITLE,
+        DISPLAY_START_AT,
+        DISPLAY_END_AT,
+        DISPLAY_MODE,
+        SIZE_MODE,
+        POPUP_WIDTH,
+        POPUP_HEIGHT,
+        WIDTH_RATIO,
+        HEIGHT_RATIO,
+        MINIMUM_WIDTH,
+        MINIMUM_HEIGHT,
+        MAXIMUM_WIDTH,
+        MAXIMUM_HEIGHT,
+        SHOW_HEADER_YN,
+        SHOW_CLOSE_BUTTON_YN,
+        SHOW_FOOTER_YN,
+        SHOW_DONT_SHOW_YN,
+        CONTENT_JSON,
+        DISPLAY_ORDER,
+        USE_YN
+        FROM POPUP_NOTICE
+        WHERE USE_YN = 'Y'
+        AND
+        (
+        DISPLAY_START_AT IS NULL
+        OR DISPLAY_START_AT &lt;= SYSTIMESTAMP
+        )
+        AND
+        (
+        DISPLAY_END_AT IS NULL
+        OR DISPLAY_END_AT &gt;= SYSTIMESTAMP
+        )
+        ORDER BY
+        DISPLAY_ORDER,
+        POPUP_ID
+
+    </select>
+
+</mapper>
