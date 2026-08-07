@@ -1,8 +1,8 @@
 ﻿using Popup.Models;
-using Popup.Services;
 using System;
 using System.Windows;
 using System.Windows.Input;
+using System.Threading.Tasks;
 
 namespace Popup.Views.Windows
 {
@@ -311,68 +311,135 @@ namespace Popup.Views.Windows
         }
 
         /*
-         * 공통 닫기 이벤트
+         * 공통 닫기 이벤트다.
          *
-         * 상단 X 버튼과 하단 닫기 버튼이
-         * 같은 메서드를 사용한다.
+         * "30일간 보지 않기"가 선택된 경우에는
+         * 서버 저장이 성공한 후에만 창을 닫는다.
          */
-        private void CloseButton_Click(
-                object sender,
-                RoutedEventArgs e)
+        /*
+ * 공통 닫기 이벤트다.
+ *
+ * "30일간 보지 않기"가 선택된 경우에는
+ * 서버 저장이 성공한 후에만 창을 닫는다.
+ */
+        private async void CloseButton_Click(
+            object sender,
+            RoutedEventArgs e)
         {
-            SaveDoNotShowAgain();
+            /*
+             * 클릭한 객체를 UIElement로 변환해 저장한다.
+             *
+             * 변수는 한 번만 선언하고
+             * try와 finally에서 함께 사용한다.
+             */
+            UIElement? clickedControl =
+                sender as UIElement;
 
-            Close();
+            /*
+             * 저장 중 중복 클릭으로 API가
+             * 여러 번 호출되지 않도록 비활성화한다.
+             */
+            if (clickedControl != null)
+            {
+                clickedControl.IsEnabled =
+                    false;
+            }
+
+            try
+            {
+                /*
+                 * 체크박스 상태를 확인하고
+                 * 필요한 경우 서버에 숨김 정보를 저장한다.
+                 */
+                await SaveDoNotShowAgainAsync();
+
+                /*
+                 * 숨김 저장이 성공했거나
+                 * 체크박스가 선택되지 않았다면
+                 * 팝업을 닫는다.
+                 */
+                Close();
+            }
+            catch (Exception exception)
+            {
+                /*
+                 * 서버 저장에 실패하면
+                 * 팝업을 닫지 않고 오류를 안내한다.
+                 */
+                MessageBox.Show(
+                    "30일간 보지 않기 저장에 실패했습니다.\n\n" +
+                    exception.Message,
+                    "팝업 숨김 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            finally
+            {
+                /*
+                 * 저장 실패로 팝업이 남아 있다면
+                 * 닫기 버튼을 다시 사용할 수 있게 한다.
+                 *
+                 * 창이 이미 닫힌 경우에 속성을 변경해도
+                 * 별도 동작 문제는 발생하지 않는다.
+                 */
+                if (clickedControl != null)
+                {
+                    clickedControl.IsEnabled =
+                        true;
+                }
+            }
         }
 
         /*
-         * "30일간 보지 않기" 체크 여부를 확인하여
-         * 숨김 정보를 저장한다.
-         */
-        private void SaveDoNotShowAgain()
+ * "30일간 보지 않기" 체크 여부를 확인하고
+ * Java 서버에 숨김 정보를 저장한다.
+ */
+        private async Task SaveDoNotShowAgainAsync()
         {
             /*
              * 체크박스가 선택되지 않았다면
-             * 숨김 정보를 저장하지 않는다.
+             * 숨김 저장 없이 정상적으로 종료한다.
              */
-            if (!DoNotShowAgainCheckBox.IsChecked.GetValueOrDefault())
+            if (!DoNotShowAgainCheckBox
+                    .IsChecked
+                    .GetValueOrDefault())
             {
                 return;
             }
 
             /*
-             * PopupOptions가 없다면
-             * 팝업 정보를 확인할 수 없으므로 종료한다.
-             *
-             * 현재 _options는 생성자에서 반드시 들어오므로
-             * 실제로 null이 될 가능성은 거의 없다.
-             */
-            if (_options == null)
-            {
-                return;
-            }
-
-            /*
-             * PopupId가 없으면
-             * 어떤 팝업을 숨겨야 하는지 알 수 없으므로
-             * 저장하지 않는다.
+             * PopupId가 없으면 서버가
+             * 어떤 팝업을 숨길지 알 수 없다.
              */
             if (string.IsNullOrWhiteSpace(
                     _options.PopupId))
             {
-                return;
+                throw new InvalidOperationException(
+                    "숨김 처리할 팝업 ID가 없습니다.");
             }
 
             /*
-             * 프로그램 전체가 함께 사용하는
-             * PopupStorageService.Instance에 저장한다.
-             *
-             * 현재 시점으로부터 30일 뒤까지
-             * 해당 PopupId를 숨김 상태로 저장한다.
+             * MainWindow에서 서버 저장 함수를
+             * 연결하지 않았다면 API를 호출할 수 없다.
              */
-            PopupStorageService.Instance.HideUntil(
+            if (_options.HidePopupAsync == null)
+            {
+                throw new InvalidOperationException(
+                    "팝업 숨김 저장 함수가 연결되지 않았습니다.");
+            }
+
+            /*
+             * MainWindow에서 전달한 함수를 호출한다.
+             *
+             * popupId
+             * → 현재 팝업 ID
+             *
+             * 30
+             * → 현재 시점부터 30일 동안 숨김
+             */
+            await _options.HidePopupAsync(
                 _options.PopupId,
-                DateTime.Now.AddDays(30));
+                30);
         }
     }
 }

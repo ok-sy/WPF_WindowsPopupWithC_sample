@@ -4,11 +4,11 @@ using Popup.Views.Contents;
 using Popup.Views.Windows;
 using System.Linq;
 using System.Security.Policy;
-using System.Text.Json;
 using System.Windows;
 using Popup.Managers;
 using Popup.Services;
 using System.Collections.Generic;
+using System.Net.Http;
 
 namespace Popup
 {
@@ -27,6 +27,15 @@ namespace Popup
          */
         private readonly PopupService
             _popupService;
+
+        /*
+         * Java Spring Boot 서버와 통신하여
+         * 팝업 목록을 조회하는 API 서비스다.
+         */
+        private readonly PopupApiService
+            _popupApiService;
+
+
         /*
          * MainWindow 생성자
          *
@@ -50,475 +59,182 @@ namespace Popup
              */
             _popupService =
                 new PopupService();
+
+            /*
+             * Java Spring Boot 팝업 API와 통신하는
+             * PopupApiService를 생성한다.
+             */
+            _popupApiService =
+                new PopupApiService();
         }
 
+    
         /*
-         * JSON 기반 TEXT 팝업 테스트
-         *
-         * 실제 서버 연동 전까지는
-         * JSON 문자열을 직접 작성해서 테스트한다.
+         * Java 서버에서 현재 사용자에게 표시할 팝업을 조회하고
+         * PopupManager를 통해 화면에 표시한다.
          */
-        private void OpenPopupButton_Click(
-         object sender,
-         RoutedEventArgs e)
+        private async void OpenPopupButton_Click(
+            object sender,
+            RoutedEventArgs e)
         {
             /*
-             * 서버에서 전달받았다고 가정한
-             * 팝업 JSON 데이터다.
-             */
-            string popupJson =
-            """
-            [
-              {
-                "popupId": "TEXT_TEST_001",
-                "popupType": "TEXT",
-                "title": "서비스 이용 안내",
-
-                "displayStartAt": "2026-01-01T00:00:00+09:00",
-                "displayEndAt": "2026-12-31T23:59:59+09:00",
-                "displayMode": "SEQUENTIAL",
-
-                "sizeMode": "VIEWPORT_RATIO",
-                "widthRatio": 0.55,
-                "heightRatio": 0.70,
-
-                "minimumWidth": 600,
-                "minimumHeight": 500,
-                "maximumWidth": 1000,
-                "maximumHeight": 850,
-
-                "showHeader": true,
-                "showCloseButton": true,
-                "showFooter": true,
-                "showDoNotShowAgain": true,
-
-                "content": {
-                  "contentTitle": "서비스 이용 안내",
-                  "description": "JSON 배열에서 생성된 텍스트 팝업입니다.",
-
-                  "leftSectionTitle": "1. 주요 안내",
-                  "leftSectionBody": "서버에서는 여러 개의 팝업을 배열로 전달합니다.",
-
-                  "highlightText": "현재 팝업은 첫 번째 순차 팝업입니다.",
-
-                  "rightSectionTitle": "2. 처리 흐름",
-                  "rightSectionBody": "DTO 변환 후 정책 검사를 거쳐 화면을 생성합니다.",
-
-                  "additionalDescription": "첫 팝업을 닫으면 다음 팝업이 표시됩니다."
-                }
-              },
-              {
-                "popupId": "TEXT_TEST_002",
-                "popupType": "TEXT",
-                "title": "두 번째 안내",
-
-                "displayStartAt": "2026-01-01T00:00:00+09:00",
-                "displayEndAt": "2026-12-31T23:59:59+09:00",
-                "displayMode": "SEQUENTIAL",
-
-                "sizeMode": "VIEWPORT_RATIO",
-                "widthRatio": 0.5,
-                "heightRatio": 0.65,
-
-                "minimumWidth": 600,
-                "minimumHeight": 500,
-                "maximumWidth": 900,
-                "maximumHeight": 800,
-
-                "showHeader": true,
-                "showCloseButton": true,
-                "showFooter": true,
-                "showDoNotShowAgain": false,
-
-                "content": {
-                  "contentTitle": "두 번째 팝업",
-                  "description": "첫 번째 팝업이 닫힌 후 표시됩니다.",
-
-                  "leftSectionTitle": "순차 표시",
-                  "leftSectionBody": "PopupManager의 Queue를 통해 순서대로 표시됩니다.",
-
-                  "highlightText": "DisplayMode가 SEQUENTIAL입니다.",
-
-                  "rightSectionTitle": "PopupManager",
-                  "rightSectionBody": "현재 창의 Closed 이벤트 후 다음 팝업을 엽니다.",
-
-                  "additionalDescription": "여러 팝업 목록 처리 테스트입니다."
-                }
-              }
-                ,
-                {
-                  "popupId": "IMAGE_TEST_001",
-                  "popupType": "IMAGE",
-                  "title": "이미지 공지",
-
-                  "displayStartAt": "2026-01-01T00:00:00+09:00",
-                  "displayEndAt": "2026-12-31T23:59:59+09:00",
-                  "displayMode": "SEQUENTIAL",
-
-                  "sizeMode": "VIEWPORT_RATIO",
-                  "widthRatio": 0.55,
-                  "heightRatio": 0.75,
-
-                  "minimumWidth": 500,
-                  "minimumHeight": 450,
-                  "maximumWidth": 900,
-                  "maximumHeight": 850,
-
-                  "showHeader": true,
-                  "showCloseButton": true,
-                  "showFooter": true,
-                  "showDoNotShowAgain": true,
-
-                  "content": {
-                    "imageTitle": "이미지 안내",
-                    "imageUrl": "https://images.unsplash.com/photo-1784037076368-fb4a699076e5?q=80&w=687&auto=format&fit=crop",
-                    "description": "TEXT 팝업 다음에 표시되는 IMAGE 팝업입니다.",
-                    "showDescription": true,
-
-                    "imageSizeMode": "ADAPTIVE",
-                    "imageWidth": 0,
-                    "imageHeight": 0,
-
-                    "linkUrl": ""
-                  }
-                }
-                ,
-            {
-              "popupId": "VIDEO_TEST_001",
-              "popupType": "VIDEO",
-              "title": "교육 영상",
-
-              "displayStartAt": "2026-01-01T00:00:00+09:00",
-              "displayEndAt": "2026-12-31T23:59:59+09:00",
-              "displayMode": "SEQUENTIAL",
-
-              "sizeMode": "VIEWPORT_RATIO",
-              "widthRatio": 0.7,
-              "heightRatio": 0.75,
-
-              "minimumWidth": 600,
-              "minimumHeight": 450,
-              "maximumWidth": 1200,
-              "maximumHeight": 900,
-
-              "showHeader": true,
-              "showCloseButton": true,
-              "showFooter": true,
-              "showDoNotShowAgain": false,
-
-              "content": {
-                "videoTitle": "정보보안 교육 영상",
-                "videoUrl": "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
-                "description": "영상 재생 기능을 확인해주세요.",
-
-                "showDescription": true,
-                "showControls": true,
-                "allowFullScreen": true,
-                "allowPlaybackRateChange": true,
-
-                "autoPlay": false,
-                "isLoop": false,
-                "defaultVolume": 0.7,
-
-                "completionRatio": 0.9,
-                "allowCloseBeforeCompletion": true
-              }
-            }
-                        ,
-            {
-              "popupId": "SURVEY_TEST_001",
-              "popupType": "SURVEY",
-              "title": "교육 만족도 설문",
-
-              "displayStartAt": "2026-01-01T00:00:00+09:00",
-              "displayEndAt": "2026-12-31T23:59:59+09:00",
-              "displayMode": "SEQUENTIAL",
-
-              "sizeMode": "VIEWPORT_RATIO",
-              "widthRatio": 0.55,
-              "heightRatio": 0.75,
-
-              "minimumWidth": 600,
-              "minimumHeight": 500,
-              "maximumWidth": 900,
-              "maximumHeight": 900,
-
-              "showHeader": false,
-              "showCloseButton": false,
-              "showFooter": false,
-              "showDoNotShowAgain": false,
-
-              "content": {
-                "surveyTitle": "교육 만족도 설문",
-                "description": "더 나은 교육을 위해 아래 문항에 응답해주세요.",
-
-                "passingScore": 0,
-                "validateRequiredQuestions": true,
-
-                "questions": [
-                  {
-                    "questionId": 1,
-                    "title": "교육 내용에 얼마나 만족하셨나요?",
-                    "description": "전체 교육 내용을 기준으로 평가해주세요.",
-                    "questionType": "RATING5",
-
-                    "isRequired": true,
-                    "isScored": false,
-
-                    "options": [],
-                    "correctAnswers": []
-                  },
-                  {
-                    "questionId": 2,
-                    "title": "교육을 알게 된 경로를 선택해주세요.",
-                    "description": "한 가지 항목을 선택해주세요.",
-                    "questionType": "SINGLE_CHOICE",
-
-                    "isRequired": true,
-                    "isScored": false,
-
-                    "options": [
-                      {
-                        "value": "EMAIL",
-                        "text": "이메일"
-                      },
-                      {
-                        "value": "NOTICE",
-                        "text": "사내 공지"
-                      },
-                      {
-                        "value": "RECOMMEND",
-                        "text": "동료 추천"
-                      },
-                      {
-                        "value": "ETC",
-                        "text": "기타"
-                      }
-                    ],
-
-                    "correctAnswers": []
-                  },
-                  {
-                    "questionId": 3,
-                    "title": "도움이 되었던 내용을 선택해주세요.",
-                    "description": "여러 항목을 선택할 수 있습니다.",
-                    "questionType": "MULTIPLE_CHOICE",
-
-                    "isRequired": false,
-                    "isScored": false,
-
-                    "options": [
-                      {
-                        "value": "THEORY",
-                        "text": "이론 설명"
-                      },
-                      {
-                        "value": "EXAMPLE",
-                        "text": "실습 예제"
-                      },
-                      {
-                        "value": "DOCUMENT",
-                        "text": "교육 자료"
-                      }
-                    ],
-
-                    "correctAnswers": []
-                  },
-                  {
-                    "questionId": 4,
-                    "title": "추가 의견을 작성해주세요.",
-                    "description": "자유롭게 작성할 수 있습니다.",
-                    "questionType": "TEXT",
-
-                    "isRequired": false,
-                    "isScored": false,
-
-                    "options": [],
-                    "correctAnswers": []
-                  }
-                ]
-              }
-            }
-                        ,
-            {
-              "popupId": "QUIZ_TEST_001",
-              "popupType": "QUIZ",
-              "title": "정보보안 교육 평가",
-
-              "displayStartAt": "2026-01-01T00:00:00+09:00",
-              "displayEndAt": "2026-12-31T23:59:59+09:00",
-              "displayMode": "SEQUENTIAL",
-
-              "sizeMode": "VIEWPORT_RATIO",
-              "widthRatio": 0.55,
-              "heightRatio": 0.75,
-
-              "minimumWidth": 600,
-              "minimumHeight": 500,
-              "maximumWidth": 900,
-              "maximumHeight": 900,
-
-              "showHeader": false,
-              "showCloseButton": false,
-              "showFooter": false,
-              "showDoNotShowAgain": false,
-
-              "content": {
-                "surveyTitle": "정보보안 교육 평가",
-                "description": "채점 대상 문항에서 80점 이상이면 통과입니다.",
-
-                "passingScore": 80,
-                "validateRequiredQuestions": true,
-
-                "questions": [
-                  {
-                    "questionId": 1,
-                    "title": "다음 중 개인정보에 해당하는 것은?",
-                    "description": "정답을 하나 선택해주세요.",
-                    "questionType": "SINGLE_CHOICE",
-
-                    "isRequired": true,
-                    "isScored": true,
-
-                    "options": [
-                      {
-                        "value": "PHONE",
-                        "text": "휴대전화 번호"
-                      },
-                      {
-                        "value": "WEATHER",
-                        "text": "오늘의 날씨"
-                      },
-                      {
-                        "value": "BUILDING",
-                        "text": "회사 건물 층수"
-                      }
-                    ],
-
-                    "correctAnswers": [
-                      "PHONE"
-                    ]
-                  },
-                  {
-                    "questionId": 2,
-                    "title": "올바른 비밀번호 관리 방법을 모두 선택하세요.",
-                    "description": "정답을 모두 선택해야 합니다.",
-                    "questionType": "MULTIPLE_CHOICE",
-
-                    "isRequired": true,
-                    "isScored": true,
-
-                    "options": [
-                      {
-                        "value": "LONG",
-                        "text": "충분히 긴 비밀번호를 사용한다."
-                      },
-                      {
-                        "value": "REUSE",
-                        "text": "모든 사이트에서 같은 비밀번호를 사용한다."
-                      },
-                      {
-                        "value": "MFA",
-                        "text": "다중 인증을 사용한다."
-                      },
-                      {
-                        "value": "SHARE",
-                        "text": "동료와 비밀번호를 공유한다."
-                      }
-                    ],
-
-                    "correctAnswers": [
-                      "LONG",
-                      "MFA"
-                    ]
-                  },
-                  {
-                    "questionId": 3,
-                    "title": "의심스러운 이메일을 받았을 때 가장 적절한 행동은?",
-                    "description": "정답을 하나 선택해주세요.",
-                    "questionType": "SINGLE_CHOICE",
-
-                    "isRequired": true,
-                    "isScored": true,
-
-                    "options": [
-                      {
-                        "value": "CLICK",
-                        "text": "링크를 눌러 내용을 확인한다."
-                      },
-                      {
-                        "value": "REPORT",
-                        "text": "링크를 누르지 않고 보안 담당자에게 신고한다."
-                      },
-                      {
-                        "value": "FORWARD",
-                        "text": "동료들에게 그대로 전달한다."
-                      }
-                    ],
-
-                    "correctAnswers": [
-                      "REPORT"
-                    ]
-                  },
-                  {
-                    "questionId": 4,
-                    "title": "교육에 대한 의견을 작성해주세요.",
-                    "description": "이 문항은 점수에 포함되지 않습니다.",
-                    "questionType": "TEXT",
-
-                    "isRequired": false,
-                    "isScored": false,
-
-                    "options": [],
-                    "correctAnswers": []
-                  }
-                ]
-              }
-            }
-            ]
-            """; 
-
-        JsonSerializerOptions jsonOptions =
-         new JsonSerializerOptions
-         {
-             /*
-              * 서버 JSON이 camelCase이고
-              * C# 속성이 PascalCase여도 연결되게 한다.
-              */
-             PropertyNameCaseInsensitive = true
-         };
-
-        List<PopupResponseDto> popupDtos =
-            JsonSerializer.Deserialize<List<PopupResponseDto>>(
-                popupJson,
-                jsonOptions)
-            ?? throw new InvalidOperationException(
-                "팝업 JSON 목록 변환에 실패했습니다.");
-
-        /*
-         * PopupService를 통해 표시 가능한 팝업만
-         * PopupOptions 목록으로 변환한다.
-         *
-         * 내부에서 다음 조건을 검사한다.
-         *
-         * 1. 노출 시작 일시
-         * 2. 노출 종료 일시
-         * 3. PopupId 숨김 여부
-         */
-        List<PopupOptions> popupOptionsList =
-                _popupService.CreatePopupOptions(
-                    popupDtos);
-
-            /*
-             * 정책 검사를 통과한 PopupOptions를
-             * PopupManager에 전달한다.
+             * 현재는 로그인 기능이 없으므로
+             * 테스트용 사용자 ID를 직접 사용한다.
              *
-             * PopupManager는 각 PopupOptions의 DisplayMode에 따라
-             * 순차 또는 동시 표시를 결정한다.
+             * 나중에는 로그인한 사용자 정보나
+             * 사번을 이 위치에 연결한다.
+             *
+             * TEST_USER는 앞선 API 테스트에서
+             * 30일 숨김 처리했을 수 있으므로
+             * 우선 새로운 사용자 ID로 테스트한다.
              */
-            _popupManager.ShowRange(
-                popupOptionsList);
-         }
+            const string currentUserId =
+                "WPF_TEST_USER";
+
+            try
+            {
+                /*
+                 * Java 서버의 다음 API를 호출한다.
+                 *
+                 * GET /api/popups?userId=WPF_TEST_USER
+                 *
+                 * Java 서버는 Oracle에서 현재 사용자에게
+                 * 표시할 수 있는 팝업만 조회하여 반환한다.
+                 */
+                List<PopupResponseDto> popupDtos =
+                    await _popupApiService
+                        .GetAvailablePopupsAsync(
+                            currentUserId);
+
+                /*
+                 * 서버가 빈 배열을 반환했다면
+                 * 현재 사용자에게 표시할 팝업이 없는 상태다.
+                 *
+                 * 예:
+                 *
+                 * 1. 노출 기간이 끝난 경우
+                 * 2. 30일간 보지 않기가 적용된 경우
+                 * 3. 사용 가능한 팝업 데이터가 없는 경우
+                 */
+                if (popupDtos.Count == 0)
+                {
+                    MessageBox.Show(
+                        "현재 표시할 팝업이 없습니다.",
+                        "팝업 조회",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    return;
+                }
+
+                /*
+                 * 서버에서 받은 PopupResponseDto 목록을
+                 * 실제 화면 생성에 사용하는
+                 * PopupOptions 목록으로 변환한다.
+                 *
+                 * PopupService 내부에서는 다음 작업을 수행한다.
+                 *
+                 * 1. 팝업 노출 기간 검사
+                 * 2. 로컬 숨김 상태 검사
+                 * 3. PopupType에 맞는 콘텐츠 생성
+                 * 4. PopupOptions 생성
+                 */
+                List<PopupOptions> popupOptionsList =
+                    _popupService.CreatePopupOptions(
+                        popupDtos);
+
+                /*
+                 * 정책 검사를 통과한 팝업이 없다면
+                 * PopupManager에 전달할 필요가 없다.
+                 */
+                if (popupOptionsList.Count == 0)
+                {
+                    MessageBox.Show(
+                        "팝업 정책 검사를 통과한 항목이 없습니다.",
+                        "팝업 조회",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    return;
+                }
+                /*
+                 * 서버에서 생성된 모든 PopupOptions에
+                 * 30일 숨김 저장 함수를 연결한다.
+                 *
+                 * PopupWindow에서 체크박스를 선택하고 닫으면
+                 * 이 함수가 호출된다.
+                 */
+                foreach (PopupOptions popupOptions
+                         in popupOptionsList)
+                {
+                    /*
+                     * PopupWindow는 PopupId와 숨김 일수만 전달한다.
+                     *
+                     * 현재 사용자 ID와 PopupApiService는
+                     * MainWindow가 알고 있으므로 여기서 연결한다.
+                     */
+                    popupOptions.HidePopupAsync =
+                        async (popupId, hideDays) =>
+                        {
+                            /*
+                             * Java 서버에 숨김 요청을 보내고
+                             * Oracle 저장이 완료될 때까지 기다린다.
+                             */
+                            await _popupApiService.HidePopupAsync(
+                                popupId,
+                                currentUserId,
+                                hideDays);
+                        };
+                }
+                /*
+                 * 생성된 PopupOptions 목록을
+                 * PopupManager에 전달한다.
+                 *
+                 * PopupManager는 DisplayMode 값에 따라
+                 * 팝업을 순차 또는 동시 방식으로 표시한다.
+                 */
+                _popupManager.ShowRange(
+                    popupOptionsList);
+            }
+            catch (HttpRequestException exception)
+            {
+                /*
+                 * Java 서버가 실행되지 않았거나
+                 * HTTP 오류 상태가 반환되면 실행된다.
+                 */
+                MessageBox.Show(
+                    "팝업 서버에 연결하지 못했습니다.\n\n" +
+                    exception.Message,
+                    "서버 연결 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            catch (TaskCanceledException)
+            {
+                /*
+                 * Java 서버가 설정된 제한 시간 안에
+                 * 응답하지 않으면 실행된다.
+                 */
+                MessageBox.Show(
+                    "팝업 서버의 응답 시간이 초과되었습니다.",
+                    "서버 응답 지연",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            catch (Exception exception)
+            {
+                /*
+                 * JSON 변환 실패나 PopupFactory 오류처럼
+                 * 예상하지 못한 문제가 발생하면 실행된다.
+                 */
+                MessageBox.Show(
+                    "팝업을 불러오는 중 오류가 발생했습니다.\n\n" +
+                    exception.Message,
+                    "팝업 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
 
         /*
          * 이미지 팝업 열기 버튼 클릭 이벤트

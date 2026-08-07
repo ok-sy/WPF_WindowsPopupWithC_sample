@@ -1,4 +1,8 @@
 ﻿using System.Windows;
+using System;
+using System.Threading.Tasks;
+using System.Windows;
+
 
 namespace Popup.Models
 {
@@ -57,6 +61,24 @@ namespace Popup.Models
          * 사용자 설정 저장에 사용한다.
          */
         public string PopupId { get; set; } = string.Empty;
+
+        /*
+         * "30일간 보지 않기"를 저장할 때
+         * 호출할 비동기 함수다.
+         *
+         * 첫 번째 값
+         * → 숨길 PopupId
+         *
+         * 두 번째 값
+         * → 숨길 일수
+         *
+         * PopupOptions는 서버 주소나 사용자 ID를
+         * 직접 알지 않고 저장 함수만 전달받는다.
+         */
+        public Func<string, int, Task>?
+            HidePopupAsync
+        { get; set; }
+
         /*
          * 팝업 상단에 표시할 제목
          */
