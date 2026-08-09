@@ -366,7 +366,25 @@
                     </Grid>
 
                 </Border>
+                <!--
+                    헤더가 없는 팝업에서 사용하는
+                    투명한 창 이동 영역
 
+                    역할
+                    ShowHeader가 false인 SURVEY 또는 QUIZ 팝업도
+                    창 상단의 빈 공간을 잡고 이동할 수 있게 한다.
+
+                    PopupContent에는 현재 Margin="24"가 적용되어 있으므로
+                    높이 24 영역은 실제 콘텐츠와 겹치지 않는다.
+                -->
+                <Border x:Name="HeaderlessDragArea"
+                                Grid.Row="1"
+                                Height="24"
+                                VerticalAlignment="Top"
+                                Background="Transparent"
+                                Panel.ZIndex="10"
+                                Visibility="Collapsed"
+                                MouseLeftButtonDown="Header_MouseLeftButtonDown"/>
                 <!--
                 ContentControl
 

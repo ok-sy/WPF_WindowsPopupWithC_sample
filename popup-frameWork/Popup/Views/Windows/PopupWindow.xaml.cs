@@ -84,7 +84,21 @@ namespace Popup.Views.Windows
             HeaderArea.Visibility = _options.ShowHeader
                 ? Visibility.Visible
                 : Visibility.Collapsed;
-
+            /*
+             * 공통 Header가 없는 팝업에서도
+             * 창 상단을 잡고 이동할 수 있도록
+             * 투명한 드래그 영역의 표시 여부를 설정한다.
+             *
+             * ShowHeader = true
+             * → 기존 HeaderArea에서 드래그하므로 숨긴다.
+             *
+             * ShowHeader = false
+             * → HeaderlessDragArea를 표시한다.
+             */
+            HeaderlessDragArea.Visibility =
+                _options.ShowHeader
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
             /*
              * ShowHeader가 true면
              * Header가 사용할 높이 48을 유지한다.
