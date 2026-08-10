@@ -61,7 +61,12 @@ namespace Popup
             _popupService =
                 new PopupService();
 
-
+            /*
+             * Java Spring Boot 서버와 통신하는
+             * PopupApiService를 생성한다.
+             */
+            _popupApiService =
+                new PopupApiService();
         }
 
    
