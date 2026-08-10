@@ -2,6 +2,7 @@ using Popup.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Net.Http.Json;
@@ -65,43 +66,43 @@ namespace Popup.Services
             /*
              * Java JSON은 camelCase를 사용하고
              * C# DTO 속성은 PascalCase를 사용한다.
-             *
+         *
              * 예:
              *
              * JSON
-             * popupId
-             *
+         * popupId
+         *
              * C#
-             * PopupId
+         * PopupId
              *
              * 대소문자를 구분하지 않도록 설정하면
              * 두 이름을 정상적으로 연결할 수 있다.
-             */
+         */
             _jsonOptions =
-                new JsonSerializerOptions
-                {
-                    /*
+            new JsonSerializerOptions
+            {
+                /*
                      * Java 서버가 보내는 camelCase JSON과
                      * C#의 PascalCase 속성을 연결한다.
-                     */
-                    PropertyNameCaseInsensitive =
-                        true,
+                 */
+                PropertyNameCaseInsensitive =
+                    true,
 
-                    /*
+                /*
                      * C# DTO를 Java 서버로 보낼 때도
                      * 속성명을 camelCase로 변환한다.
-                     *
+                 *
                      * 예:
                      *
-                     * UserId
-                     * → userId
-                     *
-                     * HideDays
-                     * → hideDays
-                     */
-                    PropertyNamingPolicy =
-                        JsonNamingPolicy.CamelCase
-                };
+                 * UserId
+                 * → userId
+                 *
+                 * HideDays
+                 * → hideDays
+                 */
+                PropertyNamingPolicy =
+                    JsonNamingPolicy.CamelCase
+            };
         }
 
         /*
@@ -184,7 +185,7 @@ namespace Popup.Services
              */
             List<PopupResponseDto>? popupDtos =
                 JsonSerializer.Deserialize<
-                    List<PopupResponseDto>>(
+                        List<PopupResponseDto>>(
                         popupJson,
                         _jsonOptions);
 
@@ -198,12 +199,14 @@ namespace Popup.Services
             return popupDtos
                 ?? new List<PopupResponseDto>();
         }
+
         /*
          * 사용자가 선택한 팝업을
          * 지정한 기간 동안 숨김 처리한다.
          *
          * 호출되는 Java API:
          *
+         * Java API:
          * POST /api/popups/{popupId}/hide
          */
         public async Task<PopupHideResponseDto>
@@ -278,6 +281,10 @@ namespace Popup.Services
                     HideDays =
                         hideDays
                 };
+
+            string requestUrl =
+                $"{BaseUrl}/api/popups/" +
+                $"{Uri.EscapeDataString(popupId)}/hide";
 
             /*
              * Java 서버에 JSON 형식으로

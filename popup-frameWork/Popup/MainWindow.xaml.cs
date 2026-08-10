@@ -8,7 +8,9 @@ using System.Windows;
 using Popup.Managers;
 using Popup.Services;
 using System.Collections.Generic;
+using Popup.Service;
 using System.Net.Http;
+
 
 namespace Popup
 {
@@ -61,8 +63,7 @@ namespace Popup
                 new PopupService();
 
             /*
-             * Java Spring Boot 팝업 API와 통신하는
-             * PopupApiService를 생성한다.
+             * Java API 통신 서비스를 생성한다.
              */
             _popupApiService =
                 new PopupApiService();
@@ -70,52 +71,40 @@ namespace Popup
 
     
         /*
-         * Java 서버에서 현재 사용자에게 표시할 팝업을 조회하고
-         * PopupManager를 통해 화면에 표시한다.
+         * Java Spring Boot API와 통신하는 서비스
          */
+        private readonly PopupApiService
+            _popupApiService;
+
+        /*
+ * Java API에서 현재 사용자에게 노출할 팝업을 조회하고
+ * PopupManager를 통해 화면에 표시한다.
+ */
         private async void OpenPopupButton_Click(
             object sender,
             RoutedEventArgs e)
         {
             /*
-             * 현재는 로그인 기능이 없으므로
-             * 테스트용 사용자 ID를 직접 사용한다.
+             * 로그인 기능이 아직 없으므로
+             * 테스트용 사용자 ID를 고정해서 사용한다.
              *
-             * 나중에는 로그인한 사용자 정보나
-             * 사번을 이 위치에 연결한다.
-             *
-             * TEST_USER는 앞선 API 테스트에서
-             * 30일 숨김 처리했을 수 있으므로
-             * 우선 새로운 사용자 ID로 테스트한다.
+             * 이후 로그인 기능이 연결되면
+             * 현재 로그인한 사용자의 ID로 교체한다.
              */
             const string currentUserId =
-                "WPF_TEST_USER";
+                "WPF_TYPE_TEST_USER";
 
             try
             {
                 /*
-                 * Java 서버의 다음 API를 호출한다.
-                 *
-                 * GET /api/popups?userId=WPF_TEST_USER
-                 *
-                 * Java 서버는 Oracle에서 현재 사용자에게
-                 * 표시할 수 있는 팝업만 조회하여 반환한다.
+                 * Java API와 Oracle DB를 통해
+                 * 현재 사용자에게 노출 가능한 팝업만 조회한다.
                  */
                 List<PopupResponseDto> popupDtos =
                     await _popupApiService
                         .GetAvailablePopupsAsync(
                             currentUserId);
 
-                /*
-                 * 서버가 빈 배열을 반환했다면
-                 * 현재 사용자에게 표시할 팝업이 없는 상태다.
-                 *
-                 * 예:
-                 *
-                 * 1. 노출 기간이 끝난 경우
-                 * 2. 30일간 보지 않기가 적용된 경우
-                 * 3. 사용 가능한 팝업 데이터가 없는 경우
-                 */
                 if (popupDtos.Count == 0)
                 {
                     MessageBox.Show(
@@ -128,82 +117,55 @@ namespace Popup
                 }
 
                 /*
-                 * 서버에서 받은 PopupResponseDto 목록을
-                 * 실제 화면 생성에 사용하는
+                 * 서버 DTO를 실제 PopupWindow에서 사용하는
                  * PopupOptions 목록으로 변환한다.
-                 *
-                 * PopupService 내부에서는 다음 작업을 수행한다.
-                 *
-                 * 1. 팝업 노출 기간 검사
-                 * 2. 로컬 숨김 상태 검사
-                 * 3. PopupType에 맞는 콘텐츠 생성
-                 * 4. PopupOptions 생성
                  */
                 List<PopupOptions> popupOptionsList =
                     _popupService.CreatePopupOptions(
                         popupDtos);
 
-                /*
-                 * 정책 검사를 통과한 팝업이 없다면
-                 * PopupManager에 전달할 필요가 없다.
-                 */
-                if (popupOptionsList.Count == 0)
-                {
-                    MessageBox.Show(
-                        "팝업 정책 검사를 통과한 항목이 없습니다.",
-                        "팝업 조회",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-
-                    return;
-                }
-                /*
-                 * 서버에서 생성된 모든 PopupOptions에
-                 * 30일 숨김 저장 함수를 연결한다.
-                 *
-                 * PopupWindow에서 체크박스를 선택하고 닫으면
-                 * 이 함수가 호출된다.
-                 */
                 foreach (PopupOptions popupOptions
                          in popupOptionsList)
                 {
                     /*
-                     * PopupWindow는 PopupId와 숨김 일수만 전달한다.
+                     * PopupWindow에서 "다시 보지 않기"를 선택하면
+                     * 실행할 서버 저장 콜백을 설정한다.
                      *
-                     * 현재 사용자 ID와 PopupApiService는
-                     * MainWindow가 알고 있으므로 여기서 연결한다.
+                     * PopupWindow는 API 주소나 사용자 ID를 직접 알지 않고,
+                     * 이 콜백만 호출한다.
                      */
                     popupOptions.HidePopupAsync =
-                        async (popupId, hideDays) =>
+                        async (
+                            popupId,
+                            hideDays) =>
                         {
-                            /*
-                             * Java 서버에 숨김 요청을 보내고
-                             * Oracle 저장이 완료될 때까지 기다린다.
-                             */
-                            await _popupApiService.HidePopupAsync(
-                                popupId,
-                                currentUserId,
-                                hideDays);
+                            await _popupApiService
+                                .HidePopupAsync(
+                                    popupId,
+                                    currentUserId,
+                                    hideDays);
                         };
                 }
+
                 /*
-                 * 생성된 PopupOptions 목록을
-                 * PopupManager에 전달한다.
+                 * 조회한 팝업을 PopupManager에 전달한다.
                  *
-                 * PopupManager는 DisplayMode 값에 따라
-                 * 팝업을 순차 또는 동시 방식으로 표시한다.
+                 * 서버의 displayMode 값에 따라:
+                 *
+                 * SEQUENTIAL
+                 * → 한 개씩 순차적으로 표시
+                 *
+                 * SHOW_ALL
+                 * → 여러 팝업을 한 번에 표시
                  */
                 _popupManager.ShowRange(
                     popupOptionsList);
             }
             catch (HttpRequestException exception)
             {
-                /*
-                 * Java 서버가 실행되지 않았거나
-                 * HTTP 오류 상태가 반환되면 실행된다.
-                 */
                 MessageBox.Show(
-                    "팝업 서버에 연결하지 못했습니다.\n\n" +
+                    "Java 팝업 서버에 연결할 수 없습니다.\n\n" +
+                    "Spring Boot 서버가 실행 중인지 확인해주세요.\n\n" +
                     exception.Message,
                     "서버 연결 오류",
                     MessageBoxButton.OK,
@@ -211,22 +173,14 @@ namespace Popup
             }
             catch (TaskCanceledException)
             {
-                /*
-                 * Java 서버가 설정된 제한 시간 안에
-                 * 응답하지 않으면 실행된다.
-                 */
                 MessageBox.Show(
                     "팝업 서버의 응답 시간이 초과되었습니다.",
-                    "서버 응답 지연",
+                    "서버 응답 시간 초과",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
             catch (Exception exception)
             {
-                /*
-                 * JSON 변환 실패나 PopupFactory 오류처럼
-                 * 예상하지 못한 문제가 발생하면 실행된다.
-                 */
                 MessageBox.Show(
                     "팝업을 불러오는 중 오류가 발생했습니다.\n\n" +
                     exception.Message,
