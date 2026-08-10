@@ -273,9 +273,13 @@ namespace Popup.Services
                         hideDays
                 };
 
+            /*
+             * 앞에서 공백 제거와 URL 인코딩을 완료한
+             * PopupId로 숨김 API 주소를 생성한다.
+             */
             string requestUrl =
                 $"{BaseUrl}/api/popups/" +
-                $"{Uri.EscapeDataString(popupId)}/hide";
+                $"{encodedPopupId}/hide";
 
             /*
              * Java 서버에 JSON 형식으로
