@@ -8,32 +8,16 @@
 		<UseWPF>true</UseWPF>
 	</PropertyGroup>
 
+
+
 	<ItemGroup>
-		<Content Include="..\..\..\Users\oso79\Pictures\sample.png"
-				 Link="Assets\Image\sample.png" />
-	</ItemGroup>
-
-	<!--
-  appsettings.json을 빌드 및 Publish 결과 폴더에 복사한다.
-  -->
-	<ItemGroup>
-		<None Update="appsettings.json">
-
 			<!--
-      Debug 또는 Release 빌드 결과 폴더에 복사한다.
+  API 설정 파일을 실행 및 배포 폴더에 복사한다.
       -->
-			<CopyToOutputDirectory>
-				PreserveNewest
-			</CopyToOutputDirectory>
-
-			<!--
-      dotnet publish 결과 폴더에 복사한다.
-      -->
-			<CopyToPublishDirectory>
-				PreserveNewest
-			</CopyToPublishDirectory>
-
-		</None>
+		<Content Include="appsettings.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+		</Content>
 	</ItemGroup>
 
 	<ItemGroup>
