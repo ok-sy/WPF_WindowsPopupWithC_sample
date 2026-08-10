@@ -6,7 +6,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-
 namespace Popup.Services
 {
     /*
@@ -26,11 +25,13 @@ namespace Popup.Services
         /*
          * Java Spring Boot 서버의 기본 주소다.
          *
-         * 현재 Java 서버가 로컬 8080 포트에서
-         * 실행되고 있으므로 localhost를 사용한다.
+         * 개발·테스트·운영 환경마다
+         * 다른 주소를 사용할 수 있도록
+         * 생성자에서 값을 전달받는다.
          */
-        private const string BaseUrl =
-            "http://localhost:8080";
+        private readonly string
+            _baseUrl;
+
 
         /*
          * 서버에 HTTP 요청을 보내는 객체다.
@@ -59,50 +60,82 @@ namespace Popup.Services
             _jsonOptions;
 
         /*
-         * PopupApiService 생성자다.
-         */
-        public PopupApiService()
+ * PopupApiService 생성자다.
+ *
+ * baseUrl
+ * → Java Spring Boot 팝업 API의 기본 주소
+ *
+ * 예:
+ * http://localhost:8080
+ * https://popup-api.company.com
+ */
+        public PopupApiService(
+            string baseUrl)
         {
+            /*
+             * API 주소가 없으면
+             * 서버 요청 주소를 만들 수 없으므로
+             * 객체 생성을 중단한다.
+             */
+            if (string.IsNullOrWhiteSpace(
+                    baseUrl))
+            {
+                throw new ArgumentException(
+                    "팝업 API 주소가 필요합니다.",
+                    nameof(baseUrl));
+            }
+
+            /*
+             * 전달받은 API 주소의 앞뒤 공백과
+             * 마지막 슬래시를 제거한다.
+             *
+             * 예:
+             * http://localhost:8080/
+             *
+             * 변경:
+             * http://localhost:8080
+             *
+             * 이후 /api/popups를 붙였을 때
+             * //api/popups가 되는 것을 방지한다.
+             */
+            _baseUrl =
+                baseUrl
+                    .Trim()
+                    .TrimEnd('/');
+
             /*
              * Java JSON은 camelCase를 사용하고
              * C# DTO 속성은 PascalCase를 사용한다.
-         *
-             * 예:
              *
-             * JSON
-         * popupId
-         *
-             * C#
-         * PopupId
+             * JSON:
+             * popupId
              *
-             * 대소문자를 구분하지 않도록 설정하면
-             * 두 이름을 정상적으로 연결할 수 있다.
-         */
+             * C#:
+             * PopupId
+             */
             _jsonOptions =
-            new JsonSerializerOptions
-            {
-                /*
+                new JsonSerializerOptions
+                {
+                    /*
                      * Java 서버가 보내는 camelCase JSON과
                      * C#의 PascalCase 속성을 연결한다.
-                 */
-                PropertyNameCaseInsensitive =
-                    true,
+                     */
+                    PropertyNameCaseInsensitive =
+                        true,
 
-                /*
-                     * C# DTO를 Java 서버로 보낼 때도
+                    /*
+                     * C# DTO를 Java 서버로 보낼 때
                      * 속성명을 camelCase로 변환한다.
-                 *
-                     * 예:
                      *
-                 * UserId
-                 * → userId
-                 *
-                 * HideDays
-                 * → hideDays
-                 */
-                PropertyNamingPolicy =
-                    JsonNamingPolicy.CamelCase
-            };
+                     * UserId
+                     * → userId
+                     *
+                     * HideDays
+                     * → hideDays
+                     */
+                    PropertyNamingPolicy =
+                        JsonNamingPolicy.CamelCase
+                };
         }
 
         /*
@@ -149,8 +182,8 @@ namespace Popup.Services
              * http://localhost:8080/api/popups?userId=TEST_USER
              */
             string requestUrl =
-                $"{BaseUrl}/api/popups" +
-                $"?userId={encodedUserId}";
+            $"{_baseUrl}/api/popups" +
+            $"?userId={encodedUserId}";
 
             /*
              * Java 서버에 GET 요청을 보내고
@@ -258,7 +291,6 @@ namespace Popup.Services
                 Uri.EscapeDataString(
                     popupId.Trim());
 
-        
 
             /*
              * Java 서버로 전달할 요청 데이터를 만든다.
@@ -273,12 +305,8 @@ namespace Popup.Services
                         hideDays
                 };
 
-            /*
-             * 앞에서 공백 제거와 URL 인코딩을 완료한
-             * PopupId로 숨김 API 주소를 생성한다.
-             */
             string requestUrl =
-                $"{BaseUrl}/api/popups/" +
+                $"{_baseUrl}/api/popups/" +
                 $"{encodedPopupId}/hide";
 
             /*

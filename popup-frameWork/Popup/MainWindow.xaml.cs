@@ -9,6 +9,8 @@ using Popup.Managers;
 using Popup.Services;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.Json;
+using System.IO;
 
 
 namespace Popup
@@ -36,6 +38,112 @@ namespace Popup
         private readonly PopupApiService
             _popupApiService;
 
+        /*
+ * appsettings.json에서
+ * Java 팝업 API 기본 주소를 읽는다.
+ *
+ * 반환 예:
+ * http://localhost:8080
+ */
+        private static string LoadPopupApiBaseUrl()
+        {
+            /*
+             * 실행 중인 Popup.exe가 위치한 폴더를 기준으로
+             * appsettings.json의 전체 경로를 만든다.
+             *
+             * AppContext.BaseDirectory를 사용해야
+             * 바로가기나 다른 작업 폴더에서 실행해도
+             * EXE 옆의 설정 파일을 정확하게 찾을 수 있다.
+             */
+            string configurationFilePath =
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "appsettings.json");
+
+            /*
+             * 설정 파일이 없으면
+             * 어떤 API 서버를 호출해야 하는지 알 수 없으므로
+             * 자세한 경로를 포함해 예외를 발생시킨다.
+             */
+            if (!File.Exists(
+                    configurationFilePath))
+            {
+                throw new FileNotFoundException(
+                    "팝업 API 설정 파일을 찾을 수 없습니다.\n" +
+                    configurationFilePath,
+                    configurationFilePath);
+            }
+
+            /*
+             * appsettings.json의 전체 내용을
+             * 문자열로 읽는다.
+             */
+            string configurationJson =
+                File.ReadAllText(
+                    configurationFilePath);
+
+            /*
+             * JSON 문자열을 탐색 가능한
+             * JsonDocument 객체로 변환한다.
+             *
+             * using을 사용하므로 메서드 종료 시
+             * JsonDocument가 자동으로 정리된다.
+             */
+            using JsonDocument configurationDocument =
+                JsonDocument.Parse(
+                    configurationJson);
+
+            JsonElement rootElement =
+                configurationDocument.RootElement;
+
+            /*
+             * 다음 구조에서 PopupApi 영역을 찾는다.
+             *
+             * {
+             *   "PopupApi": {
+             *     "BaseUrl": "..."
+             *   }
+             * }
+             */
+            if (!rootElement.TryGetProperty(
+                    "PopupApi",
+                    out JsonElement popupApiElement))
+            {
+                throw new InvalidOperationException(
+                    "appsettings.json에 PopupApi 설정이 없습니다.");
+            }
+
+            /*
+             * PopupApi 내부에서 BaseUrl 값을 찾는다.
+             */
+            if (!popupApiElement.TryGetProperty(
+                    "BaseUrl",
+                    out JsonElement baseUrlElement))
+            {
+                throw new InvalidOperationException(
+                    "appsettings.json에 PopupApi.BaseUrl 설정이 없습니다.");
+            }
+
+            /*
+             * JSON의 BaseUrl 값을
+             * C# 문자열로 변환한다.
+             */
+            string? baseUrl =
+                baseUrlElement.GetString();
+
+            /*
+             * 속성은 존재하지만 값이 비어 있는 경우에도
+             * 잘못된 설정으로 처리한다.
+             */
+            if (string.IsNullOrWhiteSpace(
+                    baseUrl))
+            {
+                throw new InvalidOperationException(
+                    "PopupApi.BaseUrl 값이 비어 있습니다.");
+            }
+
+            return baseUrl;
+        }
 
         /*
          * MainWindow 생성자
@@ -61,19 +169,32 @@ namespace Popup
             _popupService =
                 new PopupService();
 
+
             /*
-             * Java Spring Boot 서버와 통신하는
+             * Java Spring Boot 서버의 주소를 전달하여
+             * PopupApiService를 생성한다.
+             */
+            /*
+             * appsettings.json에서
+             * Java 팝업 API 주소를 읽는다.
+             */
+            string popupApiBaseUrl =
+                LoadPopupApiBaseUrl();
+
+            /*
+             * 설정 파일에서 읽은 API 주소를 전달하여
              * PopupApiService를 생성한다.
              */
             _popupApiService =
-                new PopupApiService();
+                new PopupApiService(
+                    popupApiBaseUrl);
         }
 
    
         /*
- * Java API에서 현재 사용자에게 노출할 팝업을 조회하고
- * PopupManager를 통해 화면에 표시한다.
- */
+         * Java API에서 현재 사용자에게 노출할 팝업을 조회하고
+         * PopupManager를 통해 화면에 표시한다.
+         */
         private async void OpenPopupButton_Click(
             object sender,
             RoutedEventArgs e)
@@ -178,6 +299,168 @@ namespace Popup
                     "팝업을 불러오는 중 오류가 발생했습니다.\n\n" +
                     exception.Message,
                     "팝업 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        /*
+ * C# 코드 안에 작성한 평문 JSON으로
+ * TEXT 팝업을 생성하는 테스트 이벤트다.
+ *
+ * Java API나 Oracle DB를 호출하지 않고:
+ *
+ * 평문 JSON
+ * → PopupResponseDto
+ * → PopupOptions
+ * → PopupManager
+ * → PopupWindow
+ *
+ * 순서로 팝업을 표시한다.
+ */
+        private void OpenTextPopupButton_Click(
+            object sender,
+            RoutedEventArgs e)
+        {
+            try
+            {
+                /*
+                 * 서버 응답과 같은 구조로 작성한
+                 * 로컬 테스트용 평문 JSON이다.
+                 *
+                 * 대괄호로 감싼 이유는
+                 * PopupService.CreatePopupOptions()에
+                 * 팝업 목록을 전달하기 위해서다.
+                 */
+                string popupJson =
+                    """
+            [
+              {
+                "popupId": "LOCAL_TEXT_TEST_001",
+                "popupType": "TEXT",
+                "title": "로컬 TEXT 팝업 테스트",
+                "displayStartAt": "2026-01-01T00:00:00+09:00",
+                "displayEndAt": "2027-12-31T23:59:59+09:00",
+                "displayMode": "SEQUENTIAL",
+                "sizeMode": "VIEWPORT_RATIO",
+                "width": 900,
+                "height": 620,
+                "widthRatio": 0.60,
+                "heightRatio": 0.70,
+                "minimumWidth": 600,
+                "minimumHeight": 450,
+                "maximumWidth": 1000,
+                "maximumHeight": 850,
+                "showHeader": true,
+                "showCloseButton": true,
+                "showFooter": true,
+                "showDoNotShowAgain": false,
+                "content": {
+                  "contentTitle": "로컬 JSON 팝업 안내",
+                  "description": "Java API를 호출하지 않고 C# 평문 JSON으로 생성한 팝업입니다.",
+                  "leftSectionTitle": "1. 테스트 목적",
+                  "leftSectionBody": "TEXT 팝업의 JSON 변환과 화면 생성을 독립적으로 확인합니다.",
+                  "highlightText": "현재 팝업은 Oracle DB와 관계없이 표시됩니다.",
+                  "rightSectionTitle": "2. 처리 흐름",
+                  "rightSectionBody": "JSON을 PopupResponseDto로 변환한 뒤 PopupService로 전달합니다.",
+                  "additionalDescription": "API 서버가 꺼져 있어도 이 팝업은 정상적으로 열려야 합니다."
+                }
+              }
+            ]
+            """;
+
+                /*
+                 * Java 서버의 camelCase JSON 속성과
+                 * C# DTO의 PascalCase 속성을 연결하기 위한 설정이다.
+                 *
+                 * JSON:
+                 * popupId
+                 *
+                 * C#:
+                 * PopupId
+                 */
+                JsonSerializerOptions jsonOptions =
+                    new JsonSerializerOptions
+                    {
+                        /*
+                         * JSON 속성 이름의
+                         * 대소문자를 구분하지 않는다.
+                         */
+                        PropertyNameCaseInsensitive =
+                            true
+                    };
+
+                /*
+                 * 평문 JSON 배열을
+                 * PopupResponseDto 목록으로 변환한다.
+                 */
+                List<PopupResponseDto>? popupDtos =
+                    JsonSerializer.Deserialize<
+                        List<PopupResponseDto>>(
+                            popupJson,
+                            jsonOptions);
+
+                /*
+                 * 역직렬화 결과가 없거나
+                 * JSON 배열이 비어 있으면 팝업을 만들 수 없다.
+                 */
+                if (popupDtos == null ||
+                    popupDtos.Count == 0)
+                {
+                    MessageBox.Show(
+                        "로컬 JSON에서 팝업 정보를 읽지 못했습니다.",
+                        "TEXT 팝업 오류",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+
+                    return;
+                }
+
+                /*
+                 * PopupResponseDto 목록을
+                 * 실제 화면 생성에 사용하는
+                 * PopupOptions 목록으로 변환한다.
+                 *
+                 * PopupService 내부에서 PopupType이 TEXT인지 확인하고
+                 * TextPopupView를 생성한다.
+                 */
+                List<PopupOptions> popupOptionsList =
+                    _popupService.CreatePopupOptions(
+                        popupDtos);
+
+                /*
+                 * 생성된 TEXT 팝업을
+                 * PopupManager를 통해 표시한다.
+                 *
+                 * 현재 JSON에는 한 건만 있으므로
+                 * TEXT 팝업 하나가 열린다.
+                 */
+                _popupManager.ShowRange(
+                    popupOptionsList);
+            }
+            catch (JsonException exception)
+            {
+                /*
+                 * JSON 문법이 잘못되었거나
+                 * DTO 형식과 맞지 않을 때 실행된다.
+                 */
+                MessageBox.Show(
+                    "TEXT 팝업 JSON 형식이 올바르지 않습니다.\n\n" +
+                    exception.Message,
+                    "JSON 변환 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            catch (Exception exception)
+            {
+                /*
+                 * PopupFactory 또는 View 생성 과정에서
+                 * 예상하지 못한 오류가 발생했을 때 실행된다.
+                 */
+                MessageBox.Show(
+                    "TEXT 팝업을 생성하는 중 오류가 발생했습니다.\n\n" +
+                    exception.Message,
+                    "TEXT 팝업 오류",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }

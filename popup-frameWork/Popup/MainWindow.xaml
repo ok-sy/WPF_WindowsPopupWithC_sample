@@ -23,12 +23,21 @@
             <!--
             기존 텍스트 팝업 열기 버튼
             -->
-            <Button Content="텍스트 팝업 열기"
+            <Button Content="API 통신 팝업"
             Width="160"
             Height="42"
             Margin="0,0,0,12"
             Click="OpenPopupButton_Click"/>
-
+            
+			 <!--
+            기존 텍스트 팝업 열기 버튼
+            -->
+            <Button Content="텍스트 팝업 열기"
+            Width="160"
+            Height="42"
+            Margin="0,0,0,12"
+            Click="OpenTextPopupButton_Click"/>
+			
             <!--
             이미지 팝업 열기 버튼
             -->
