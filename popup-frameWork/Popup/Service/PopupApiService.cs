@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Net.Http.Json;
+
 
 namespace Popup.Services
 {
@@ -258,16 +258,7 @@ namespace Popup.Services
                 Uri.EscapeDataString(
                     popupId.Trim());
 
-            /*
-             * 팝업 숨김 API 주소를 만든다.
-             *
-             * 완성되는 주소 예:
-             *
-             * http://localhost:8080/api/popups/JAVA_TEXT_TEST_001/hide
-             */
-            string requestUrl =
-                $"{BaseUrl}/api/popups/" +
-                $"{encodedPopupId}/hide";
+        
 
             /*
              * Java 서버로 전달할 요청 데이터를 만든다.

@@ -1,7 +1,6 @@
 ﻿using System.Windows;
 using System;
 using System.Threading.Tasks;
-using System.Windows;
 
 
 namespace Popup.Models
@@ -85,21 +84,7 @@ namespace Popup.Models
         public string Title { get; set; } =
             string.Empty;
 
-        /*
-         * 사용자가 "다시 보지 않기"를 선택했을 때
-         * 서버 저장을 실행할 비동기 콜백이다.
-         *
-         * 첫 번째 매개 변수:
-         * 팝업 ID
-         *
-         * 두 번째 매개 변수:
-         * 숨김 기간
-         */
-        public Func<string, int, Task>? HidePopupAsync
-        {
-            get;
-            set;
-        }
+        
         /*
          * PopupWindow 안에 삽입할 실제 본문
          *

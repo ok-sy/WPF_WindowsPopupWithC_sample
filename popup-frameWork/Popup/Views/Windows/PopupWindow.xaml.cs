@@ -326,17 +326,14 @@ namespace Popup.Views.Windows
 
 
         /*
-         * 팝업의 닫기 버튼 또는 Header 닫기 버튼을 처리한다.
-         */
+ * 팝업의 닫기 버튼 또는 Header 닫기 버튼을 처리한다.
+ */
         private async void CloseButton_Click(
             object sender,
             RoutedEventArgs e)
         {
             /*
-             * 클릭된 컨트롤을 UIElement로 변환한다.
-             *
-             * 같은 범위에서 clickedControl을 다시 선언하면
-             * CS0136 오류가 발생하므로 한 번만 선언한다.
+             * 클릭된 닫기 버튼을 가져온다.
              */
             UIElement? clickedControl =
                 sender as UIElement;
@@ -347,23 +344,29 @@ namespace Popup.Views.Windows
             }
 
             /*
-             * 클릭 이벤트가 상위 컨트롤로
+             * 상위 컨트롤로 클릭 이벤트가
              * 추가 전달되지 않도록 처리한다.
              */
             e.Handled =
                 true;
 
+            /*
+             * 저장 중 버튼을 다시 클릭해서
+             * API가 중복 호출되는 것을 방지한다.
+             */
+            clickedControl.IsEnabled =
+                false;
+
             try
             {
                 /*
-                 * "다시 보지 않기"가 선택된 경우
-                 * Java API를 통해 Oracle DB에 저장한다.
+                 * 체크된 경우에만 서버에
+                 * 30일 숨김 정보를 저장한다.
                  */
                 await SaveDoNotShowAgainAsync();
 
                 /*
-                 * 서버 저장이 성공했거나
-                 * 다시 보지 않기가 선택되지 않았으면
+                 * 저장이 성공했거나 저장할 필요가 없으면
                  * 현재 팝업을 닫는다.
                  */
                 Close();
@@ -371,10 +374,8 @@ namespace Popup.Views.Windows
             catch (Exception exception)
             {
                 /*
-                 * 서버 저장에 실패하면 팝업을 닫지 않는다.
-                 *
-                 * 사용자가 저장 실패 사실을 확인하고
-                 * 다시 시도할 수 있도록 현재 창을 유지한다.
+                 * 서버 저장에 실패하면
+                 * 팝업을 닫지 않고 오류를 표시한다.
                  */
                 MessageBox.Show(
                     "다시 보지 않기 설정을 저장하지 못했습니다.\n\n" +
@@ -383,30 +384,40 @@ namespace Popup.Views.Windows
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
+            finally
+            {
+                /*
+                 * 저장 실패로 창이 남아 있을 경우
+                 * 사용자가 다시 시도할 수 있도록 버튼을 활성화한다.
+                 */
+                clickedControl.IsEnabled =
+                    true;
+            }
         }
 
         /*
-          * 사용자가 선택한 "다시 보지 않기" 설정을
-          * Java API를 통해 Oracle DB에 저장한다.
-          */
+        * 사용자가 선택한 "다시 보지 않기" 설정을
+        * Java API를 통해 Oracle DB에 저장한다.
+        */
         private async Task SaveDoNotShowAgainAsync()
         {
             /*
              * 체크박스가 표시되지 않거나
-             * 사용자가 체크하지 않았다면 저장하지 않는다.
+             * 사용자가 체크하지 않았다면
+             * 서버 저장 없이 정상적으로 종료한다.
              */
             if (_options.ShowDoNotShowAgain == false ||
                 DoNotShowAgainCheckBox.IsChecked != true)
             {
-                throw new InvalidOperationException(
-                    "숨김 처리할 팝업 ID가 없습니다.");
+                return;
             }
 
             /*
              * 어떤 팝업을 숨길지 서버에 전달하려면
              * PopupId가 반드시 필요하다.
              */
-            if (_options.HidePopupAsync == null)
+            if (string.IsNullOrWhiteSpace(
+                    _options.PopupId))
             {
                 throw new InvalidOperationException(
                     "팝업 ID가 없어 다시 보지 않기를 저장할 수 없습니다.");
@@ -414,7 +425,7 @@ namespace Popup.Views.Windows
 
             /*
              * MainWindow에서 서버 저장 콜백이
-             * 설정되지 않은 경우 저장할 수 없다.
+             * 설정되지 않은 경우 API를 호출할 수 없다.
              */
             if (_options.HidePopupAsync == null)
             {
@@ -424,15 +435,12 @@ namespace Popup.Views.Windows
 
             /*
              * 현재 정책은 30일 동안 숨김이다.
-             *
-             * 추후 체크박스 대신 기간 선택 UI를 만들면
-             * 이 값을 사용자가 선택한 기간으로 교체할 수 있다.
              */
             const int hideDays =
                 30;
 
             /*
-             * MainWindow가 설정한 콜백을 호출하여
+             * MainWindow에서 설정한 콜백을 호출하여
              * Java API와 Oracle DB에 숨김 상태를 저장한다.
              */
             await _options.HidePopupAsync(

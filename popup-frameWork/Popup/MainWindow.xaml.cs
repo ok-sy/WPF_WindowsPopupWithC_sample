@@ -8,7 +8,6 @@ using System.Windows;
 using Popup.Managers;
 using Popup.Services;
 using System.Collections.Generic;
-using Popup.Service;
 using System.Net.Http;
 
 
@@ -62,20 +61,10 @@ namespace Popup
             _popupService =
                 new PopupService();
 
-            /*
-             * Java API 통신 서비스를 생성한다.
-             */
-            _popupApiService =
-                new PopupApiService();
+
         }
 
-    
-        /*
-         * Java Spring Boot API와 통신하는 서비스
-         */
-        private readonly PopupApiService
-            _popupApiService;
-
+   
         /*
  * Java API에서 현재 사용자에게 노출할 팝업을 조회하고
  * PopupManager를 통해 화면에 표시한다.
@@ -154,8 +143,7 @@ namespace Popup
                  *
                  * SEQUENTIAL
                  * → 한 개씩 순차적으로 표시
-                 *
-                 * SHOW_ALL
+                 * SIMULTANEOUS
                  * → 여러 팝업을 한 번에 표시
                  */
                 _popupManager.ShowRange(
