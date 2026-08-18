@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Popup.Models;
 
 namespace Popup.Views.Contents
 {
@@ -30,6 +31,22 @@ namespace Popup.Views.Contents
          * 영상 재생 위치와 UI를 동기화하는 타이머다.
          */
         private readonly DispatcherTimer _progressTimer;
+
+        /*
+         * 서버 저장용 진행 상태를 일정 간격으로 외부에 전달하는 타이머다.
+         * 화면 갱신 타이머보다 느린 5초 간격을 사용하여 API 호출을 줄인다.
+         */
+        private readonly DispatcherTimer _progressSaveTimer;
+
+        private double _maximumPositionSeconds;
+        private double _watchedSeconds;
+        private double _lastObservedPositionSeconds;
+
+        /// <summary>
+        /// 현재 영상 진행 상태를 서버에 저장해야 할 때 발생한다.
+        /// </summary>
+        public event EventHandler<VideoProgressSnapshot>?
+            VideoProgressSaveRequested;
         /*
          * 일정 시간 동안 마우스 움직임이 없으면
          * 영상 컨트롤바를 숨기는 타이머다.
@@ -124,6 +141,16 @@ namespace Popup.Views.Contents
 
             _progressTimer.Tick +=
                 ProgressTimer_Tick;
+
+            _progressSaveTimer =
+                new DispatcherTimer
+                {
+                    Interval =
+                        TimeSpan.FromSeconds(5)
+                };
+
+            _progressSaveTimer.Tick +=
+                ProgressSaveTimer_Tick;
             if (string.IsNullOrWhiteSpace(videoPath))
             {
                 throw new ArgumentException(
@@ -463,6 +490,17 @@ namespace Popup.Views.Contents
             ProgressSlider.Value =
                 0;
 
+            _maximumPositionSeconds =
+                0;
+
+            _watchedSeconds =
+                0;
+
+            _lastObservedPositionSeconds =
+                0;
+
+            _progressSaveTimer.Start();
+
             PlayVideo();
         }
 
@@ -479,11 +517,97 @@ namespace Popup.Views.Contents
             TimeSpan currentPosition =
                 PopupVideo.Position;
 
+            UpdatePlaybackMeasurements(
+                currentPosition.TotalSeconds);
+
             CurrentTimeText.Text =
                 FormatTime(currentPosition);
 
             ProgressSlider.Value =
                 currentPosition.TotalSeconds;
+        }
+
+        /*
+         * 실제 재생 위치의 작은 증가분만 시청시간에 더한다.
+         * 진행바를 앞으로 크게 이동한 값은 시청시간으로 계산하지 않는다.
+         */
+        private void UpdatePlaybackMeasurements(
+            double currentPositionSeconds)
+        {
+            _maximumPositionSeconds =
+                Math.Max(
+                    _maximumPositionSeconds,
+                    currentPositionSeconds);
+
+            double positionDifference =
+                currentPositionSeconds
+                - _lastObservedPositionSeconds;
+
+            if (_isPlaying &&
+                positionDifference > 0 &&
+                positionDifference <= 1.5)
+            {
+                _watchedSeconds +=
+                    positionDifference;
+            }
+
+            _lastObservedPositionSeconds =
+                currentPositionSeconds;
+        }
+
+        private void ProgressSaveTimer_Tick(
+            object? sender,
+            EventArgs e)
+        {
+            RequestProgressSave();
+        }
+
+        /*
+         * MediaElement의 현재 상태를 API 전달용 객체로 만들어
+         * PopupManager에 알린다.
+         */
+        private void RequestProgressSave()
+        {
+            if (!_isMediaOpened ||
+                !PopupVideo.NaturalDuration.HasTimeSpan)
+            {
+                return;
+            }
+
+            double durationSeconds =
+                PopupVideo.NaturalDuration.TimeSpan.TotalSeconds;
+
+            if (durationSeconds <= 0)
+            {
+                return;
+            }
+
+            double positionSeconds =
+                Math.Clamp(
+                    PopupVideo.Position.TotalSeconds,
+                    0,
+                    durationSeconds);
+
+            UpdatePlaybackMeasurements(
+                positionSeconds);
+
+            VideoProgressSaveRequested?.Invoke(
+                this,
+                new VideoProgressSnapshot
+                {
+                    DurationSeconds =
+                        (decimal)durationSeconds,
+                    PositionSeconds =
+                        (decimal)positionSeconds,
+                    MaximumPositionSeconds =
+                        (decimal)Math.Min(
+                            _maximumPositionSeconds,
+                            durationSeconds),
+                    WatchedSeconds =
+                        (decimal)Math.Min(
+                            _watchedSeconds,
+                            durationSeconds)
+                });
         }
 
         private void ProgressSlider_PreviewMouseLeftButtonDown(
@@ -1278,6 +1402,8 @@ namespace Popup.Views.Contents
                 CurrentTimeText.Text =
                     FormatTime(duration);
             }
+
+            RequestProgressSave();
         }
 
         private void PopupVideo_MediaFailed(
@@ -1461,6 +1587,13 @@ namespace Popup.Views.Contents
                 }
 
                 _progressTimer.Stop();
+
+                /*
+                 * 영상 객체를 정리하기 전에 마지막 위치를 저장 요청한다.
+                 */
+                RequestProgressSave();
+
+                _progressSaveTimer.Stop();
                 
                 _controlHideTimer.Stop();
                 /*
