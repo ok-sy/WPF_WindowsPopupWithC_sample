@@ -34,15 +34,11 @@ dependencies {
      */
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-	/*
-     * Oracle과 MyBatis를 연결한다.
-     */
+	/* PostgreSQL과 MyBatis를 연결한다. */
 	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.0'
 
-	/*
-     * Oracle JDBC 드라이버다.
-     */
-	runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
+	/* PostgreSQL JDBC 드라이버다. */
+	runtimeOnly 'org.postgresql:postgresql'
 
 	/*
      * Spring Boot 테스트 기능을 제공한다.

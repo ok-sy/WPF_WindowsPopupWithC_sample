@@ -50,7 +50,7 @@ public class PopupController {
      * 현재:
      * → PopupService에서 만든 테스트 데이터를 반환
      *
-     * Oracle 연결 후:
+     * PostgreSQL 연결 후:
      * → 사용자에게 표시할 DB 팝업 목록을 반환
      */
     /*
@@ -80,7 +80,7 @@ public class PopupController {
      * POST /api/popups/{popupId}/hide 요청을 처리한다.
      *
      * 사용자가 WPF에서 '30일간 보지 않기'를 선택하면
-     * 해당 사용자와 팝업의 숨김 만료 일시를 Oracle에 저장한다.
+     * 해당 사용자와 팝업의 숨김 만료 일시를 PostgreSQL에 저장한다.
      */
     @PostMapping("/{popupId}/hide")
     public PopupHideResponseDto hidePopup(
@@ -106,7 +106,7 @@ public class PopupController {
             PopupHideRequestDto requestDto) {
 
         /*
-         * 실제 Oracle 저장 처리는
+         * 실제 PostgreSQL 저장 처리는
          * PopupService에 위임한다.
          */
         return popupService.hidePopup(

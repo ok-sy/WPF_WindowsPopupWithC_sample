@@ -6,7 +6,7 @@ import java.time.OffsetDateTime;
 /*
  * POPUP_NOTICE 테이블의 조회 결과 한 건을 담는 객체다.
  *
- * Oracle 컬럼의 값을 우선 원본 형태로 받아두고,
+ * PostgreSQL 조회값을 우선 원본 형태로 받아두고,
  * PopupService에서 WPF 응답용 PopupResponseDto로 변환한다.
  */
 public record PopupEntity(
@@ -45,7 +45,7 @@ public record PopupEntity(
         /*
          * 팝업 크기 관련 값이다.
          *
-         * Oracle NUMBER 컬럼을 정확하게 받기 위해
+         * PostgreSQL NUMERIC 컬럼을 정확하게 받기 위해
          * BigDecimal을 사용한다.
          */
         BigDecimal popupWidth,
@@ -61,7 +61,7 @@ public record PopupEntity(
         BigDecimal maximumHeight,
 
         /*
-         * Oracle에 저장된 Y/N 값이다.
+         * DB에 저장된 Y/N 값이다.
          *
          * PopupService에서 boolean으로 변환한다.
          */
@@ -71,7 +71,7 @@ public record PopupEntity(
         String showDontShowYn,
 
         /*
-         * CLOB에 저장된 팝업 종류별 content JSON 문자열이다.
+         * POPUP_CONTENT에서 조립한 팝업 종류별 JSON 문자열이다.
          *
          * PopupService에서 Map<String, Object>로 변환한다.
          */
