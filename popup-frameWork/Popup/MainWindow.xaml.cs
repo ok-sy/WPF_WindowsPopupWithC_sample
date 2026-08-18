@@ -39,13 +39,23 @@ namespace Popup
             _popupApiService;
 
         /*
- * appsettings.json에서
- * Java 팝업 API 기본 주소를 읽는다.
- *
- * 반환 예:
- * http://localhost:8080
- */
-        private static string LoadPopupApiBaseUrl()
+         * appsettings.json에서 읽은 현재 사용자 ID다.
+         *
+         * 현재는 로그인 시스템이 없으므로 설정값을 사용하고,
+         * 이후 사내 로그인 연계 시 이 값만 로그인 사용자 정보로 교체한다.
+         */
+        private readonly string
+            _currentUserId;
+
+        /*
+         * appsettings.json에서 Java 팝업 API 주소와
+         * 현재 사용자 ID를 함께 읽는다.
+         *
+         * 반환 예:
+         * BaseUrl = http://localhost:8080
+         * UserId  = E1002
+         */
+        private static PopupClientSettings LoadPopupClientSettings()
         {
             /*
              * 실행 중인 Popup.exe가 위치한 폴더를 기준으로
@@ -101,7 +111,8 @@ namespace Popup
              *
              * {
              *   "PopupApi": {
-             *     "BaseUrl": "..."
+             *     "BaseUrl": "...",
+             *     "UserId": "E1002"
              *   }
              * }
              */
@@ -142,7 +153,63 @@ namespace Popup
                     "PopupApi.BaseUrl 값이 비어 있습니다.");
             }
 
-            return baseUrl;
+            /*
+             * UserId는 실행 환경변수가 없을 때 사용할 대체값이다.
+             * 환경변수만 사용하는 운영 환경에서는 생략하거나 비워도 된다.
+             */
+            string configuredUserId =
+                string.Empty;
+
+            if (popupApiElement.TryGetProperty(
+                    "UserId",
+                    out JsonElement userIdElement))
+            {
+                configuredUserId =
+                    userIdElement.GetString()
+                    ?? string.Empty;
+            }
+
+            return new PopupClientSettings
+            {
+                BaseUrl =
+                    baseUrl.Trim(),
+                UserId =
+                    configuredUserId.Trim()
+            };
+        }
+
+        /*
+         * 현재 사용자 ID를 결정한다.
+         *
+         * 1순위: 실행 환경변수 POPUP_USER_ID
+         * 2순위: appsettings.json의 PopupApi.UserId
+         *
+         * 백그라운드 실행 프로그램은 POPUP_USER_ID만 전달하면
+         * 사용자마다 appsettings.json을 수정할 필요가 없다.
+         */
+        private static string ResolveCurrentUserId(
+            string configuredUserId)
+        {
+            string? environmentUserId =
+                Environment.GetEnvironmentVariable(
+                    "POPUP_USER_ID");
+
+            if (!string.IsNullOrWhiteSpace(
+                    environmentUserId))
+            {
+                return environmentUserId.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    configuredUserId))
+            {
+                return configuredUserId.Trim();
+            }
+
+            throw new InvalidOperationException(
+                "현재 사용자 ID가 없습니다.\n" +
+                "POPUP_USER_ID 환경변수 또는 " +
+                "appsettings.json의 PopupApi.UserId를 설정해주세요.");
         }
 
         /*
@@ -178,8 +245,12 @@ namespace Popup
              * appsettings.json에서
              * Java 팝업 API 주소를 읽는다.
              */
-            string popupApiBaseUrl =
-                LoadPopupApiBaseUrl();
+            PopupClientSettings popupClientSettings =
+                LoadPopupClientSettings();
+
+            _currentUserId =
+                ResolveCurrentUserId(
+                    popupClientSettings.UserId);
 
             /*
              * 설정 파일에서 읽은 API 주소를 전달하여
@@ -187,7 +258,7 @@ namespace Popup
              */
             _popupApiService =
                 new PopupApiService(
-                    popupApiBaseUrl);
+                    popupClientSettings.BaseUrl);
         }
 
    
@@ -200,14 +271,11 @@ namespace Popup
             RoutedEventArgs e)
         {
             /*
-             * 로그인 기능이 아직 없으므로
-             * 테스트용 사용자 ID를 고정해서 사용한다.
-             *
-             * 이후 로그인 기능이 연결되면
-             * 현재 로그인한 사용자의 ID로 교체한다.
+             * 생성자에서 appsettings.json으로부터 읽어둔
+             * 현재 사용자 ID를 이번 API 요청 전체에서 사용한다.
              */
-            const string currentUserId =
-                "E1002";
+            string currentUserId =
+                _currentUserId;
 
             try
             {
