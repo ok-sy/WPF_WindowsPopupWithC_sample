@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
 using System.IO;
+using System.Windows.Threading;
 
 
 namespace Popup
@@ -49,6 +50,21 @@ namespace Popup
 
         private readonly bool
             _autoLoadOnStartup;
+
+        private readonly int
+            _pollingIntervalSeconds;
+
+        private readonly DispatcherTimer
+            _pollingTimer;
+
+        /*
+         * 같은 실행 중 이미 화면에 전달한 팝업 ID를 기억한다.
+         * 주기 조회 때 서버가 같은 목록을 반환해도 중복 표시하지 않는다.
+         */
+        private readonly HashSet<string>
+            _shownPopupIds =
+                new HashSet<string>(
+                    StringComparer.OrdinalIgnoreCase);
 
         private bool
             _isLoadingPopups;
@@ -188,6 +204,21 @@ namespace Popup
                     autoLoadElement.GetBoolean();
             }
 
+            int pollingIntervalSeconds =
+                300;
+
+            if (popupApiElement.TryGetProperty(
+                    "PollingIntervalSeconds",
+                    out JsonElement pollingIntervalElement)
+                && pollingIntervalElement.TryGetInt32(
+                    out int configuredPollingIntervalSeconds))
+            {
+                pollingIntervalSeconds =
+                    Math.Max(
+                        0,
+                        configuredPollingIntervalSeconds);
+            }
+
             return new PopupClientSettings
             {
                 BaseUrl =
@@ -195,7 +226,9 @@ namespace Popup
                 UserId =
                     configuredUserId.Trim(),
                 AutoLoadOnStartup =
-                    autoLoadOnStartup
+                    autoLoadOnStartup,
+                PollingIntervalSeconds =
+                    pollingIntervalSeconds
             };
         }
 
@@ -276,6 +309,15 @@ namespace Popup
             _autoLoadOnStartup =
                 popupClientSettings.AutoLoadOnStartup;
 
+            _pollingIntervalSeconds =
+                popupClientSettings.PollingIntervalSeconds;
+
+            _pollingTimer =
+                new DispatcherTimer();
+
+            _pollingTimer.Tick +=
+                PollingTimer_Tick;
+
             /*
              * 설정 파일에서 읽은 API 주소를 전달하여
              * PopupApiService를 생성한다.
@@ -302,8 +344,42 @@ namespace Popup
             if (_autoLoadOnStartup)
             {
                 await LoadAndShowAvailablePopupsAsync(
-                    showEmptyMessage: false);
+                    showEmptyMessage: false,
+                    showErrorMessage: true);
             }
+
+            StartPeriodicPolling();
+        }
+
+        /*
+         * 설정된 초 간격으로 서버 조회 타이머를 시작한다.
+         * 0이면 주기 조회를 사용하지 않는다.
+         */
+        private void StartPeriodicPolling()
+        {
+            if (_pollingIntervalSeconds <= 0)
+            {
+                return;
+            }
+
+            _pollingTimer.Interval =
+                TimeSpan.FromSeconds(
+                    _pollingIntervalSeconds);
+
+            _pollingTimer.Start();
+        }
+
+        /*
+         * 주기 조회 실패는 백그라운드에서 조용히 넘긴다.
+         * 다음 주기가 되면 서버 연결을 다시 시도한다.
+         */
+        private async void PollingTimer_Tick(
+            object? sender,
+            EventArgs e)
+        {
+            await LoadAndShowAvailablePopupsAsync(
+                showEmptyMessage: false,
+                showErrorMessage: false);
         }
 
         /*
@@ -324,14 +400,16 @@ namespace Popup
         public async Task RefreshPopupsAsync()
         {
             await LoadAndShowAvailablePopupsAsync(
-                showEmptyMessage: true);
+                showEmptyMessage: true,
+                showErrorMessage: true);
         }
 
         /*
          * 자동 실행과 수동 버튼이 함께 사용하는 실제 조회 메서드다.
          */
         private async Task LoadAndShowAvailablePopupsAsync(
-            bool showEmptyMessage)
+            bool showEmptyMessage,
+            bool showErrorMessage)
         {
             if (_isLoadingPopups)
             {
@@ -389,10 +467,12 @@ namespace Popup
                 popupDtos =
                     popupDtos
                         .Where(popup =>
-                            !statusByPopupId.TryGetValue(
-                                popup.PopupId,
-                                out UserPopupStatusDto? status)
-                            || !status.Completed)
+                            (!_shownPopupIds.Contains(
+                                popup.PopupId))
+                            && (!statusByPopupId.TryGetValue(
+                                    popup.PopupId,
+                                    out UserPopupStatusDto? status)
+                                || !status.Completed))
                         .ToList();
 
                 if (popupDtos.Count == 0)
@@ -540,35 +620,51 @@ namespace Popup
                  * SIMULTANEOUS
                  * → 여러 팝업을 한 번에 표시
                  */
+                foreach (PopupResponseDto popupDto
+                         in popupDtos)
+                {
+                    _shownPopupIds.Add(
+                        popupDto.PopupId);
+                }
+
                 _popupManager.ShowRange(
                     popupOptionsList);
             }
             catch (HttpRequestException exception)
             {
-                MessageBox.Show(
-                    "Java 팝업 서버에 연결할 수 없습니다.\n\n" +
-                    "Spring Boot 서버가 실행 중인지 확인해주세요.\n\n" +
-                    exception.Message,
-                    "서버 연결 오류",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                if (showErrorMessage)
+                {
+                    MessageBox.Show(
+                        "Java 팝업 서버에 연결할 수 없습니다.\n\n" +
+                        "Spring Boot 서버가 실행 중인지 확인해주세요.\n\n" +
+                        exception.Message,
+                        "서버 연결 오류",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
             }
             catch (TaskCanceledException)
             {
-                MessageBox.Show(
-                    "팝업 서버의 응답 시간이 초과되었습니다.",
-                    "서버 응답 시간 초과",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                if (showErrorMessage)
+                {
+                    MessageBox.Show(
+                        "팝업 서버의 응답 시간이 초과되었습니다.",
+                        "서버 응답 시간 초과",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
             }
             catch (Exception exception)
             {
-                MessageBox.Show(
-                    "팝업을 불러오는 중 오류가 발생했습니다.\n\n" +
-                    exception.Message,
-                    "팝업 오류",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                if (showErrorMessage)
+                {
+                    MessageBox.Show(
+                        "팝업을 불러오는 중 오류가 발생했습니다.\n\n" +
+                        exception.Message,
+                        "팝업 오류",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
             }
             finally
             {

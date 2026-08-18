@@ -13,5 +13,8 @@ namespace Popup.Models
 
         public bool AutoLoadOnStartup { get; set; } =
             true;
+
+        public int PollingIntervalSeconds { get; set; } =
+            300;
     }
 }
