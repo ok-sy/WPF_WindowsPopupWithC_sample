@@ -304,6 +304,9 @@ namespace Popup.Factories
                     question.Options.Add(
                         new SurveyOption
                         {
+                            OptionId =
+                                optionDto.OptionId,
+
                             Value =
                                 optionDto.Value,
 

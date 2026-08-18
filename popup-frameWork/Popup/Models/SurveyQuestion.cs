@@ -11,7 +11,7 @@ namespace Popup.Models
         /// 질문을 구분하는 고유 값이다.
         /// 서버에 응답을 보낼 때 어떤 질문의 답인지 구분하는 데 사용한다.
         /// </summary>
-        public int QuestionId { get; set; }
+        public long QuestionId { get; set; }
 
         /// <summary>
         /// 화면에 표시할 질문 문구다.

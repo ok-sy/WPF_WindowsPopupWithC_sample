@@ -5,6 +5,9 @@
     /// </summary>
     public class SurveyOption
     {
+        /// <summary>서버 POPUP_OPTION의 고유 ID다.</summary>
+        public long OptionId { get; set; }
+
         /// <summary>
         /// 서버나 프로그램에서 사용하는 실제 값이다.
         /// 예: "1", "M", "EMAIL"

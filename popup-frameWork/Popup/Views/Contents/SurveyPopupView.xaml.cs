@@ -53,7 +53,7 @@ namespace Popup.Views.Contents
          * 어떤 질문의 RadioButton, CheckBox, TextBox인지
          * 다시 찾기 위해 사용한다.
          */
-        private readonly Dictionary<int, FrameworkElement>
+        private readonly Dictionary<long, FrameworkElement>
         _answerControls = new();
 
         /*

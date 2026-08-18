@@ -16,7 +16,7 @@ namespace Popup.Dtos
          * 응답 제출 시 어떤 질문의 답인지
          * 구분하는 데 사용한다.
          */
-        public int QuestionId { get; set; }
+        public long QuestionId { get; set; }
 
         /*
          * 화면에 표시할 질문 제목

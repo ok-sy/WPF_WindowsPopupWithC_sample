@@ -132,6 +132,23 @@ namespace Popup.Dtos
 
         public bool ShowDoNotShowAgain { get; set; }
 
+        /* 설문·퀴즈가 참조하는 서버 질문 템플릿 ID */
+        public long? QuestionTemplateId { get; set; }
+
+        /* 기간·반복·숨김·완료 정책 값 */
+        public string PeriodMode { get; set; } = "FIXED";
+        public int? RepeatInterval { get; set; }
+        public string? RepeatDayOfWeek { get; set; }
+        public int? RepeatDayOfMonth { get; set; }
+        public int? HideDays { get; set; }
+        public double? CompletionRatio { get; set; }
+        public double? PassingScore { get; set; }
+        public bool AllowCloseBeforeComplete { get; set; } = true;
+
+        /* 설문 제출 시 사용할 서버 문항 목록 */
+        public System.Collections.Generic.List<SurveyQuestionDto> Questions
+            { get; set; } = new();
+
         /*
          * 팝업 종류별 상세 데이터
          *
