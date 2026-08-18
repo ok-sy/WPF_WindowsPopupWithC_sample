@@ -2,7 +2,10 @@ package com.oksy.popup.dto;
 
 import java.time.OffsetDateTime;
 
-/** 사용자별 팝업 표시·닫기·완료 상태다. */
+/**
+ * user_popup_status 조회 결과를 WPF에 전달한다.
+ * 최초·최근 표시, 표시 횟수, 닫기, 숨김 만료, 완료 상태를 한 번에 확인할 수 있다.
+ */
 public record UserPopupStatusDto(
         String userId,
         String popupId,

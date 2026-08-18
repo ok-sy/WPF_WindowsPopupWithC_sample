@@ -35,7 +35,13 @@ import java.util.function.Function;
 import java.math.RoundingMode;
 import java.util.stream.Collectors;
 
-/** PostgreSQL 조회 결과를 WPF 팝업 응답으로 변환한다. */
+/**
+ * 팝업 API의 핵심 업무 로직을 한곳에서 처리한다.
+ *
+ * <p>Controller는 HTTP 처리만 맡고 이 Service가 사용자 대상 판정 결과 조회,
+ * 질문·선택지 결합, JSON 변환, 숨김, 설문 채점, 영상 완료율, 표시 상태를 처리한다.
+ * DB 작업 자체는 PopupMapper에 위임한다.</p>
+ */
 @Service
 public class PopupService {
 
@@ -50,6 +56,11 @@ public class PopupService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 사용자에게 현재 표시할 수 있는 팝업을 조회한다.
+     * Mapper가 기간·대상 그룹·숨김 여부를 판정하고, Service는 설문 문항과 선택지를
+     * 묶어 WPF가 바로 그릴 수 있는 PopupResponseDto 목록으로 변환한다.
+     */
     public List<PopupResponseDto> getPopups(
             String userId) {
 
@@ -142,6 +153,10 @@ public class PopupService {
                 optionDtos);
     }
 
+    /**
+     * 사용자가 선택한 기간 동안 팝업을 숨긴다.
+     * 상태 UPSERT와 저장 결과 재조회가 함께 성공하도록 하나의 트랜잭션으로 실행한다.
+     */
     @Transactional
     public PopupHideResponseDto hidePopup(
             String popupId,
@@ -188,7 +203,11 @@ public class PopupService {
                 hiddenUntil);
     }
 
-    /** 설문 답안을 검증하고 서버 기준으로 채점한 뒤 한 트랜잭션으로 저장한다. */
+    /**
+     * 설문 답안을 검증하고 서버 DB의 정답을 기준으로 채점한다.
+     * 문항·선택지 위조와 중복 입력을 확인하고 응답/답안/선택값/완료 상태를
+     * 한 트랜잭션으로 저장하므로 일부 테이블만 저장되는 상황을 막는다.
+     */
     @Transactional
     public PopupSubmitResponseDto submitResponse(
             String popupId,
