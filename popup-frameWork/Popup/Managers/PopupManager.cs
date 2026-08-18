@@ -313,14 +313,53 @@ namespace Popup.Managers
             if (popupOptions.Content is
                 SurveyPopupView surveyPopupView)
             {
+                bool isSubmitting =
+                    false;
+
                 surveyPopupView.SurveySubmitted +=
-                    (sender, answers) =>
+                    async (sender, answers) =>
                     {
+                        if (isSubmitting)
+                        {
+                            return;
+                        }
+
+                        isSubmitting =
+                            true;
+
                         /*
-                         * 나중에는 이 위치에서
-                         * 설문 응답 또는 퀴즈 결과를 서버에 저장한다.
+                         * API 팝업에는 MainWindow가 설정한 콜백이 있다.
+                         * 서버 저장이 성공해야만 팝업을 닫는다.
                          */
-                        popupWindow.Close();
+                        try
+                        {
+                            if (popupOptions.SubmitSurveyAsync != null)
+                            {
+                                await popupOptions.SubmitSurveyAsync(
+                                    popupOptions.PopupId,
+                                    answers);
+                            }
+
+                            popupWindow.Close();
+                        }
+                        catch (Exception exception)
+                        {
+                            /*
+                             * 저장 실패 시 창과 입력값을 그대로 유지하여
+                             * 사용자가 다시 제출할 수 있게 한다.
+                             */
+                            MessageBox.Show(
+                                "설문 응답을 서버에 저장하지 못했습니다.\n\n" +
+                                exception.Message,
+                                "설문 저장 오류",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error);
+                        }
+                        finally
+                        {
+                            isSubmitting =
+                                false;
+                        }
                     };
             }
         }
