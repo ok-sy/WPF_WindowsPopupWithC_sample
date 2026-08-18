@@ -14,7 +14,13 @@ import java.time.temporal.ChronoUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** 모든 API 요청의 처리 결과를 API_REQUEST_LOG에 남긴다. */
+/**
+ * 모든 HTTP 요청의 시작과 종료를 감싸 API_REQUEST_LOG에 감사 로그를 남긴다.
+ *
+ * <p>OncePerRequestFilter이므로 한 요청에 한 번만 실행된다. Controller 실행 전
+ * 시작 시각을 저장하고 실행 후 상태코드와 경과시간을 기록한다. 로그 INSERT가
+ * 실패해도 원래 API 응답은 정상 반환되어야 하므로 저장 예외는 내부에서 차단한다.</p>
+ */
 @Component
 public class ApiRequestLoggingFilter extends OncePerRequestFilter {
 

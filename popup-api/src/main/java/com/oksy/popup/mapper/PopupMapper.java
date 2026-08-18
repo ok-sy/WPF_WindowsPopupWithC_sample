@@ -13,11 +13,12 @@ import java.util.List;
 import java.math.BigDecimal;
 import com.oksy.popup.dto.UserPopupStatusDto;
 
-/*
- * POPUP_NOTICE 테이블의 SQL을 호출하는 Mapper다.
+/**
+ * 팝업 조회와 사용자 행동 저장 SQL을 호출하는 MyBatis Mapper다.
  *
- * 실제 SQL은 같은 namespace를 사용하는
- * PopupMapper.xml에 작성한다.
+ * <p>메서드는 SQL을 직접 포함하지 않고, 같은 namespace의
+ * {@code resources/mapper/PopupMapper.xml}에 있는 동일한 id의 SQL과 연결된다.
+ * {@code @Param} 이름을 변경하면 XML 바인딩 이름도 함께 변경해야 한다.</p>
  */
 @Mapper
 public interface PopupMapper {
