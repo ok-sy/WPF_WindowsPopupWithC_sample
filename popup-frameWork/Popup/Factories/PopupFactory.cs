@@ -102,6 +102,13 @@ namespace Popup.Factories
                 ShowDoNotShowAgain =
                     popupDto.ShowDoNotShowAgain,
 
+                CompletionRatio =
+                    popupDto.CompletionRatio
+                    ?? 1.0,
+
+                AllowCloseBeforeComplete =
+                    popupDto.AllowCloseBeforeComplete,
+
                 SizeMode =
                     ConvertPopupSizeMode(
                         popupDto.SizeMode),

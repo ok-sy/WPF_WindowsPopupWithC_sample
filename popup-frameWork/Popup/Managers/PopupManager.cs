@@ -383,9 +383,20 @@ namespace Popup.Managers
 
                         try
                         {
-                            await popupOptions.SaveVideoProgressAsync(
+                            bool completed =
+                                await popupOptions.SaveVideoProgressAsync(
                                 popupOptions.PopupId,
                                 progress);
+
+                            /*
+                             * 서버가 완료 기준 충족을 확인한 뒤에만
+                             * 필수 영상 팝업의 닫기를 허용한다.
+                             */
+                            if (completed)
+                            {
+                                popupOptions.IsCompleted =
+                                    true;
+                            }
                         }
                         catch (Exception exception)
                         {
