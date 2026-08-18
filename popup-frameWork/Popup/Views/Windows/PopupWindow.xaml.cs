@@ -3,6 +3,7 @@ using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Threading.Tasks;
+using Popup.Views.Contents;
 namespace Popup.Views.Windows
 
 {
@@ -369,6 +370,34 @@ namespace Popup.Views.Windows
              */
             e.Handled =
                 true;
+
+            /*
+             * 서버가 완료 전 닫기를 금지한 VIDEO 팝업은
+             * 진행률 API에서 완료 판정을 받기 전까지 닫지 않는다.
+             *
+             * TEXT나 SURVEY 등 다른 팝업의 기존 닫기 동작에는
+             * 영향을 주지 않도록 VIDEO 콘텐츠에만 적용한다.
+             */
+            if (_options.Content is VideoPopupView &&
+                !_options.AllowCloseBeforeComplete &&
+                !_options.IsCompleted)
+            {
+                double requiredPercent =
+                    Math.Clamp(
+                        _options.CompletionRatio,
+                        0,
+                        1)
+                    * 100;
+
+                MessageBox.Show(
+                    $"이 영상은 {requiredPercent:0.##}% 이상 시청해야 " +
+                    "닫을 수 있습니다.",
+                    "필수 영상 시청",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                return;
+            }
 
             /*
              * 저장 중 버튼을 다시 클릭해서

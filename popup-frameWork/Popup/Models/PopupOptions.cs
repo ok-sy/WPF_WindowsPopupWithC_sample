@@ -116,9 +116,23 @@ namespace Popup.Models
          * 영상의 현재 위치와 누적 시청시간을
          * 서버에 저장할 때 호출하는 비동기 함수다.
          */
-        public Func<string, VideoProgressSnapshot, Task>?
+        public Func<string, VideoProgressSnapshot, Task<bool>>?
             SaveVideoProgressAsync
         { get; set; }
+
+        /*
+         * 서버가 지정한 영상 완료 기준과 완료 전 닫기 허용 여부다.
+         */
+        public double CompletionRatio { get; set; } =
+            1.0;
+
+        public bool AllowCloseBeforeComplete { get; set; } =
+            true;
+
+        /*
+         * 영상 진행률 API가 완료로 판정하면 true로 변경된다.
+         */
+        public bool IsCompleted { get; set; }
 
         /*
          * 팝업 상단에 표시할 제목

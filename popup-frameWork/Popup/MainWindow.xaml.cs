@@ -330,7 +330,8 @@ namespace Popup
                     popupOptions.SaveVideoProgressAsync =
                         async (popupId, progress) =>
                         {
-                            await _popupApiService
+                            VideoProgressResponseDto response =
+                                await _popupApiService
                                 .SaveVideoProgressAsync(
                                     popupId,
                                     new VideoProgressRequestDto
@@ -346,6 +347,8 @@ namespace Popup
                                         WatchedSeconds =
                                             progress.WatchedSeconds
                                     });
+
+                            return response.Completed;
                         };
                 }
 
