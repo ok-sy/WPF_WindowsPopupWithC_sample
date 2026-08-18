@@ -47,6 +47,12 @@ namespace Popup
         private readonly string
             _currentUserId;
 
+        private readonly bool
+            _autoLoadOnStartup;
+
+        private bool
+            _isLoadingPopups;
+
         /*
          * appsettings.json에서 Java 팝업 API 주소와
          * 현재 사용자 ID를 함께 읽는다.
@@ -169,12 +175,27 @@ namespace Popup
                     ?? string.Empty;
             }
 
+            bool autoLoadOnStartup =
+                true;
+
+            if (popupApiElement.TryGetProperty(
+                    "AutoLoadOnStartup",
+                    out JsonElement autoLoadElement)
+                && (autoLoadElement.ValueKind == JsonValueKind.True
+                    || autoLoadElement.ValueKind == JsonValueKind.False))
+            {
+                autoLoadOnStartup =
+                    autoLoadElement.GetBoolean();
+            }
+
             return new PopupClientSettings
             {
                 BaseUrl =
                     baseUrl.Trim(),
                 UserId =
-                    configuredUserId.Trim()
+                    configuredUserId.Trim(),
+                AutoLoadOnStartup =
+                    autoLoadOnStartup
             };
         }
 
@@ -252,6 +273,9 @@ namespace Popup
                 ResolveCurrentUserId(
                     popupClientSettings.UserId);
 
+            _autoLoadOnStartup =
+                popupClientSettings.AutoLoadOnStartup;
+
             /*
              * 설정 파일에서 읽은 API 주소를 전달하여
              * PopupApiService를 생성한다.
@@ -259,9 +283,29 @@ namespace Popup
             _popupApiService =
                 new PopupApiService(
                     popupClientSettings.BaseUrl);
+
+            Loaded +=
+                MainWindow_Loaded;
         }
 
-   
+        /*
+         * MainWindow가 처음 준비되면 API 팝업을 자동으로 조회한다.
+         * 설정값이 false이면 기존처럼 버튼을 눌러야 조회한다.
+         */
+        private async void MainWindow_Loaded(
+            object sender,
+            RoutedEventArgs e)
+        {
+            Loaded -=
+                MainWindow_Loaded;
+
+            if (_autoLoadOnStartup)
+            {
+                await LoadAndShowAvailablePopupsAsync(
+                    showEmptyMessage: false);
+            }
+        }
+
         /*
          * Java API에서 현재 사용자에게 노출할 팝업을 조회하고
          * PopupManager를 통해 화면에 표시한다.
@@ -270,6 +314,24 @@ namespace Popup
             object sender,
             RoutedEventArgs e)
         {
+            await LoadAndShowAvailablePopupsAsync(
+                showEmptyMessage: true);
+        }
+
+        /*
+         * 자동 실행과 수동 버튼이 함께 사용하는 실제 조회 메서드다.
+         */
+        private async Task LoadAndShowAvailablePopupsAsync(
+            bool showEmptyMessage)
+        {
+            if (_isLoadingPopups)
+            {
+                return;
+            }
+
+            _isLoadingPopups =
+                true;
+
             /*
              * 생성자에서 appsettings.json으로부터 읽어둔
              * 현재 사용자 ID를 이번 API 요청 전체에서 사용한다.
@@ -326,11 +388,14 @@ namespace Popup
 
                 if (popupDtos.Count == 0)
                 {
-                    MessageBox.Show(
-                        "현재 표시할 팝업이 없습니다.",
-                        "팝업 조회",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    if (showEmptyMessage)
+                    {
+                        MessageBox.Show(
+                            "현재 표시할 팝업이 없습니다.",
+                            "팝업 조회",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
 
                     return;
                 }
@@ -495,6 +560,11 @@ namespace Popup
                     "팝업 오류",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+            }
+            finally
+            {
+                _isLoadingPopups =
+                    false;
             }
         }
 

@@ -10,5 +10,8 @@ namespace Popup.Models
 
         public string UserId { get; set; } =
             string.Empty;
+
+        public bool AutoLoadOnStartup { get; set; } =
+            true;
     }
 }
