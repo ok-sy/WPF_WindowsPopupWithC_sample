@@ -362,6 +362,49 @@ namespace Popup.Managers
                         }
                     };
             }
+
+            if (popupOptions.Content is
+                VideoPopupView videoPopupView)
+            {
+                bool isSavingVideoProgress =
+                    false;
+
+                videoPopupView.VideoProgressSaveRequested +=
+                    async (sender, progress) =>
+                    {
+                        if (isSavingVideoProgress ||
+                            popupOptions.SaveVideoProgressAsync == null)
+                        {
+                            return;
+                        }
+
+                        isSavingVideoProgress =
+                            true;
+
+                        try
+                        {
+                            await popupOptions.SaveVideoProgressAsync(
+                                popupOptions.PopupId,
+                                progress);
+                        }
+                        catch (Exception exception)
+                        {
+                            /*
+                             * 일시적인 저장 오류가 영상 재생을 중단하지 않게 하고,
+                             * 다음 5초 저장 시 다시 시도한다.
+                             */
+                            Debug.WriteLine(
+                                $"영상 진행률 저장 실패 " +
+                                $"(PopupId: {popupOptions.PopupId}): " +
+                                exception.Message);
+                        }
+                        finally
+                        {
+                            isSavingVideoProgress =
+                                false;
+                        }
+                    };
+            }
         }
 
         /*

@@ -113,6 +113,14 @@ namespace Popup.Models
         { get; set; }
 
         /*
+         * 영상의 현재 위치와 누적 시청시간을
+         * 서버에 저장할 때 호출하는 비동기 함수다.
+         */
+        public Func<string, VideoProgressSnapshot, Task>?
+            SaveVideoProgressAsync
+        { get; set; }
+
+        /*
          * 팝업 상단에 표시할 제목
          */
         public string Title { get; set; } =

@@ -322,6 +322,31 @@ namespace Popup
                                     currentUserId,
                                     requestAnswers);
                         };
+
+                    /*
+                     * VideoPopupView가 측정한 재생 위치와 실제 시청시간을
+                     * 서버의 영상 진행률 API에 저장한다.
+                     */
+                    popupOptions.SaveVideoProgressAsync =
+                        async (popupId, progress) =>
+                        {
+                            await _popupApiService
+                                .SaveVideoProgressAsync(
+                                    popupId,
+                                    new VideoProgressRequestDto
+                                    {
+                                        UserId =
+                                            currentUserId,
+                                        DurationSeconds =
+                                            progress.DurationSeconds,
+                                        PositionSeconds =
+                                            progress.PositionSeconds,
+                                        MaximumPositionSeconds =
+                                            progress.MaximumPositionSeconds,
+                                        WatchedSeconds =
+                                            progress.WatchedSeconds
+                                    });
+                        };
                 }
 
                 /*
