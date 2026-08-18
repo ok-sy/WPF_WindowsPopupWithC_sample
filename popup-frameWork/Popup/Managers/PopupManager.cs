@@ -155,13 +155,6 @@ namespace Popup.Managers
                 popupWindow,
                 popupOptions);
             /*
-             * MainWindow를
-             * 팝업의 부모 창으로 지정한다.
-             */
-            popupWindow.Owner =
-                _owner;
-
-            /*
              * 동시에 표시되는 팝업들이
              * 완전히 같은 위치에 겹치지 않도록 한다.
              */
@@ -173,15 +166,40 @@ namespace Popup.Managers
                     .OfType<PopupWindow>()
                     .Count();
 
-            popupWindow.Left =
-                _owner.Left
-                + 50
-                + (openedPopupCount * 30);
+            if (_owner.IsVisible)
+            {
+                popupWindow.Owner =
+                    _owner;
 
-            popupWindow.Top =
-                _owner.Top
-                + 50
-                + (openedPopupCount * 30);
+                popupWindow.Left =
+                    _owner.Left
+                    + 50
+                    + (openedPopupCount * 30);
+
+                popupWindow.Top =
+                    _owner.Top
+                    + 50
+                    + (openedPopupCount * 30);
+            }
+            else
+            {
+                /*
+                 * 백그라운드 모드에서는 숨겨진 MainWindow를
+                 * 부모로 지정하면 팝업도 함께 숨겨질 수 있다.
+                 * 이 경우 부모 없이 주 화면 중앙에 배치한다.
+                 */
+                popupWindow.Left =
+                    SystemParameters.WorkArea.Left
+                    + ((SystemParameters.WorkArea.Width
+                        - popupWindow.Width) / 2)
+                    + (openedPopupCount * 30);
+
+                popupWindow.Top =
+                    SystemParameters.WorkArea.Top
+                    + ((SystemParameters.WorkArea.Height
+                        - popupWindow.Height) / 2)
+                    + (openedPopupCount * 30);
+            }
 
             popupWindow.Show();
         }
@@ -246,12 +264,16 @@ namespace Popup.Managers
                 _currentPopupWindow,
                 popupOptions);
 
-            /*
-             * MainWindow를
-             * 팝업의 부모 창으로 지정한다.
-             */
-            _currentPopupWindow.Owner =
-                _owner;
+            if (_owner.IsVisible)
+            {
+                _currentPopupWindow.Owner =
+                    _owner;
+            }
+            else
+            {
+                _currentPopupWindow.WindowStartupLocation =
+                    WindowStartupLocation.CenterScreen;
+            }
 
             /*
              * 현재 팝업이 닫히면 실행되는 이벤트

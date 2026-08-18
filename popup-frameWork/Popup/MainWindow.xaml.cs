@@ -314,6 +314,15 @@ namespace Popup
             object sender,
             RoutedEventArgs e)
         {
+            await RefreshPopupsAsync();
+        }
+
+        /*
+         * 관리 화면의 버튼과 App의 트레이 메뉴가 함께 사용하는
+         * 공개 팝업 재조회 메서드다.
+         */
+        public async Task RefreshPopupsAsync()
+        {
             await LoadAndShowAvailablePopupsAsync(
                 showEmptyMessage: true);
         }
