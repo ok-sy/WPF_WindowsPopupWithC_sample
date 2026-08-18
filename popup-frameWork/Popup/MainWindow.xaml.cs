@@ -39,13 +39,23 @@ namespace Popup
             _popupApiService;
 
         /*
- * appsettings.json에서
- * Java 팝업 API 기본 주소를 읽는다.
- *
- * 반환 예:
- * http://localhost:8080
- */
-        private static string LoadPopupApiBaseUrl()
+         * appsettings.json에서 읽은 현재 사용자 ID다.
+         *
+         * 현재는 로그인 시스템이 없으므로 설정값을 사용하고,
+         * 이후 사내 로그인 연계 시 이 값만 로그인 사용자 정보로 교체한다.
+         */
+        private readonly string
+            _currentUserId;
+
+        /*
+         * appsettings.json에서 Java 팝업 API 주소와
+         * 현재 사용자 ID를 함께 읽는다.
+         *
+         * 반환 예:
+         * BaseUrl = http://localhost:8080
+         * UserId  = E1002
+         */
+        private static PopupClientSettings LoadPopupClientSettings()
         {
             /*
              * 실행 중인 Popup.exe가 위치한 폴더를 기준으로
@@ -101,7 +111,8 @@ namespace Popup
              *
              * {
              *   "PopupApi": {
-             *     "BaseUrl": "..."
+             *     "BaseUrl": "...",
+             *     "UserId": "E1002"
              *   }
              * }
              */
@@ -142,7 +153,34 @@ namespace Popup
                     "PopupApi.BaseUrl 값이 비어 있습니다.");
             }
 
-            return baseUrl;
+            /*
+             * PopupApi 내부에서 현재 사용자 ID를 찾는다.
+             */
+            if (!popupApiElement.TryGetProperty(
+                    "UserId",
+                    out JsonElement userIdElement))
+            {
+                throw new InvalidOperationException(
+                    "appsettings.json에 PopupApi.UserId 설정이 없습니다.");
+            }
+
+            string? userId =
+                userIdElement.GetString();
+
+            if (string.IsNullOrWhiteSpace(
+                    userId))
+            {
+                throw new InvalidOperationException(
+                    "PopupApi.UserId 값이 비어 있습니다.");
+            }
+
+            return new PopupClientSettings
+            {
+                BaseUrl =
+                    baseUrl.Trim(),
+                UserId =
+                    userId.Trim()
+            };
         }
 
         /*
@@ -178,8 +216,11 @@ namespace Popup
              * appsettings.json에서
              * Java 팝업 API 주소를 읽는다.
              */
-            string popupApiBaseUrl =
-                LoadPopupApiBaseUrl();
+            PopupClientSettings popupClientSettings =
+                LoadPopupClientSettings();
+
+            _currentUserId =
+                popupClientSettings.UserId;
 
             /*
              * 설정 파일에서 읽은 API 주소를 전달하여
@@ -187,7 +228,7 @@ namespace Popup
              */
             _popupApiService =
                 new PopupApiService(
-                    popupApiBaseUrl);
+                    popupClientSettings.BaseUrl);
         }
 
    
@@ -200,14 +241,11 @@ namespace Popup
             RoutedEventArgs e)
         {
             /*
-             * 로그인 기능이 아직 없으므로
-             * 테스트용 사용자 ID를 고정해서 사용한다.
-             *
-             * 이후 로그인 기능이 연결되면
-             * 현재 로그인한 사용자의 ID로 교체한다.
+             * 생성자에서 appsettings.json으로부터 읽어둔
+             * 현재 사용자 ID를 이번 API 요청 전체에서 사용한다.
              */
-            const string currentUserId =
-                "E1002";
+            string currentUserId =
+                _currentUserId;
 
             try
             {
