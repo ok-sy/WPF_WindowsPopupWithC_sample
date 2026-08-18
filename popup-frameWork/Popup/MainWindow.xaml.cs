@@ -220,6 +220,42 @@ namespace Popup
                         .GetAvailablePopupsAsync(
                             currentUserId);
 
+                /*
+                 * 앱을 다시 실행해도 이미 완료한 설문이나 영상이
+                 * 다시 표시되지 않도록 서버의 사용자별 상태를 조회한다.
+                 *
+                 * /api/popups 목록은 현재 기간·대상·숨김 조건을 처리하고,
+                 * /api/popups/statuses 목록은 사용자의 완료 이력을 알려준다.
+                 */
+                List<UserPopupStatusDto> popupStatuses =
+                    await _popupApiService
+                        .GetPopupStatusesAsync(
+                            currentUserId);
+
+                Dictionary<string, UserPopupStatusDto> statusByPopupId =
+                    popupStatuses
+                        .GroupBy(
+                            status => status.PopupId,
+                            StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(
+                            group => group.Key,
+                            group => group.First(),
+                            StringComparer.OrdinalIgnoreCase);
+
+                /*
+                 * 완료 상태가 없는 팝업과 아직 미완료인 팝업만 남긴다.
+                 * 숨김 상태는 Java 조회 SQL에서도 제외되지만,
+                 * 완료 상태는 이 단계에서 최종적으로 제외한다.
+                 */
+                popupDtos =
+                    popupDtos
+                        .Where(popup =>
+                            !statusByPopupId.TryGetValue(
+                                popup.PopupId,
+                                out UserPopupStatusDto? status)
+                            || !status.Completed)
+                        .ToList();
+
                 if (popupDtos.Count == 0)
                 {
                     MessageBox.Show(
