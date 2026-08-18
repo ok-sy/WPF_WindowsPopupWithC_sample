@@ -4,6 +4,7 @@ import com.oksy.popup.domain.PopupEntity;
 import com.oksy.popup.domain.PopupOptionEntity;
 import com.oksy.popup.domain.PopupQuestionEntity;
 import com.oksy.popup.domain.PopupSubmissionContext;
+import com.oksy.popup.domain.VideoPopupContext;
 import com.oksy.popup.dto.PopupHideRequestDto;
 import com.oksy.popup.dto.PopupHideResponseDto;
 import com.oksy.popup.dto.PopupOptionDto;
@@ -12,6 +13,8 @@ import com.oksy.popup.dto.PopupResponseDto;
 import com.oksy.popup.dto.PopupSubmitAnswerDto;
 import com.oksy.popup.dto.PopupSubmitRequestDto;
 import com.oksy.popup.dto.PopupSubmitResponseDto;
+import com.oksy.popup.dto.VideoProgressRequestDto;
+import com.oksy.popup.dto.VideoProgressResponseDto;
 import com.oksy.popup.mapper.PopupMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +29,7 @@ import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
+import java.math.RoundingMode;
 import java.util.stream.Collectors;
 
 /** PostgreSQL 조회 결과를 WPF 팝업 응답으로 변환한다. */
@@ -396,6 +400,67 @@ public class PopupService {
             BigDecimal earnedScore,
             String correctYn
     ) {
+    }
+
+    /** 영상 누적 시청시간을 기준으로 진행률과 완료 여부를 서버에서 계산한다. */
+    @Transactional
+    public VideoProgressResponseDto saveVideoProgress(
+            String popupId,
+            VideoProgressRequestDto requestDto) {
+        if (popupId == null || popupId.isBlank()) {
+            throw new IllegalArgumentException("팝업 ID는 필수입니다.");
+        }
+
+        String normalizedPopupId = popupId.trim();
+        String userId = requestDto.userId().trim();
+        boolean eligible = popupMapper.selectAvailablePopups(userId).stream()
+                .anyMatch(popup -> normalizedPopupId.equals(popup.popupId()));
+        if (!eligible) {
+            throw new IllegalArgumentException(
+                    "현재 사용자에게 표시되는 영상 팝업이 아닙니다.");
+        }
+        VideoPopupContext context = popupMapper.selectVideoPopupContext(
+                userId, normalizedPopupId);
+        if (context == null || !"VIDEO".equalsIgnoreCase(context.popupType())) {
+            throw new IllegalArgumentException(
+                    "현재 사용자에게 유효한 영상 팝업이 아닙니다.");
+        }
+        if (requestDto.positionSeconds().compareTo(
+                requestDto.durationSeconds()) > 0
+                || requestDto.maximumPositionSeconds().compareTo(
+                requestDto.durationSeconds()) > 0) {
+            throw new IllegalArgumentException(
+                    "영상 재생 위치는 전체 재생시간을 초과할 수 없습니다.");
+        }
+
+        BigDecimal watchedSeconds = requestDto.watchedSeconds()
+                .min(requestDto.durationSeconds());
+        BigDecimal watchedRatio = watchedSeconds.divide(
+                requestDto.durationSeconds(), 4, RoundingMode.DOWN)
+                .min(BigDecimal.ONE);
+        BigDecimal requiredRatio = context.completionRatio() == null
+                ? BigDecimal.ONE : context.completionRatio();
+        boolean completed = watchedRatio.compareTo(requiredRatio) >= 0;
+        String completedYn = completed ? "Y" : "N";
+
+        int affectedRows = popupMapper.upsertVideoProgress(
+                userId, normalizedPopupId,
+                requestDto.durationSeconds(), requestDto.positionSeconds(),
+                requestDto.maximumPositionSeconds(), watchedSeconds,
+                watchedRatio, completedYn);
+        if (affectedRows <= 0) {
+            throw new IllegalStateException("영상 진행률 저장에 실패했습니다.");
+        }
+        popupMapper.markPopupCompleted(
+                userId, normalizedPopupId, completedYn);
+        OffsetDateTime completedAt = completed
+                ? popupMapper.selectVideoCompletedAt(userId, normalizedPopupId)
+                : null;
+
+        return new VideoProgressResponseDto(
+                userId, normalizedPopupId,
+                watchedRatio.doubleValue(), requiredRatio.doubleValue(),
+                completed, completedAt);
     }
 
     private PopupResponseDto toResponseDto(

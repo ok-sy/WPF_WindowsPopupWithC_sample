@@ -10,6 +10,8 @@ import com.oksy.popup.dto.PopupHideRequestDto;
 import com.oksy.popup.dto.PopupHideResponseDto;
 import com.oksy.popup.dto.PopupSubmitRequestDto;
 import com.oksy.popup.dto.PopupSubmitResponseDto;
+import com.oksy.popup.dto.VideoProgressRequestDto;
+import com.oksy.popup.dto.VideoProgressResponseDto;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -126,5 +128,13 @@ public class PopupController {
             @Valid @RequestBody PopupSubmitRequestDto requestDto) {
 
         return popupService.submitResponse(popupId, requestDto);
+    }
+
+    /** POST /api/popups/{popupId}/video-progress */
+    @PostMapping("/{popupId}/video-progress")
+    public VideoProgressResponseDto saveVideoProgress(
+            @PathVariable String popupId,
+            @Valid @RequestBody VideoProgressRequestDto requestDto) {
+        return popupService.saveVideoProgress(popupId, requestDto);
     }
 }

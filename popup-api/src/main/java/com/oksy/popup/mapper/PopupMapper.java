@@ -4,6 +4,7 @@ import com.oksy.popup.domain.PopupEntity;
 import com.oksy.popup.domain.PopupOptionEntity;
 import com.oksy.popup.domain.PopupQuestionEntity;
 import com.oksy.popup.domain.PopupSubmissionContext;
+import com.oksy.popup.domain.VideoPopupContext;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
@@ -139,5 +140,26 @@ public interface PopupMapper {
             @Param("userId") String userId,
             @Param("popupId") String popupId,
             @Param("passedYn") String passedYn
+    );
+
+    VideoPopupContext selectVideoPopupContext(
+            @Param("userId") String userId,
+            @Param("popupId") String popupId
+    );
+
+    int upsertVideoProgress(
+            @Param("userId") String userId,
+            @Param("popupId") String popupId,
+            @Param("durationSeconds") BigDecimal durationSeconds,
+            @Param("positionSeconds") BigDecimal positionSeconds,
+            @Param("maximumPositionSeconds") BigDecimal maximumPositionSeconds,
+            @Param("watchedSeconds") BigDecimal watchedSeconds,
+            @Param("watchedRatio") BigDecimal watchedRatio,
+            @Param("completedYn") String completedYn
+    );
+
+    OffsetDateTime selectVideoCompletedAt(
+            @Param("userId") String userId,
+            @Param("popupId") String popupId
     );
 }
