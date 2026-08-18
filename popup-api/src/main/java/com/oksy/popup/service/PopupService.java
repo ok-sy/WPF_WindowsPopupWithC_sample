@@ -15,6 +15,9 @@ import com.oksy.popup.dto.PopupSubmitRequestDto;
 import com.oksy.popup.dto.PopupSubmitResponseDto;
 import com.oksy.popup.dto.VideoProgressRequestDto;
 import com.oksy.popup.dto.VideoProgressResponseDto;
+import com.oksy.popup.dto.PopupEventRequestDto;
+import com.oksy.popup.dto.PopupEventResponseDto;
+import com.oksy.popup.dto.UserPopupStatusDto;
 import com.oksy.popup.mapper.PopupMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -461,6 +464,39 @@ public class PopupService {
                 userId, normalizedPopupId,
                 watchedRatio.doubleValue(), requiredRatio.doubleValue(),
                 completed, completedAt);
+    }
+
+    /** 팝업 창이 실제 표시되거나 닫힌 시각을 사용자 상태에 기록한다. */
+    @Transactional
+    public PopupEventResponseDto recordPopupEvent(
+            String popupId,
+            PopupEventRequestDto requestDto) {
+        if (popupId == null || popupId.isBlank()) {
+            throw new IllegalArgumentException("팝업 ID는 필수입니다.");
+        }
+        String normalizedPopupId = popupId.trim();
+        String userId = requestDto.userId().trim();
+        String eventType = requestDto.eventType().trim().toUpperCase();
+
+        if (popupMapper.countActiveUserAndPopup(
+                userId, normalizedPopupId) == 0) {
+            throw new IllegalArgumentException(
+                    "유효한 사용자 또는 팝업이 아닙니다.");
+        }
+        int affectedRows = popupMapper.upsertPopupEvent(
+                userId, normalizedPopupId, eventType);
+        if (affectedRows <= 0) {
+            throw new IllegalStateException("팝업 이벤트 저장에 실패했습니다.");
+        }
+        return new PopupEventResponseDto(
+                userId, normalizedPopupId, eventType, OffsetDateTime.now());
+    }
+
+    public List<UserPopupStatusDto> getPopupStatuses(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
+        }
+        return popupMapper.selectPopupStatuses(userId.trim());
     }
 
     private PopupResponseDto toResponseDto(
