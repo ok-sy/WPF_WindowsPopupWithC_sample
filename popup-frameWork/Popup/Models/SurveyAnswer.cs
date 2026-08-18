@@ -11,7 +11,7 @@ namespace Popup.Models
         /// 어떤 질문에 대한 답인지 구분하는 값이다.
         /// SurveyQuestion의 QuestionId와 연결된다.
         /// </summary>
-        public int QuestionId { get; set; }
+        public long QuestionId { get; set; }
 
         /// <summary>
         /// 객관식에서 사용자가 선택한 값 목록이다.

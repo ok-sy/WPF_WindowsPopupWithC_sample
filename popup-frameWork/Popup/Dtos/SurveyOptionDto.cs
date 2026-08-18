@@ -11,6 +11,9 @@
      */
     public class SurveyOptionDto
     {
+        /* 설문 제출 시 서버에 다시 전달할 선택지 고유 ID */
+        public long OptionId { get; set; }
+
         /*
          * 서버와 주고받을 실제 선택지 값
          *

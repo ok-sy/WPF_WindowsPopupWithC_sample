@@ -350,5 +350,180 @@ namespace Popup.Services
                 ?? throw new InvalidOperationException(
                     "팝업 숨김 응답이 비어 있습니다.");
         }
+
+        /// <summary>
+        /// 설문 또는 퀴즈 답안을 서버에 제출한다.
+        /// 점수와 통과 여부는 WPF에서 계산하지 않고 서버 응답을 사용한다.
+        /// </summary>
+        public Task<PopupSubmitResponseDto> SubmitResponseAsync(
+            string popupId,
+            string userId,
+            List<PopupSubmitAnswerRequestDto> answers,
+            DateTimeOffset? responseStartedAt = null,
+            string? clientRequestId = null)
+        {
+            ValidatePopupAndUser(popupId, userId);
+
+            if (answers == null || answers.Count == 0)
+            {
+                throw new ArgumentException(
+                    "제출할 설문 답안이 필요합니다.", nameof(answers));
+            }
+
+            PopupSubmitRequestDto request = new()
+            {
+                ClientRequestId = string.IsNullOrWhiteSpace(clientRequestId)
+                    ? Guid.NewGuid().ToString("N")
+                    : clientRequestId.Trim(),
+                UserId = userId.Trim(),
+                ResponseStartedAt = responseStartedAt,
+                Answers = answers
+            };
+
+            return PostAsync<PopupSubmitRequestDto, PopupSubmitResponseDto>(
+                BuildPopupUrl(popupId, "responses"), request, userId);
+        }
+
+        /// <summary>
+        /// 영상의 현재 위치와 누적 시청시간을 저장한다.
+        /// 서버가 DB의 완료 기준과 비교하여 최종 완료 여부를 반환한다.
+        /// </summary>
+        public Task<VideoProgressResponseDto> SaveVideoProgressAsync(
+            string popupId,
+            VideoProgressRequestDto request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            ValidatePopupAndUser(popupId, request.UserId);
+
+            if (request.DurationSeconds <= 0
+                || request.PositionSeconds < 0
+                || request.MaximumPositionSeconds < 0
+                || request.WatchedSeconds < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(request), "영상 시간 값이 올바르지 않습니다.");
+            }
+
+            return PostAsync<VideoProgressRequestDto, VideoProgressResponseDto>(
+                BuildPopupUrl(popupId, "video-progress"),
+                request,
+                request.UserId);
+        }
+
+        /// <summary>
+        /// 팝업이 화면에 표시됐거나 닫혔다는 이벤트를 저장한다.
+        /// eventType은 DISPLAYED 또는 CLOSED만 허용한다.
+        /// </summary>
+        public Task<PopupEventResponseDto> RecordPopupEventAsync(
+            string popupId,
+            string userId,
+            string eventType)
+        {
+            ValidatePopupAndUser(popupId, userId);
+            string normalizedEvent = eventType?.Trim().ToUpperInvariant()
+                ?? string.Empty;
+
+            if (normalizedEvent != "DISPLAYED" && normalizedEvent != "CLOSED")
+            {
+                throw new ArgumentException(
+                    "이벤트는 DISPLAYED 또는 CLOSED여야 합니다.",
+                    nameof(eventType));
+            }
+
+            PopupEventRequestDto request = new()
+            {
+                UserId = userId.Trim(),
+                EventType = normalizedEvent
+            };
+
+            return PostAsync<PopupEventRequestDto, PopupEventResponseDto>(
+                BuildPopupUrl(popupId, "events"), request, userId);
+        }
+
+        /// <summary>사용자에게 저장된 모든 팝업 상태를 조회한다.</summary>
+        public async Task<List<UserPopupStatusDto>> GetPopupStatusesAsync(
+            string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new ArgumentException(
+                    "사용자 ID가 필요합니다.", nameof(userId));
+            }
+
+            string requestUrl = $"{_baseUrl}/api/popups/statuses?userId="
+                + Uri.EscapeDataString(userId.Trim());
+            using HttpResponseMessage response =
+                await HttpClient.GetAsync(requestUrl);
+            await EnsureSuccessAsync(response);
+
+            return await response.Content
+                .ReadFromJsonAsync<List<UserPopupStatusDto>>(_jsonOptions)
+                ?? new List<UserPopupStatusDto>();
+        }
+
+        /// <summary>공통 JSON POST 요청을 보내고 응답 DTO로 변환한다.</summary>
+        private async Task<TResponse> PostAsync<TRequest, TResponse>(
+            string requestUrl,
+            TRequest requestBody,
+            string userId)
+        {
+            using HttpRequestMessage request = new(
+                HttpMethod.Post, requestUrl)
+            {
+                Content = JsonContent.Create(
+                    requestBody, options: _jsonOptions)
+            };
+
+            // API_REQUEST_LOG가 POST 본문을 읽지 않아도 사용자를 기록할 수 있게 한다.
+            request.Headers.TryAddWithoutValidation(
+                "X-User-Id", userId.Trim());
+
+            using HttpResponseMessage response =
+                await HttpClient.SendAsync(request);
+            await EnsureSuccessAsync(response);
+
+            return await response.Content.ReadFromJsonAsync<TResponse>(
+                       _jsonOptions)
+                   ?? throw new InvalidOperationException(
+                       "팝업 API 응답 본문이 비어 있습니다.");
+        }
+
+        /// <summary>서버 오류 JSON을 포함한 읽기 쉬운 예외를 만든다.</summary>
+        private static async Task EnsureSuccessAsync(
+            HttpResponseMessage response)
+        {
+            if (response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            string errorBody = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(
+                $"팝업 API 요청 실패: {(int)response.StatusCode} "
+                + $"{response.ReasonPhrase}\n{errorBody}");
+        }
+
+        private string BuildPopupUrl(string popupId, string action)
+        {
+            return $"{_baseUrl}/api/popups/"
+                + $"{Uri.EscapeDataString(popupId.Trim())}/{action}";
+        }
+
+        private static void ValidatePopupAndUser(
+            string popupId,
+            string userId)
+        {
+            if (string.IsNullOrWhiteSpace(popupId))
+            {
+                throw new ArgumentException(
+                    "팝업 ID가 필요합니다.", nameof(popupId));
+            }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new ArgumentException(
+                    "사용자 ID가 필요합니다.", nameof(userId));
+            }
+        }
     }
 }
