@@ -318,6 +318,26 @@ namespace Popup.Views.Windows
                         Topmost =
                             true;
 
+                        /*
+                         * 일반 팝업의 24px 바깥 여백은 그림자를 보여주기
+                         * 위한 투명 공간이다. 전체화면에서는 이 여백 때문에
+                         * 뒤 화면과 작업표시줄이 보이므로 제거한다.
+                         */
+                        PopupOuterGrid.Margin =
+                            new Thickness(0);
+
+                        PopupBodyBorder.CornerRadius =
+                            new CornerRadius(0);
+
+                        PopupBodyBorder.BorderThickness =
+                            new Thickness(0);
+
+                        PopupBodyBorder.Effect =
+                            null;
+
+                        HeaderArea.CornerRadius =
+                            new CornerRadius(0);
+
                         break;
                     }
 
