@@ -79,6 +79,29 @@ namespace Popup.Models
         { get; set; }
 
         /*
+         * 팝업이 실제 화면에 표시됐을 때
+         * 호출할 비동기 함수다.
+         *
+         * PopupManager가 Window의 ContentRendered 이벤트를 감지한 뒤
+         * PopupId를 전달하여 서버에 DISPLAYED 이벤트를 저장한다.
+         */
+        public Func<string, Task>?
+            PopupDisplayedAsync
+        { get; set; }
+
+        /*
+         * 팝업 창이 실제로 닫혔을 때
+         * 호출할 비동기 함수다.
+         *
+         * 닫기 버튼, 설문 제출, 운영체제의 창 닫기 등
+         * 닫힌 원인과 관계없이 Window의 Closed 이벤트를 기준으로
+         * 서버에 CLOSED 이벤트를 저장한다.
+         */
+        public Func<string, Task>?
+            PopupClosedAsync
+        { get; set; }
+
+        /*
          * 팝업 상단에 표시할 제목
          */
         public string Title { get; set; } =

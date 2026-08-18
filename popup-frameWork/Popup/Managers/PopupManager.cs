@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Linq;
 using Popup.Views.Contents;
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 
 namespace Popup.Managers
@@ -143,6 +146,14 @@ namespace Popup.Managers
             AttachContentEvents(
                 popupWindow,
                 popupOptions);
+
+            /*
+             * 실제 표시 및 닫힘 시점을 서버에 기록할 수 있도록
+             * WPF Window 생명주기 이벤트를 연결한다.
+             */
+            AttachLifecycleEvents(
+                popupWindow,
+                popupOptions);
             /*
              * MainWindow를
              * 팝업의 부모 창으로 지정한다.
@@ -229,6 +240,13 @@ namespace Popup.Managers
                 popupOptions);
 
             /*
+             * 순차 팝업에도 실제 표시 및 닫힘 이벤트를 연결한다.
+             */
+            AttachLifecycleEvents(
+                _currentPopupWindow,
+                popupOptions);
+
+            /*
              * MainWindow를
              * 팝업의 부모 창으로 지정한다.
              */
@@ -304,6 +322,83 @@ namespace Popup.Managers
                          */
                         popupWindow.Close();
                     };
+            }
+        }
+
+        /*
+         * PopupWindow의 실제 생명주기와
+         * 서버 이벤트 저장 콜백을 연결한다.
+         *
+         * ContentRendered
+         * → 팝업 내용이 실제 화면에 그려진 시점
+         *
+         * Closed
+         * → 팝업 창이 완전히 닫힌 시점
+         */
+        private static void AttachLifecycleEvents(
+            PopupWindow popupWindow,
+            PopupOptions popupOptions)
+        {
+            /*
+             * 예외적인 재렌더링이 발생해도 DISPLAYED가
+             * 한 창당 한 번만 저장되도록 막는다.
+             */
+            bool displayedEventRecorded =
+                false;
+
+            popupWindow.ContentRendered +=
+                async (sender, eventArgs) =>
+                {
+                    if (displayedEventRecorded)
+                    {
+                        return;
+                    }
+
+                    displayedEventRecorded =
+                        true;
+
+                    await InvokeLifecycleCallbackSafelyAsync(
+                        popupOptions.PopupDisplayedAsync,
+                        popupOptions.PopupId,
+                        "DISPLAYED");
+                };
+
+            popupWindow.Closed +=
+                async (sender, eventArgs) =>
+                {
+                    await InvokeLifecycleCallbackSafelyAsync(
+                        popupOptions.PopupClosedAsync,
+                        popupOptions.PopupId,
+                        "CLOSED");
+                };
+        }
+
+        /*
+         * 서버 이벤트 저장 중 오류가 발생해도
+         * 팝업 표시, 닫기, 다음 팝업 열기 동작은 계속 진행한다.
+         */
+        private static async Task InvokeLifecycleCallbackSafelyAsync(
+            Func<string, Task>? lifecycleCallback,
+            string popupId,
+            string eventType)
+        {
+            if (lifecycleCallback == null ||
+                string.IsNullOrWhiteSpace(
+                    popupId))
+            {
+                return;
+            }
+
+            try
+            {
+                await lifecycleCallback(
+                    popupId);
+            }
+            catch (Exception exception)
+            {
+                Debug.WriteLine(
+                    $"팝업 {eventType} 이벤트 저장 실패 " +
+                    $"(PopupId: {popupId}): {exception.Message}");
             }
         }
     }

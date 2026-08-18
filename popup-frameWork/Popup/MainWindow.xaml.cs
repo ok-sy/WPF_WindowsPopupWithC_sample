@@ -260,6 +260,34 @@ namespace Popup
                                     currentUserId,
                                     hideDays);
                         };
+
+                    /*
+                     * 팝업 내용이 실제 화면에 표시되면
+                     * 서버에 DISPLAYED 이벤트를 저장한다.
+                     */
+                    popupOptions.PopupDisplayedAsync =
+                        async popupId =>
+                        {
+                            await _popupApiService
+                                .RecordPopupEventAsync(
+                                    popupId,
+                                    currentUserId,
+                                    "DISPLAYED");
+                        };
+
+                    /*
+                     * 팝업 창이 실제로 닫히면
+                     * 서버에 CLOSED 이벤트를 저장한다.
+                     */
+                    popupOptions.PopupClosedAsync =
+                        async popupId =>
+                        {
+                            await _popupApiService
+                                .RecordPopupEventAsync(
+                                    popupId,
+                                    currentUserId,
+                                    "CLOSED");
+                        };
                 }
 
                 /*
