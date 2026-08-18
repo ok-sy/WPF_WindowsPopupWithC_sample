@@ -102,6 +102,17 @@ namespace Popup.Models
         { get; set; }
 
         /*
+         * 설문 또는 퀴즈에서 사용자가 제출한 답안을
+         * 서버에 저장할 때 호출하는 비동기 함수다.
+         *
+         * 서버 저장이 정상 완료된 뒤에 Task가 끝나며,
+         * 오류가 발생하면 PopupManager가 창을 닫지 않고 유지한다.
+         */
+        public Func<string, List<SurveyAnswer>, Task>?
+            SubmitSurveyAsync
+        { get; set; }
+
+        /*
          * 팝업 상단에 표시할 제목
          */
         public string Title { get; set; } =

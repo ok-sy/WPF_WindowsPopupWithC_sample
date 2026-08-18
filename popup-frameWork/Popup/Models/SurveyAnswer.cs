@@ -28,6 +28,12 @@ namespace Popup.Models
         public List<string> SelectedValues { get; set; } = new();
 
         /// <summary>
+        /// 객관식에서 사용자가 선택한 보기의 서버 OPTION_ID 목록이다.
+        /// API는 화면 표시용 Value가 아니라 이 ID로 선택 보기를 저장한다.
+        /// </summary>
+        public List<long> SelectedOptionIds { get; set; } = new();
+
+        /// <summary>
         /// 주관식 질문에서 사용자가 입력한 내용이다.
         /// 객관식 질문에서는 비어 있다.
         /// </summary>

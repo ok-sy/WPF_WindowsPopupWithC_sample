@@ -294,8 +294,12 @@ namespace Popup.Views.Contents
                     Content =
                         option.Text,
 
+                    /*
+                     * 화면 표시용 Value와 서버 저장용 OptionId를
+                     * 제출 시 모두 읽을 수 있도록 보기 객체를 보관한다.
+                     */
                     Tag =
-                        option.Value,
+                        option,
 
                     GroupName =
                         $"Question_{question.QuestionId}"
@@ -324,7 +328,7 @@ namespace Popup.Views.Contents
                 {
                     Margin = new Thickness(0, 0, 0, 10),
                     Content = option.Text,
-                    Tag = option.Value,
+                    Tag = option,
                     GroupName = $"Question_{question.QuestionId}"
                 };
 
@@ -351,7 +355,7 @@ namespace Popup.Views.Contents
                 {
                     Margin = new Thickness(0, 0, 0, 10),
                     Content = option.Text,
-                    Tag = option.Value
+                    Tag = option
                 };
 
                 optionPanel.Children.Add(checkBox);
@@ -495,9 +499,9 @@ namespace Popup.Views.Contents
                 if (child is RadioButton radioButton &&
                     radioButton.IsChecked == true)
                 {
-                    answer.SelectedValues.Add(
-                        radioButton.Tag?.ToString()
-                        ?? string.Empty);
+                    AddSelectedOption(
+                        answer,
+                        radioButton.Tag);
 
                     break;
                 }
@@ -522,11 +526,46 @@ namespace Popup.Views.Contents
                 if (child is CheckBox checkBox &&
                     checkBox.IsChecked == true)
                 {
-                    answer.SelectedValues.Add(
-                        checkBox.Tag?.ToString()
-                        ?? string.Empty);
+                    AddSelectedOption(
+                        answer,
+                        checkBox.Tag);
                 }
             }
+        }
+
+        /// <summary>
+        /// 선택한 보기의 비교용 Value와 서버 저장용 OptionId를
+        /// SurveyAnswer에 함께 추가한다.
+        /// </summary>
+        private static void AddSelectedOption(
+            SurveyAnswer answer,
+            object? optionTag)
+        {
+            if (optionTag is SurveyOption option)
+            {
+                answer.SelectedValues.Add(
+                    option.Value);
+
+                /*
+                 * 서버에서 받은 보기에만 실제 OptionId가 있다.
+                 * 로컬 미리보기용 자동 생성 보기의 0은 전송하지 않는다.
+                 */
+                if (option.OptionId > 0)
+                {
+                    answer.SelectedOptionIds.Add(
+                        option.OptionId);
+                }
+
+                return;
+            }
+
+            /*
+             * 이전 방식으로 만든 사용자 정의 컨트롤과의
+             * 호환을 위해 문자열 Tag도 계속 읽는다.
+             */
+            answer.SelectedValues.Add(
+                optionTag?.ToString()
+                ?? string.Empty);
         }
 
         /// <summary>

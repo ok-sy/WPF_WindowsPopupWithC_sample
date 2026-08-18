@@ -288,6 +288,40 @@ namespace Popup
                                     currentUserId,
                                     "CLOSED");
                         };
+
+                    /*
+                     * 설문/퀴즈 팝업의 제출 이벤트를
+                     * 서버 응답 저장 API와 연결한다.
+                     */
+                    popupOptions.SubmitSurveyAsync =
+                        async (popupId, surveyAnswers) =>
+                        {
+                            List<PopupSubmitAnswerRequestDto> requestAnswers =
+                                surveyAnswers
+                                    .Select(answer =>
+                                        new PopupSubmitAnswerRequestDto
+                                        {
+                                            QuestionId =
+                                                answer.QuestionId,
+
+                                            TextAnswer =
+                                                string.IsNullOrWhiteSpace(
+                                                    answer.TextAnswer)
+                                                    ? null
+                                                    : answer.TextAnswer,
+
+                                            OptionIds =
+                                                new List<long>(
+                                                    answer.SelectedOptionIds)
+                                        })
+                                    .ToList();
+
+                            await _popupApiService
+                                .SubmitResponseAsync(
+                                    popupId,
+                                    currentUserId,
+                                    requestAnswers);
+                        };
                 }
 
                 /*
