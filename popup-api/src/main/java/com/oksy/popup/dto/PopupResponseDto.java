@@ -1,6 +1,7 @@
 package com.oksy.popup.dto;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 
 /*
@@ -130,6 +131,18 @@ public record PopupResponseDto(
          */
         boolean showDoNotShowAgain,
 
+        /* v0.8 기간 및 문항 템플릿 정보다. */
+        Long questionTemplateId,
+        String periodMode,
+        Integer repeatInterval,
+        String repeatDayOfWeek,
+        Integer repeatDayOfMonth,
+        Integer hideDays,
+        Double completionRatio,
+        Double passingScore,
+        boolean allowCloseBeforeComplete,
+        List<PopupQuestionDto> questions,
+
         /*
          * 팝업 종류별 상세 데이터다.
          *
@@ -147,4 +160,7 @@ public record PopupResponseDto(
          */
         Map<String, Object> content
 ) {
+    public PopupResponseDto {
+        questions = questions == null ? List.of() : List.copyOf(questions);
+    }
 }

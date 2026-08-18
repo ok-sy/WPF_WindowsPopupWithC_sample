@@ -269,11 +269,33 @@ public class PopupService {
                 isYes(
                         popupEntity.showDontShowYn()),
 
+                popupEntity.questionTemplateId(),
+                popupEntity.periodMode(),
+                popupEntity.repeatInterval(),
+                popupEntity.repeatDayOfWeek(),
+                popupEntity.repeatDayOfMonth(),
+                popupEntity.hideDays(),
+                toNullableDouble(
+                        popupEntity.completionRatio()),
+                toNullableDouble(
+                        popupEntity.passingScore()),
+                isYes(
+                        popupEntity.allowCloseBeforeCompleteYn()),
+                List.of(),
+
                 /*
                  * 종류별 content JSON 객체
                  */
                 content
         );
+    }
+
+    private Double toNullableDouble(
+            java.math.BigDecimal value) {
+
+        return value == null
+                ? null
+                : value.doubleValue();
     }
 
     /*

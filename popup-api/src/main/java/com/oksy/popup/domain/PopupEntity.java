@@ -85,7 +85,18 @@ public record PopupEntity(
         /*
          * 팝업 사용 여부
          */
-        String useYn
+        String useYn,
+
+        /* v0.8 확장 필드. 기존 Oracle 조회 호환을 위해 뒤에 추가한다. */
+        Long questionTemplateId,
+        String periodMode,
+        Integer repeatInterval,
+        String repeatDayOfWeek,
+        Integer repeatDayOfMonth,
+        Integer hideDays,
+        BigDecimal completionRatio,
+        BigDecimal passingScore,
+        String allowCloseBeforeCompleteYn
 
 ) {
 }

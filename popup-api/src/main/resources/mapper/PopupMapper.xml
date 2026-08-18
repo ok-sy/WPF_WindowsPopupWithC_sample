@@ -110,6 +110,42 @@
             <arg
                     column="USE_YN"
                     javaType="java.lang.String"/>
+
+            <arg
+                    column="QUESTION_TEMPLATE_ID"
+                    javaType="java.lang.Long"/>
+
+            <arg
+                    column="PERIOD_MODE"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="REPEAT_INTERVAL"
+                    javaType="java.lang.Integer"/>
+
+            <arg
+                    column="REPEAT_DAY_OF_WEEK"
+                    javaType="java.lang.String"/>
+
+            <arg
+                    column="REPEAT_DAY_OF_MONTH"
+                    javaType="java.lang.Integer"/>
+
+            <arg
+                    column="HIDE_DAYS"
+                    javaType="java.lang.Integer"/>
+
+            <arg
+                    column="COMPLETION_RATIO"
+                    javaType="java.math.BigDecimal"/>
+
+            <arg
+                    column="PASSING_SCORE"
+                    javaType="java.math.BigDecimal"/>
+
+            <arg
+                    column="ALLOW_CLOSE_BEFORE_COMPLETE_YN"
+                    javaType="java.lang.String"/>
         </constructor>
     </resultMap>
 
@@ -143,7 +179,16 @@
         PN.SHOW_DONT_SHOW_YN,
         PN.CONTENT_JSON,
         PN.DISPLAY_ORDER,
-        PN.USE_YN
+        PN.USE_YN,
+        CAST(NULL AS NUMBER(19)) AS QUESTION_TEMPLATE_ID,
+        'FIXED' AS PERIOD_MODE,
+        CAST(NULL AS NUMBER(10)) AS REPEAT_INTERVAL,
+        CAST(NULL AS VARCHAR2(20)) AS REPEAT_DAY_OF_WEEK,
+        CAST(NULL AS NUMBER(10)) AS REPEAT_DAY_OF_MONTH,
+        CAST(NULL AS NUMBER(10)) AS HIDE_DAYS,
+        CAST(NULL AS NUMBER(5,4)) AS COMPLETION_RATIO,
+        CAST(NULL AS NUMBER(10,2)) AS PASSING_SCORE,
+        'Y' AS ALLOW_CLOSE_BEFORE_COMPLETE_YN
         FROM POPUP_NOTICE PN
         WHERE PN.USE_YN = 'Y'
 
