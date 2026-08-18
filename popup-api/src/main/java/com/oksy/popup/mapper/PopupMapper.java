@@ -3,11 +3,13 @@ package com.oksy.popup.mapper;
 import com.oksy.popup.domain.PopupEntity;
 import com.oksy.popup.domain.PopupOptionEntity;
 import com.oksy.popup.domain.PopupQuestionEntity;
+import com.oksy.popup.domain.PopupSubmissionContext;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 /*
  * POPUP_NOTICE 테이블의 SQL을 호출하는 Mapper다.
@@ -92,5 +94,50 @@ public interface PopupMapper {
 
             @Param("popupId")
             String popupId
+    );
+
+    PopupSubmissionContext selectSubmissionContext(
+            @Param("userId") String userId,
+            @Param("popupId") String popupId
+    );
+
+    Long selectResponseIdByClientRequestId(
+            @Param("clientRequestId") String clientRequestId,
+            @Param("userId") String userId,
+            @Param("popupId") String popupId
+    );
+
+    Long upsertPopupResponse(
+            @Param("clientRequestId") String clientRequestId,
+            @Param("userId") String userId,
+            @Param("popupId") String popupId,
+            @Param("questionTemplateId") Long questionTemplateId,
+            @Param("responseStartedAt") OffsetDateTime responseStartedAt,
+            @Param("totalScore") BigDecimal totalScore,
+            @Param("passedYn") String passedYn
+    );
+
+    int deleteResponseAnswers(@Param("responseId") Long responseId);
+
+    Long insertResponseAnswer(
+            @Param("responseId") Long responseId,
+            @Param("questionId") Long questionId,
+            @Param("textAnswer") String textAnswer,
+            @Param("earnedScore") BigDecimal earnedScore,
+            @Param("correctYn") String correctYn,
+            @Param("userId") String userId
+    );
+
+    int insertResponseValue(
+            @Param("responseAnswerId") Long responseAnswerId,
+            @Param("optionId") Long optionId,
+            @Param("selectedValue") String selectedValue,
+            @Param("userId") String userId
+    );
+
+    int markPopupCompleted(
+            @Param("userId") String userId,
+            @Param("popupId") String popupId,
+            @Param("passedYn") String passedYn
     );
 }

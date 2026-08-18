@@ -368,4 +368,125 @@
           AND popup_id = #{popupId}
     </select>
 
+    <select id="selectSubmissionContext"
+            resultType="com.oksy.popup.domain.PopupSubmissionContext">
+        SELECT
+            popup.popup_id AS popupId,
+            popup.popup_type AS popupType,
+            popup.question_template_id AS questionTemplateId,
+            popup.passing_score AS passingScore
+        FROM popup_notice popup
+        JOIN app_user usr
+          ON usr.employee_no = #{userId}
+         AND usr.active_yn = 'Y'
+        WHERE popup.popup_id = #{popupId}
+          AND popup.active_yn = 'Y'
+          AND CURRENT_TIMESTAMP BETWEEN popup.display_start_at AND popup.display_end_at
+    </select>
+
+    <select id="selectResponseIdByClientRequestId"
+            resultType="java.lang.Long">
+        SELECT response_id
+        FROM popup_response
+        WHERE client_request_id = #{clientRequestId}
+          AND employee_no = #{userId}
+          AND popup_id = #{popupId}
+    </select>
+
+    <!-- PostgreSQL RETURNING 결과를 받는 데이터 변경 SELECT다. -->
+    <select id="upsertPopupResponse"
+            resultType="java.lang.Long"
+            affectData="true"
+            flushCache="true">
+        INSERT INTO popup_response
+        (
+            client_request_id, popup_id, employee_no, question_template_id,
+            response_status, response_started_at, submitted_at, received_at,
+            total_score, passed_yn, created_by, updated_by
+        )
+        VALUES
+        (
+            #{clientRequestId}, #{popupId}, #{userId}, #{questionTemplateId},
+            'SUBMITTED', #{responseStartedAt}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+            #{totalScore}, #{passedYn}, #{userId}, #{userId}
+        )
+        ON CONFLICT (employee_no, popup_id)
+        DO UPDATE SET
+            client_request_id = EXCLUDED.client_request_id,
+            question_template_id = EXCLUDED.question_template_id,
+            response_status = 'SUBMITTED',
+            response_started_at = EXCLUDED.response_started_at,
+            submitted_at = CURRENT_TIMESTAMP,
+            received_at = CURRENT_TIMESTAMP,
+            total_score = EXCLUDED.total_score,
+            passed_yn = EXCLUDED.passed_yn,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = CURRENT_TIMESTAMP
+        RETURNING response_id
+    </select>
+
+    <delete id="deleteResponseAnswers">
+        DELETE FROM popup_response_answer
+        WHERE response_id = #{responseId}
+    </delete>
+
+    <select id="insertResponseAnswer"
+            resultType="java.lang.Long"
+            affectData="true"
+            flushCache="true">
+        INSERT INTO popup_response_answer
+        (
+            response_id, question_id, text_answer,
+            earned_score, correct_yn, created_by, updated_by
+        )
+        VALUES
+        (
+            #{responseId}, #{questionId}, #{textAnswer},
+            #{earnedScore}, #{correctYn}, #{userId}, #{userId}
+        )
+        RETURNING response_answer_id
+    </select>
+
+    <insert id="insertResponseValue">
+        INSERT INTO popup_response_value
+        (
+            response_answer_id, option_id, selected_value,
+            created_by, updated_by
+        )
+        VALUES
+        (
+            #{responseAnswerId}, #{optionId}, #{selectedValue},
+            #{userId}, #{userId}
+        )
+    </insert>
+
+    <insert id="markPopupCompleted">
+        INSERT INTO user_popup_status
+        (
+            employee_no, popup_id, popup_status, display_count,
+            completed_yn, completed_at, created_by, updated_by
+        )
+        VALUES
+        (
+            #{userId}, #{popupId},
+            CASE WHEN #{passedYn} = 'Y' THEN 'COMPLETED' ELSE 'SUBMITTED' END,
+            0, #{passedYn},
+            CASE WHEN #{passedYn} = 'Y' THEN CURRENT_TIMESTAMP ELSE NULL END,
+            #{userId}, #{userId}
+        )
+        ON CONFLICT (employee_no, popup_id)
+        DO UPDATE SET
+            popup_status = CASE
+                WHEN #{passedYn} = 'Y' THEN 'COMPLETED'
+                ELSE 'SUBMITTED'
+            END,
+            completed_yn = #{passedYn},
+            completed_at = CASE
+                WHEN #{passedYn} = 'Y' THEN CURRENT_TIMESTAMP
+                ELSE NULL
+            END,
+            updated_by = #{userId},
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
 </mapper>

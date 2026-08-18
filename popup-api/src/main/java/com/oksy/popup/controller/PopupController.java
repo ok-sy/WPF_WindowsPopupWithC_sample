@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.oksy.popup.dto.PopupHideRequestDto;
 import com.oksy.popup.dto.PopupHideResponseDto;
+import com.oksy.popup.dto.PopupSubmitRequestDto;
+import com.oksy.popup.dto.PopupSubmitResponseDto;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -112,5 +114,17 @@ public class PopupController {
         return popupService.hidePopup(
                 popupId,
                 requestDto);
+    }
+
+    /**
+     * POST /api/popups/{popupId}/responses
+     * 설문 답안을 서버에서 검증·채점한 뒤 PostgreSQL에 저장한다.
+     */
+    @PostMapping("/{popupId}/responses")
+    public PopupSubmitResponseDto submitResponse(
+            @PathVariable String popupId,
+            @Valid @RequestBody PopupSubmitRequestDto requestDto) {
+
+        return popupService.submitResponse(popupId, requestDto);
     }
 }
