@@ -30,6 +30,19 @@ public class ApiExceptionHandler {
         return badRequest(message);
     }
 
+    /** 내부 예외 내용은 숨기고 고정된 500 응답만 반환한다. */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleUnexpected(
+            Exception exception) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", OffsetDateTime.now());
+        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        body.put("error", "INTERNAL_SERVER_ERROR");
+        body.put("message", "서버 처리 중 오류가 발생했습니다.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(body);
+    }
+
     private ResponseEntity<Map<String, Object>> badRequest(String message) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", OffsetDateTime.now());
