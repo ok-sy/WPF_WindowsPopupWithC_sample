@@ -171,6 +171,26 @@ namespace Popup.Views.Windows
          */
         private void ApplyWindowSize()
         {
+            /*
+             * PopupWindow.xaml에는 Visual Studio 미리보기와
+             * 기본 실행을 위한 최소 크기가 작성되어 있다.
+             *
+             * 이 값을 여기서 서버 설정으로 다시 지정하지 않으면
+             * DB의 560 x 420 같은 크기가 XAML의 620 x 480에 막혀
+             * 실제 창에 적용되지 않는다.
+             */
+            MinWidth =
+                _options.MinimumWidth;
+
+            MinHeight =
+                _options.MinimumHeight;
+
+            MaxWidth =
+                _options.MaximumWidth;
+
+            MaxHeight =
+                _options.MaximumHeight;
+
             switch (_options.SizeMode)
             {
                 /*
