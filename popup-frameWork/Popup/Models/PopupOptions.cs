@@ -24,6 +24,12 @@ namespace Popup.Models
         ViewportRatio,
 
         /*
+         * 팝업이 열리는 모니터의 전체 화면을 사용한다.
+         * 고정 크기, 비율, 최소·최대 크기 옵션은 사용하지 않는다.
+         */
+        Fullscreen,
+
+        /*
          * 팝업 안의 콘텐츠 크기에 맞춰
          * Window 크기를 자동으로 결정한다.
          */

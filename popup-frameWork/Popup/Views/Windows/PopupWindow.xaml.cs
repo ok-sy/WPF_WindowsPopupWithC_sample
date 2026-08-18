@@ -4,6 +4,8 @@ using System.Windows;
 using System.Windows.Input;
 using System.Threading.Tasks;
 using Popup.Views.Contents;
+using System.Windows.Interop;
+using Forms = System.Windows.Forms;
 namespace Popup.Views.Windows
 
 {
@@ -44,6 +46,13 @@ namespace Popup.Views.Windows
              * 실제 화면에 적용한다.
              */
             ApplyOptions();
+
+            if (_options.SizeMode
+                == PopupSizeMode.Fullscreen)
+            {
+                SourceInitialized +=
+                    PopupWindow_SourceInitialized;
+            }
         }
 
         /*
@@ -279,6 +288,60 @@ namespace Popup.Views.Windows
                     }
 
                 /*
+                 * TEXT, IMAGE, VIDEO, SURVEY 등 콘텐츠 종류와 관계없이
+                 * 공통 PopupWindow를 현재 모니터 전체 크기로 표시한다.
+                 * 실제 모니터 좌표는 Window 핸들이 만들어진 뒤 적용한다.
+                 */
+                case PopupSizeMode.Fullscreen:
+                    {
+                        SizeToContent =
+                            SizeToContent.Manual;
+
+                        MinWidth =
+                            0;
+
+                        MinHeight =
+                            0;
+
+                        MaxWidth =
+                            double.PositiveInfinity;
+
+                        MaxHeight =
+                            double.PositiveInfinity;
+
+                        WindowStartupLocation =
+                            WindowStartupLocation.Manual;
+
+                        WindowState =
+                            WindowState.Normal;
+
+                        Topmost =
+                            true;
+
+                        /*
+                         * 일반 팝업의 24px 바깥 여백은 그림자를 보여주기
+                         * 위한 투명 공간이다. 전체화면에서는 이 여백 때문에
+                         * 뒤 화면과 작업표시줄이 보이므로 제거한다.
+                         */
+                        PopupOuterGrid.Margin =
+                            new Thickness(0);
+
+                        PopupBodyBorder.CornerRadius =
+                            new CornerRadius(0);
+
+                        PopupBodyBorder.BorderThickness =
+                            new Thickness(0);
+
+                        PopupBodyBorder.Effect =
+                            null;
+
+                        HeaderArea.CornerRadius =
+                            new CornerRadius(0);
+
+                        break;
+                    }
+
+                /*
                  * 콘텐츠 크기에 맞춰
                  * Window 크기를 자동으로 계산한다.
                  */
@@ -330,6 +393,68 @@ namespace Popup.Views.Windows
         }
 
         /*
+         * FULLSCREEN 모드에서 팝업이 열릴 모니터의 전체 영역을 구한다.
+         *
+         * WinForms Screen.Bounds는 실제 픽셀 단위이고,
+         * WPF Window는 DIP 단위를 사용하므로 DPI 변환 후 적용한다.
+         * WorkingArea 대신 Bounds를 사용하므로 작업표시줄도 덮는다.
+         */
+        private void PopupWindow_SourceInitialized(
+            object? sender,
+            EventArgs e)
+        {
+            SourceInitialized -=
+                PopupWindow_SourceInitialized;
+
+            WindowInteropHelper windowInteropHelper =
+                new WindowInteropHelper(
+                    this);
+
+            Forms.Screen screen =
+                Forms.Screen.FromHandle(
+                    windowInteropHelper.Handle);
+
+            PresentationSource? presentationSource =
+                PresentationSource.FromVisual(
+                    this);
+
+            if (presentationSource?.CompositionTarget == null)
+            {
+                return;
+            }
+
+            System.Windows.Media.Matrix fromDevice =
+                presentationSource.CompositionTarget
+                    .TransformFromDevice;
+
+            Point topLeft =
+                fromDevice.Transform(
+                    new Point(
+                        screen.Bounds.Left,
+                        screen.Bounds.Top));
+
+            Point bottomRight =
+                fromDevice.Transform(
+                    new Point(
+                        screen.Bounds.Right,
+                        screen.Bounds.Bottom));
+
+            Left =
+                topLeft.X;
+
+            Top =
+                topLeft.Y;
+
+            Width =
+                bottomRight.X
+                - topLeft.X;
+
+            Height =
+                bottomRight.Y
+                - topLeft.Y;
+        }
+
+        /*
          * 상단바 마우스 클릭 이벤트
          *
          * 상단바를 마우스로 누르고 움직이면
@@ -339,6 +464,12 @@ namespace Popup.Views.Windows
             object sender,
             MouseButtonEventArgs e)
         {
+            if (_options.SizeMode
+                == PopupSizeMode.Fullscreen)
+            {
+                return;
+            }
+
             if (e.LeftButton == MouseButtonState.Pressed)
             {
                 DragMove();

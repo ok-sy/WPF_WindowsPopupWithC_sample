@@ -453,6 +453,9 @@ namespace Popup.Factories
                 "VIEWPORT_RATIO" =>
                     PopupSizeMode.ViewportRatio,
 
+                "FULLSCREEN" =>
+                    PopupSizeMode.Fullscreen,
+
                 "AUTO" =>
                     PopupSizeMode.Auto,
 

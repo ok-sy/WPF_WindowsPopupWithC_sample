@@ -271,8 +271,12 @@ namespace Popup.Managers
             }
             else
             {
-                _currentPopupWindow.WindowStartupLocation =
-                    WindowStartupLocation.CenterScreen;
+                if (popupOptions.SizeMode
+                    != PopupSizeMode.Fullscreen)
+                {
+                    _currentPopupWindow.WindowStartupLocation =
+                        WindowStartupLocation.CenterScreen;
+                }
             }
 
             /*
