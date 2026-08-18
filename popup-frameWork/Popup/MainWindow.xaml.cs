@@ -207,12 +207,12 @@ namespace Popup
              * 현재 로그인한 사용자의 ID로 교체한다.
              */
             const string currentUserId =
-                "WPF_TYPE_TEST_USER";
+                "E1002";
 
             try
             {
                 /*
-                 * Java API와 Oracle DB를 통해
+                 * Java API와 PostgreSQL DB를 통해
                  * 현재 사용자에게 노출 가능한 팝업만 조회한다.
                  */
                 List<PopupResponseDto> popupDtos =
