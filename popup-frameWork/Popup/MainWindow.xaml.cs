@@ -154,24 +154,19 @@ namespace Popup
             }
 
             /*
-             * PopupApi 내부에서 현재 사용자 ID를 찾는다.
+             * UserId는 실행 환경변수가 없을 때 사용할 대체값이다.
+             * 환경변수만 사용하는 운영 환경에서는 생략하거나 비워도 된다.
              */
-            if (!popupApiElement.TryGetProperty(
+            string configuredUserId =
+                string.Empty;
+
+            if (popupApiElement.TryGetProperty(
                     "UserId",
                     out JsonElement userIdElement))
             {
-                throw new InvalidOperationException(
-                    "appsettings.json에 PopupApi.UserId 설정이 없습니다.");
-            }
-
-            string? userId =
-                userIdElement.GetString();
-
-            if (string.IsNullOrWhiteSpace(
-                    userId))
-            {
-                throw new InvalidOperationException(
-                    "PopupApi.UserId 값이 비어 있습니다.");
+                configuredUserId =
+                    userIdElement.GetString()
+                    ?? string.Empty;
             }
 
             return new PopupClientSettings
@@ -179,8 +174,42 @@ namespace Popup
                 BaseUrl =
                     baseUrl.Trim(),
                 UserId =
-                    userId.Trim()
+                    configuredUserId.Trim()
             };
+        }
+
+        /*
+         * 현재 사용자 ID를 결정한다.
+         *
+         * 1순위: 실행 환경변수 POPUP_USER_ID
+         * 2순위: appsettings.json의 PopupApi.UserId
+         *
+         * 백그라운드 실행 프로그램은 POPUP_USER_ID만 전달하면
+         * 사용자마다 appsettings.json을 수정할 필요가 없다.
+         */
+        private static string ResolveCurrentUserId(
+            string configuredUserId)
+        {
+            string? environmentUserId =
+                Environment.GetEnvironmentVariable(
+                    "POPUP_USER_ID");
+
+            if (!string.IsNullOrWhiteSpace(
+                    environmentUserId))
+            {
+                return environmentUserId.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    configuredUserId))
+            {
+                return configuredUserId.Trim();
+            }
+
+            throw new InvalidOperationException(
+                "현재 사용자 ID가 없습니다.\n" +
+                "POPUP_USER_ID 환경변수 또는 " +
+                "appsettings.json의 PopupApi.UserId를 설정해주세요.");
         }
 
         /*
@@ -220,7 +249,8 @@ namespace Popup
                 LoadPopupClientSettings();
 
             _currentUserId =
-                popupClientSettings.UserId;
+                ResolveCurrentUserId(
+                    popupClientSettings.UserId);
 
             /*
              * 설정 파일에서 읽은 API 주소를 전달하여
