@@ -11,6 +11,7 @@ import java.time.OffsetDateTime;
 
 import java.util.List;
 import java.math.BigDecimal;
+import com.oksy.popup.dto.UserPopupStatusDto;
 
 /*
  * POPUP_NOTICE 테이블의 SQL을 호출하는 Mapper다.
@@ -161,5 +162,20 @@ public interface PopupMapper {
     OffsetDateTime selectVideoCompletedAt(
             @Param("userId") String userId,
             @Param("popupId") String popupId
+    );
+
+    int countActiveUserAndPopup(
+            @Param("userId") String userId,
+            @Param("popupId") String popupId
+    );
+
+    int upsertPopupEvent(
+            @Param("userId") String userId,
+            @Param("popupId") String popupId,
+            @Param("eventType") String eventType
+    );
+
+    List<UserPopupStatusDto> selectPopupStatuses(
+            @Param("userId") String userId
     );
 }
