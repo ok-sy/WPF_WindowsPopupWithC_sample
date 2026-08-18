@@ -3,338 +3,369 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<!--
-    PopupMapper.java와 연결되는 SQL Mapper다.
-
-    namespace는 Mapper 인터페이스의
-    전체 패키지 경로와 정확히 같아야 한다.
--->
 <mapper namespace="com.oksy.popup.mapper.PopupMapper">
 
-    <!--
-        Oracle POPUP_NOTICE 조회 결과를
-        PopupEntity record 생성자에 연결한다.
-
-        record는 setter가 없으므로
-        constructor 매핑을 명시적으로 사용한다.
-    -->
-    <resultMap
-            id="popupEntityResultMap"
-            type="com.oksy.popup.domain.PopupEntity">
-
+    <resultMap id="popupEntityResultMap"
+               type="com.oksy.popup.domain.PopupEntity">
         <constructor>
-            <idArg
-                    column="POPUP_ID"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="POPUP_TYPE"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="TITLE"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="DISPLAY_START_AT"
-                    javaType="java.time.OffsetDateTime"/>
-
-            <arg
-                    column="DISPLAY_END_AT"
-                    javaType="java.time.OffsetDateTime"/>
-
-            <arg
-                    column="DISPLAY_MODE"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="SIZE_MODE"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="POPUP_WIDTH"
-                    javaType="java.math.BigDecimal"/>
-
-            <arg
-                    column="POPUP_HEIGHT"
-                    javaType="java.math.BigDecimal"/>
-
-            <arg
-                    column="WIDTH_RATIO"
-                    javaType="java.math.BigDecimal"/>
-
-            <arg
-                    column="HEIGHT_RATIO"
-                    javaType="java.math.BigDecimal"/>
-
-            <arg
-                    column="MINIMUM_WIDTH"
-                    javaType="java.math.BigDecimal"/>
-
-            <arg
-                    column="MINIMUM_HEIGHT"
-                    javaType="java.math.BigDecimal"/>
-
-            <arg
-                    column="MAXIMUM_WIDTH"
-                    javaType="java.math.BigDecimal"/>
-
-            <arg
-                    column="MAXIMUM_HEIGHT"
-                    javaType="java.math.BigDecimal"/>
-
-            <arg
-                    column="SHOW_HEADER_YN"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="SHOW_CLOSE_BUTTON_YN"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="SHOW_FOOTER_YN"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="SHOW_DONT_SHOW_YN"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="CONTENT_JSON"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="DISPLAY_ORDER"
-                    javaType="_int"/>
-
-            <arg
-                    column="USE_YN"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="QUESTION_TEMPLATE_ID"
-                    javaType="java.lang.Long"/>
-
-            <arg
-                    column="PERIOD_MODE"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="REPEAT_INTERVAL"
-                    javaType="java.lang.Integer"/>
-
-            <arg
-                    column="REPEAT_DAY_OF_WEEK"
-                    javaType="java.lang.String"/>
-
-            <arg
-                    column="REPEAT_DAY_OF_MONTH"
-                    javaType="java.lang.Integer"/>
-
-            <arg
-                    column="HIDE_DAYS"
-                    javaType="java.lang.Integer"/>
-
-            <arg
-                    column="COMPLETION_RATIO"
-                    javaType="java.math.BigDecimal"/>
-
-            <arg
-                    column="PASSING_SCORE"
-                    javaType="java.math.BigDecimal"/>
-
-            <arg
-                    column="ALLOW_CLOSE_BEFORE_COMPLETE_YN"
-                    javaType="java.lang.String"/>
+            <idArg column="POPUP_ID" javaType="java.lang.String"/>
+            <arg column="POPUP_TYPE" javaType="java.lang.String"/>
+            <arg column="TITLE" javaType="java.lang.String"/>
+            <arg column="DISPLAY_START_AT" javaType="java.time.OffsetDateTime"/>
+            <arg column="DISPLAY_END_AT" javaType="java.time.OffsetDateTime"/>
+            <arg column="DISPLAY_MODE" javaType="java.lang.String"/>
+            <arg column="SIZE_MODE" javaType="java.lang.String"/>
+            <arg column="POPUP_WIDTH" javaType="java.math.BigDecimal"/>
+            <arg column="POPUP_HEIGHT" javaType="java.math.BigDecimal"/>
+            <arg column="WIDTH_RATIO" javaType="java.math.BigDecimal"/>
+            <arg column="HEIGHT_RATIO" javaType="java.math.BigDecimal"/>
+            <arg column="MINIMUM_WIDTH" javaType="java.math.BigDecimal"/>
+            <arg column="MINIMUM_HEIGHT" javaType="java.math.BigDecimal"/>
+            <arg column="MAXIMUM_WIDTH" javaType="java.math.BigDecimal"/>
+            <arg column="MAXIMUM_HEIGHT" javaType="java.math.BigDecimal"/>
+            <arg column="SHOW_HEADER_YN" javaType="java.lang.String"/>
+            <arg column="SHOW_CLOSE_BUTTON_YN" javaType="java.lang.String"/>
+            <arg column="SHOW_FOOTER_YN" javaType="java.lang.String"/>
+            <arg column="SHOW_DONT_SHOW_YN" javaType="java.lang.String"/>
+            <arg column="CONTENT_JSON" javaType="java.lang.String"/>
+            <arg column="DISPLAY_ORDER" javaType="_int"/>
+            <arg column="USE_YN" javaType="java.lang.String"/>
+            <arg column="QUESTION_TEMPLATE_ID" javaType="java.lang.Long"/>
+            <arg column="PERIOD_MODE" javaType="java.lang.String"/>
+            <arg column="REPEAT_INTERVAL" javaType="java.lang.Integer"/>
+            <arg column="REPEAT_DAY_OF_WEEK" javaType="java.lang.String"/>
+            <arg column="REPEAT_DAY_OF_MONTH" javaType="java.lang.Integer"/>
+            <arg column="HIDE_DAYS" javaType="java.lang.Integer"/>
+            <arg column="COMPLETION_RATIO" javaType="java.math.BigDecimal"/>
+            <arg column="PASSING_SCORE" javaType="java.math.BigDecimal"/>
+            <arg column="ALLOW_CLOSE_BEFORE_COMPLETE_YN" javaType="java.lang.String"/>
         </constructor>
     </resultMap>
 
-    <!--
-    현재 시각과 사용자 숨김 상태를 기준으로
-    표시 가능한 팝업 목록을 조회한다.
--->
-    <select
-            id="selectAvailablePopups"
+    <resultMap id="questionEntityResultMap"
+               type="com.oksy.popup.domain.PopupQuestionEntity">
+        <constructor>
+            <idArg column="QUESTION_ID" javaType="java.lang.Long"/>
+            <arg column="QUESTION_TEMPLATE_ID" javaType="java.lang.Long"/>
+            <arg column="QUESTION_TYPE" javaType="java.lang.String"/>
+            <arg column="QUESTION_TITLE" javaType="java.lang.String"/>
+            <arg column="QUESTION_DESCRIPTION" javaType="java.lang.String"/>
+            <arg column="REQUIRED_YN" javaType="java.lang.String"/>
+            <arg column="SCORED_YN" javaType="java.lang.String"/>
+            <arg column="QUESTION_SCORE" javaType="java.math.BigDecimal"/>
+            <arg column="SORT_ORDER" javaType="java.lang.Integer"/>
+            <arg column="CREATED_BY" javaType="java.lang.String"/>
+            <arg column="CREATED_AT" javaType="java.time.LocalDateTime"/>
+            <arg column="UPDATED_BY" javaType="java.lang.String"/>
+            <arg column="UPDATED_AT" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="optionEntityResultMap"
+               type="com.oksy.popup.domain.PopupOptionEntity">
+        <constructor>
+            <idArg column="OPTION_ID" javaType="java.lang.Long"/>
+            <arg column="QUESTION_ID" javaType="java.lang.Long"/>
+            <arg column="OPTION_VALUE" javaType="java.lang.String"/>
+            <arg column="OPTION_TEXT" javaType="java.lang.String"/>
+            <arg column="CORRECT_YN" javaType="java.lang.String"/>
+            <arg column="SORT_ORDER" javaType="java.lang.Integer"/>
+            <arg column="CREATED_BY" javaType="java.lang.String"/>
+            <arg column="CREATED_AT" javaType="java.time.LocalDateTime"/>
+            <arg column="UPDATED_BY" javaType="java.lang.String"/>
+            <arg column="UPDATED_AT" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <!-- 조건 내부 AND, 대상 그룹 간 OR로 사용자의 팝업을 선택한다. -->
+    <select id="selectAvailablePopups"
             resultMap="popupEntityResultMap">
+        WITH RECURSIVE department_tree AS
+        (
+            SELECT
+                department_id AS ancestor_department_id,
+                department_id AS descendant_department_id
+            FROM app_department
 
+            UNION ALL
+
+            SELECT
+                tree.ancestor_department_id,
+                child.department_id
+            FROM department_tree tree
+            JOIN app_department child
+              ON child.parent_department_id = tree.descendant_department_id
+        ),
+        selected_user AS
+        (
+            SELECT usr.*
+            FROM app_user usr
+            WHERE usr.employee_no = #{userId}
+              AND usr.active_yn = 'Y'
+        ),
+        condition_result AS
+        (
+            SELECT
+                popup.popup_id,
+                target.target_group_id,
+                CASE condition.condition_type
+                    WHEN 'DEPARTMENT' THEN
+                        CASE condition.condition_operator
+                            WHEN '=' THEN
+                                CASE
+                                    WHEN condition.include_child_yn = 'Y' THEN EXISTS
+                                    (
+                                        SELECT 1
+                                        FROM department_tree tree
+                                        WHERE tree.ancestor_department_id = condition.department_id
+                                          AND tree.descendant_department_id = usr.department_id
+                                    )
+                                    ELSE usr.department_id = condition.department_id
+                                END
+                            WHEN '!=' THEN
+                                CASE
+                                    WHEN condition.include_child_yn = 'Y' THEN NOT EXISTS
+                                    (
+                                        SELECT 1
+                                        FROM department_tree tree
+                                        WHERE tree.ancestor_department_id = condition.department_id
+                                          AND tree.descendant_department_id = usr.department_id
+                                    )
+                                    ELSE usr.department_id &lt;&gt; condition.department_id
+                                END
+                            ELSE FALSE
+                        END
+                    WHEN 'POSITION' THEN
+                        CASE condition.condition_operator
+                            WHEN '='  THEN usr.position_id = condition.position_id
+                            WHEN '!=' THEN usr.position_id &lt;&gt; condition.position_id
+                            ELSE FALSE
+                        END
+                    WHEN 'EMPLOYEE' THEN
+                        CASE condition.condition_operator
+                            WHEN '='  THEN usr.employee_no = condition.employee_no
+                            WHEN '!=' THEN usr.employee_no &lt;&gt; condition.employee_no
+                            ELSE FALSE
+                        END
+                    WHEN 'HIRE_DATE' THEN
+                        CASE condition.condition_operator
+                            WHEN '='  THEN usr.hire_date = condition.condition_date_value
+                            WHEN '!=' THEN usr.hire_date &lt;&gt; condition.condition_date_value
+                            WHEN '&lt;'  THEN usr.hire_date &lt;  condition.condition_date_value
+                            WHEN '&lt;=' THEN usr.hire_date &lt;= condition.condition_date_value
+                            WHEN '&gt;'  THEN usr.hire_date &gt;  condition.condition_date_value
+                            WHEN '&gt;=' THEN usr.hire_date &gt;= condition.condition_date_value
+                            ELSE FALSE
+                        END
+                    ELSE FALSE
+                END AS condition_matched
+            FROM selected_user usr
+            CROSS JOIN popup_notice popup
+            JOIN popup_target_group target
+              ON target.popup_id = popup.popup_id
+            JOIN popup_target_condition condition
+              ON condition.target_group_id = target.target_group_id
+            WHERE popup.active_yn = 'Y'
+              AND CURRENT_TIMESTAMP BETWEEN popup.display_start_at AND popup.display_end_at
+              AND
+              (
+                  popup.question_template_id IS NULL
+                  OR EXISTS
+                  (
+                      SELECT 1
+                      FROM question_template template
+                      WHERE template.question_template_id = popup.question_template_id
+                        AND template.active_yn = 'Y'
+                  )
+              )
+              AND NOT EXISTS
+              (
+                  SELECT 1
+                  FROM user_popup_status status
+                  WHERE status.employee_no = usr.employee_no
+                    AND status.popup_id = popup.popup_id
+                    AND status.hidden_until_at &gt; CURRENT_TIMESTAMP
+              )
+        ),
+        eligible_popup AS
+        (
+            SELECT popup_id
+            FROM condition_result
+            GROUP BY popup_id, target_group_id
+            HAVING BOOL_AND(condition_matched)
+        )
         SELECT
-        PN.POPUP_ID,
-        PN.POPUP_TYPE,
-        PN.TITLE,
-        PN.DISPLAY_START_AT,
-        PN.DISPLAY_END_AT,
-        PN.DISPLAY_MODE,
-        PN.SIZE_MODE,
-        PN.POPUP_WIDTH,
-        PN.POPUP_HEIGHT,
-        PN.WIDTH_RATIO,
-        PN.HEIGHT_RATIO,
-        PN.MINIMUM_WIDTH,
-        PN.MINIMUM_HEIGHT,
-        PN.MAXIMUM_WIDTH,
-        PN.MAXIMUM_HEIGHT,
-        PN.SHOW_HEADER_YN,
-        PN.SHOW_CLOSE_BUTTON_YN,
-        PN.SHOW_FOOTER_YN,
-        PN.SHOW_DONT_SHOW_YN,
-        PN.CONTENT_JSON,
-        PN.DISPLAY_ORDER,
-        PN.USE_YN,
-        CAST(NULL AS NUMBER(19)) AS QUESTION_TEMPLATE_ID,
-        'FIXED' AS PERIOD_MODE,
-        CAST(NULL AS NUMBER(10)) AS REPEAT_INTERVAL,
-        CAST(NULL AS VARCHAR2(20)) AS REPEAT_DAY_OF_WEEK,
-        CAST(NULL AS NUMBER(10)) AS REPEAT_DAY_OF_MONTH,
-        CAST(NULL AS NUMBER(10)) AS HIDE_DAYS,
-        CAST(NULL AS NUMBER(5,4)) AS COMPLETION_RATIO,
-        CAST(NULL AS NUMBER(10,2)) AS PASSING_SCORE,
-        'Y' AS ALLOW_CLOSE_BEFORE_COMPLETE_YN
-        FROM POPUP_NOTICE PN
-        WHERE PN.USE_YN = 'Y'
-
-        <!--
-            노출 시작 일시가 없거나
-            현재 시각이 시작 일시 이후여야 한다.
-        -->
-        AND
+            popup.popup_id,
+            popup.popup_type,
+            popup.title,
+            popup.display_start_at AT TIME ZONE 'Asia/Seoul' AS display_start_at,
+            popup.display_end_at AT TIME ZONE 'Asia/Seoul' AS display_end_at,
+            CASE
+                WHEN popup.display_mode IN ('SEQUENTIAL', 'SIMULTANEOUS')
+                    THEN popup.display_mode
+                ELSE 'SEQUENTIAL'
+            END AS display_mode,
+            popup.size_mode,
+            popup.popup_width,
+            popup.popup_height,
+            popup.width_ratio,
+            popup.height_ratio,
+            popup.minimum_width,
+            popup.minimum_height,
+            popup.maximum_width,
+            popup.maximum_height,
+            popup.show_header_yn,
+            popup.show_close_button_yn,
+            popup.show_footer_yn,
+            popup.show_do_not_show_again_yn AS show_dont_show_yn,
+            (
+                CASE popup.popup_type
+                    WHEN 'TEXT' THEN JSONB_BUILD_OBJECT(
+                        'contentTitle', content.content_title,
+                        'description', content.description,
+                        'leftSectionBody', content.content_body
+                    )
+                    WHEN 'IMAGE' THEN JSONB_BUILD_OBJECT(
+                        'imageTitle', content.content_title,
+                        'imageUrl', content.media_url,
+                        'description', content.description,
+                        'linkUrl', content.link_url
+                    )
+                    WHEN 'VIDEO' THEN JSONB_BUILD_OBJECT(
+                        'videoTitle', content.content_title,
+                        'videoUrl', content.media_url,
+                        'description', content.description,
+                        'completionRatio', popup.completion_ratio,
+                        'allowCloseBeforeCompletion', popup.allow_close_before_complete_yn = 'Y'
+                    )
+                    WHEN 'SURVEY' THEN JSONB_BUILD_OBJECT(
+                        'surveyTitle', content.content_title,
+                        'description', content.description,
+                        'passingScore', popup.passing_score,
+                        'validateRequiredQuestions', TRUE
+                    )
+                    WHEN 'QUIZ' THEN JSONB_BUILD_OBJECT(
+                        'surveyTitle', content.content_title,
+                        'description', content.description,
+                        'passingScore', popup.passing_score,
+                        'validateRequiredQuestions', TRUE
+                    )
+                    ELSE '{}'::JSONB
+                END
+                || COALESCE(content.content_options, '{}'::JSONB)
+            )::TEXT AS content_json,
+            ROW_NUMBER() OVER (ORDER BY popup.popup_id)::INTEGER AS display_order,
+            popup.active_yn AS use_yn,
+            popup.question_template_id,
+            popup.period_mode,
+            popup.repeat_interval,
+            popup.repeat_day_of_week,
+            popup.repeat_day_of_month,
+            popup.hide_days,
+            popup.completion_ratio,
+            popup.passing_score,
+            popup.allow_close_before_complete_yn
+        FROM
         (
-        PN.DISPLAY_START_AT IS NULL
-        OR PN.DISPLAY_START_AT &lt;= SYSTIMESTAMP
-        )
-
-        <!--
-            노출 종료 일시가 없거나
-            현재 시각이 종료 일시 이전이어야 한다.
-        -->
-        AND
-        (
-        PN.DISPLAY_END_AT IS NULL
-        OR PN.DISPLAY_END_AT &gt;= SYSTIMESTAMP
-        )
-
-        <!--
-            현재 사용자의 유효한 숨김 정보가 존재하면
-            해당 팝업을 조회 결과에서 제외한다.
-        -->
-        AND NOT EXISTS
-        (
-        SELECT
-        1
-        FROM USER_POPUP_STATE UPS
-        WHERE UPS.USER_ID = #{userId}
-        AND UPS.POPUP_ID = PN.POPUP_ID
-        AND
-        (
-        <!--
-            영구 숨김이면 만료 일시와 관계없이 제외한다.
-        -->
-        UPS.HIDE_TYPE = 'PERMANENT'
-
-        OR
-
-        <!--
-            기간 숨김이면 만료 일시가
-            현재보다 미래인 경우에만 제외한다.
-        -->
-        (
-        UPS.HIDE_TYPE = 'UNTIL'
-        AND UPS.HIDDEN_UNTIL &gt; SYSTIMESTAMP
-        )
-        )
-        )
-
-        ORDER BY
-        PN.DISPLAY_ORDER,
-        PN.POPUP_ID
-
+            SELECT DISTINCT popup_id
+            FROM eligible_popup
+        ) eligible
+        JOIN popup_notice popup
+          ON popup.popup_id = eligible.popup_id
+        LEFT JOIN popup_content content
+          ON content.popup_id = popup.popup_id
+        ORDER BY popup.popup_id
     </select>
 
-    <!--
-    사용자별 팝업 숨김 상태를 저장한다.
-
-    동일한 USER_ID + POPUP_ID가 존재하면 UPDATE하고,
-    존재하지 않으면 INSERT한다.
--->
-    <insert id="upsertPopupHide">
-
-        MERGE INTO USER_POPUP_STATE TARGET
-        USING
-        (
+    <select id="selectQuestionsByTemplateIds"
+            resultMap="questionEntityResultMap">
         SELECT
-        #{userId} AS USER_ID,
-        #{popupId} AS POPUP_ID
-        FROM DUAL
-        ) SOURCE
-        ON
+            question_id,
+            question_template_id,
+            question_type,
+            question_title,
+            question_description,
+            required_yn,
+            scored_yn,
+            question_score,
+            sort_order,
+            created_by,
+            created_at,
+            updated_by,
+            updated_at
+        FROM popup_question
+        WHERE question_template_id IN
+        <foreach collection="templateIds"
+                 item="templateId"
+                 open="(" separator="," close=")">
+            #{templateId}
+        </foreach>
+        ORDER BY question_template_id, sort_order
+    </select>
+
+    <select id="selectOptionsByQuestionIds"
+            resultMap="optionEntityResultMap">
+        SELECT
+            option_id,
+            question_id,
+            option_value,
+            option_text,
+            correct_yn,
+            sort_order,
+            created_by,
+            created_at,
+            updated_by,
+            updated_at
+        FROM popup_option
+        WHERE question_id IN
+        <foreach collection="questionIds"
+                 item="questionId"
+                 open="(" separator="," close=")">
+            #{questionId}
+        </foreach>
+        ORDER BY question_id, sort_order
+    </select>
+
+    <insert id="upsertPopupHide">
+        INSERT INTO user_popup_status
         (
-        TARGET.USER_ID = SOURCE.USER_ID
-        AND TARGET.POPUP_ID = SOURCE.POPUP_ID
-        )
-
-        <!--
-            기존 숨김 정보가 존재하면
-            숨김 만료 일시를 현재 시각 기준으로 다시 계산한다.
-        -->
-        WHEN MATCHED THEN
-        UPDATE SET
-        TARGET.HIDE_TYPE =
-        'UNTIL',
-
-        TARGET.HIDDEN_UNTIL =
-        SYSTIMESTAMP
-        + NUMTODSINTERVAL(
-        #{hideDays},
-        'DAY'
-        ),
-
-        TARGET.UPDATED_AT =
-        SYSTIMESTAMP
-
-        <!--
-            기존 숨김 정보가 없다면
-            새로운 사용자 팝업 상태를 저장한다.
-        -->
-        WHEN NOT MATCHED THEN
-        INSERT
-        (
-        USER_ID,
-        POPUP_ID,
-        HIDE_TYPE,
-        HIDDEN_UNTIL,
-        CREATED_AT,
-        UPDATED_AT
+            employee_no,
+            popup_id,
+            popup_status,
+            display_count,
+            hidden_from_at,
+            hidden_until_at,
+            completed_yn,
+            created_by,
+            updated_by
         )
         VALUES
         (
-        SOURCE.USER_ID,
-        SOURCE.POPUP_ID,
-        'UNTIL',
-
-        SYSTIMESTAMP
-        + NUMTODSINTERVAL(
-        #{hideDays},
-        'DAY'
-        ),
-
-        SYSTIMESTAMP,
-        SYSTIMESTAMP
+            #{userId},
+            #{popupId},
+            'HIDDEN',
+            0,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP + (#{hideDays} * INTERVAL '1 day'),
+            'N',
+            #{userId},
+            #{userId}
         )
-
+        ON CONFLICT (employee_no, popup_id)
+        DO UPDATE SET
+            popup_status = 'HIDDEN',
+            hidden_from_at = CURRENT_TIMESTAMP,
+            hidden_until_at = CURRENT_TIMESTAMP + (#{hideDays} * INTERVAL '1 day'),
+            updated_by = #{userId},
+            updated_at = CURRENT_TIMESTAMP
     </insert>
 
-    <!--
-        MERGE 처리 후 Oracle에 저장된
-        실제 숨김 만료 일시를 조회한다.
-    -->
-    <select
-            id="selectHiddenUntil"
+    <select id="selectHiddenUntil"
             resultType="java.time.OffsetDateTime">
-
-        SELECT
-        HIDDEN_UNTIL
-        FROM USER_POPUP_STATE
-        WHERE USER_ID = #{userId}
-        AND POPUP_ID = #{popupId}
-
+        SELECT hidden_until_at AT TIME ZONE 'Asia/Seoul'
+        FROM user_popup_status
+        WHERE employee_no = #{userId}
+          AND popup_id = #{popupId}
     </select>
+
 </mapper>

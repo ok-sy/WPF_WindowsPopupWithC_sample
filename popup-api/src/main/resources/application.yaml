@@ -3,10 +3,10 @@ spring:
     name: popup-api
 
   datasource:
-    url: jdbc:oracle:thin:@//localhost:1521/XEPDB1
-    username: POPUP_APP
-    password: admin
-    driver-class-name: oracle.jdbc.OracleDriver
+    url: ${POPUP_DB_URL:jdbc:postgresql://localhost:5432/popup_db}
+    username: ${POPUP_DB_USERNAME:postgres}
+    password: ${POPUP_DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
 
 server:
   port: 8080
@@ -14,3 +14,5 @@ server:
 mybatis:
   # resources/mapper 아래의 모든 XML을 검색한다.
   mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true

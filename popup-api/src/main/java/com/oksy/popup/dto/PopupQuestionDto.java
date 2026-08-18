@@ -6,11 +6,11 @@ import java.util.List;
 /** WPF에 전달할 설문 또는 퀴즈 문항이다. */
 public record PopupQuestionDto(
         Long questionId,
+        String title,
+        String description,
         String questionType,
-        String questionTitle,
-        String questionDescription,
-        boolean required,
-        boolean scored,
+        boolean isRequired,
+        boolean isScored,
         BigDecimal questionScore,
         int sortOrder,
         List<PopupOptionDto> options

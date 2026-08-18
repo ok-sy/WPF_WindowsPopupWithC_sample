@@ -1,6 +1,8 @@
 package com.oksy.popup.mapper;
 
 import com.oksy.popup.domain.PopupEntity;
+import com.oksy.popup.domain.PopupOptionEntity;
+import com.oksy.popup.domain.PopupQuestionEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
@@ -21,7 +23,7 @@ public interface PopupMapper {
      * 사용자에게 노출 가능한 팝업 목록을 조회한다.
      *
      * 조회 조건:
-     * 1. USE_YN이 Y
+     * 1. ACTIVE_YN이 Y
      * 2. 노출 시작 일시가 지났음
      * 3. 노출 종료 일시가 지나지 않음
      */
@@ -36,6 +38,16 @@ public interface PopupMapper {
              */
             @Param("userId")
             String userId
+    );
+
+    List<PopupQuestionEntity> selectQuestionsByTemplateIds(
+            @Param("templateIds")
+            List<Long> templateIds
+    );
+
+    List<PopupOptionEntity> selectOptionsByQuestionIds(
+            @Param("questionIds")
+            List<Long> questionIds
     );
     /*
      * 사용자 팝업 숨김 상태를 저장한다.
@@ -70,7 +82,7 @@ public interface PopupMapper {
     /*
      * 저장된 사용자 팝업 숨김 만료 일시를 조회한다.
      *
-     * MERGE 처리 후 실제 Oracle 서버 시각으로 계산된
+     * UPSERT 처리 후 실제 PostgreSQL 서버 시각으로 계산된
      * HIDDEN_UNTIL 값을 응답하기 위해 사용한다.
      */
     OffsetDateTime selectHiddenUntil(
