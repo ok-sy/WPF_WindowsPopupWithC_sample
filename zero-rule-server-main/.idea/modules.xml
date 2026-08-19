@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/server.app.main.iml" filepath="$PROJECT_DIR$/.idea/modules/app/server.app.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/base/server.base.main.iml" filepath="$PROJECT_DIR$/.idea/modules/base/server.base.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/domain/server.domain.main.iml" filepath="$PROJECT_DIR$/.idea/modules/domain/server.domain.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/repo/core/server.repo.core.main.iml" filepath="$PROJECT_DIR$/.idea/modules/repo/core/server.repo.core.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/security/server.security.main.iml" filepath="$PROJECT_DIR$/.idea/modules/security/server.security.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/service/core/server.service.core.main.iml" filepath="$PROJECT_DIR$/.idea/modules/service/core/server.service.core.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/service/support/server.service.support.main.iml" filepath="$PROJECT_DIR$/.idea/modules/service/support/server.service.support.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/setup/server.setup.main.iml" filepath="$PROJECT_DIR$/.idea/modules/setup/server.setup.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/task/core/server.task.core.main.iml" filepath="$PROJECT_DIR$/.idea/modules/task/core/server.task.core.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/util/server.util.main.iml" filepath="$PROJECT_DIR$/.idea/modules/util/server.util.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/web/api/server.web.api.main.iml" filepath="$PROJECT_DIR$/.idea/modules/web/api/server.web.api.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/web/auth/server.web.auth.main.iml" filepath="$PROJECT_DIR$/.idea/modules/web/auth/server.web.auth.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/web/support/server.web.support.main.iml" filepath="$PROJECT_DIR$/.idea/modules/web/support/server.web.support.main.iml" />
+    </modules>
+  </component>
+</project>
