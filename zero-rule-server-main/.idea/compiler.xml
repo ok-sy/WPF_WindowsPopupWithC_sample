@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$PROJECT_DIR$/../../gradle_home3_pc/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.36/5a30490a6e14977d97d9c73c924c1f1b5311ea95/lombok-1.18.36.jar" />
+          <entry name="$PROJECT_DIR$/../../gradle_home3_pc/caches/modules-2/files-2.1/org.springframework.boot/spring-boot-configuration-processor/3.4.1/8dfcdae21f559be9c8a4d6d515e77cfd1d9c06a8/spring-boot-configuration-processor-3.4.1.jar" />
+        </processorPath>
+        <module name="server.app.main" />
+        <module name="server.base.main" />
+      </profile>
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$PROJECT_DIR$/../../gradle_home3_pc/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.36/5a30490a6e14977d97d9c73c924c1f1b5311ea95/lombok-1.18.36.jar" />
+        </processorPath>
+        <module name="server.security.main" />
+        <module name="server.service.core.main" />
+        <module name="server.repo.core.main" />
+        <module name="server.task.core.main" />
+        <module name="server.repo.support.main" />
+        <module name="server.domain.main" />
+        <module name="server.web.api.main" />
+        <module name="server.setup.main" />
+        <module name="server.task.support.main" />
+        <module name="server.service.support.main" />
+        <module name="server.util.main" />
+        <module name="server.web.auth.main" />
+        <module name="server.web.support.main" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel target="17" />
+  </component>
+</project>
