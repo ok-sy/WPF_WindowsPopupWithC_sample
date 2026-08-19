@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.apache.commons.lang3)
     implementation(libs.slf4j.api)
     implementation(libs.json.simple)
+    implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation(libs.oracle.ojdbc)
     implementation(libs.oracle.ojdbc6)
 }
