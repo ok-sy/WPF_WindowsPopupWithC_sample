@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Threading;
 using System.Windows;
+using Popup.Services;
 using Forms = System.Windows.Forms;
 
 namespace Popup
@@ -25,9 +26,16 @@ namespace Popup
 
         private bool _ownsSingleInstanceMutex;
 
+        private readonly WindowsStartupService
+            _windowsStartupService =
+                new WindowsStartupService();
+
         private MainWindow? _mainWindow;
 
         private Forms.NotifyIcon? _trayIcon;
+
+        private Forms.ToolStripMenuItem?
+            _runOnWindowsStartupMenuItem;
 
         private bool _isExiting;
 
@@ -103,6 +111,22 @@ namespace Popup
                 null,
                 RefreshPopupsMenuItem_Click);
 
+            _runOnWindowsStartupMenuItem =
+                new Forms.ToolStripMenuItem(
+                    "Windows 시작 시 자동 실행")
+                {
+                    Checked =
+                        _windowsStartupService.IsEnabled(),
+                    CheckOnClick =
+                        false
+                };
+
+            _runOnWindowsStartupMenuItem.Click +=
+                RunOnWindowsStartupMenuItem_Click;
+
+            trayMenu.Items.Add(
+                _runOnWindowsStartupMenuItem);
+
             trayMenu.Items.Add(
                 new Forms.ToolStripSeparator());
 
@@ -126,6 +150,41 @@ namespace Popup
 
             _trayIcon.DoubleClick +=
                 ShowMainWindowMenuItem_Click;
+        }
+
+        /*
+         * 트레이 메뉴에서 현재 사용자 로그인 자동 실행을 켜거나 끈다.
+         * 등록 결과를 다시 조회한 뒤 체크 표시를 갱신한다.
+         */
+        private void RunOnWindowsStartupMenuItem_Click(
+            object? sender,
+            EventArgs e)
+        {
+            if (_runOnWindowsStartupMenuItem == null)
+            {
+                return;
+            }
+
+            try
+            {
+                bool enableStartup =
+                    !_windowsStartupService.IsEnabled();
+
+                _windowsStartupService.SetEnabled(
+                    enableStartup);
+
+                _runOnWindowsStartupMenuItem.Checked =
+                    _windowsStartupService.IsEnabled();
+            }
+            catch (Exception exception)
+            {
+                System.Windows.MessageBox.Show(
+                    "Windows 자동 실행 설정을 변경할 수 없습니다.\n\n" +
+                    exception.Message,
+                    "자동 실행 설정 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         /*
@@ -203,6 +262,15 @@ namespace Popup
         {
             _isExiting =
                 true;
+
+            if (_runOnWindowsStartupMenuItem != null)
+            {
+                _runOnWindowsStartupMenuItem.Click -=
+                    RunOnWindowsStartupMenuItem_Click;
+
+                _runOnWindowsStartupMenuItem =
+                    null;
+            }
 
             if (_trayIcon != null)
             {
