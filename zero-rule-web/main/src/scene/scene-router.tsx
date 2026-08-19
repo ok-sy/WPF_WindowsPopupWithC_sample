@@ -30,6 +30,7 @@ const RuleDeployHome = dynamic(() => import('@/features/RuleDeployHome'), {
   ssr: false,
 });
 const EmailTransInfoHome = dynamic(() => import('@/features/EmailTransInfoHome'), { ssr: false });
+const RgstPop = dynamic(() => import('@/features/RgstPop'), { ssr: false });
 
 export interface ISceneComponent {
   url: string;
@@ -84,6 +85,7 @@ export const SCENES: Record<string, ISceneComponent> = createScenes([
   ['/interface-mgmt-home', '인터페이스 정보관리', InterfaceMgmtHome],
   ['/rule-deploy-home', '룰 배포', RuleDeployHome],
   ['/email-trans-info-home', '이메일송수신정보조회', EmailTransInfoHome],
+  ['/rgst-pop', '팝업 등록', RgstPop],
 ]);
 
 // url(키)로 값을 리턴해준다
