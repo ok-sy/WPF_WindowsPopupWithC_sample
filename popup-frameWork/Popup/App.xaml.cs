@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Drawing;
+using System.Threading;
 using System.Windows;
 using Forms = System.Windows.Forms;
 
@@ -13,6 +14,17 @@ namespace Popup
      */
     public partial class App : Application
     {
+        /*
+         * 같은 Windows 로그인 세션에서 사용하는 고정 Mutex 이름이다.
+         * Local 접두어를 사용하므로 다른 원격 세션과는 구분된다.
+         */
+        private const string SingleInstanceMutexName =
+            @"Local\OksyPopupClient.SingleInstance";
+
+        private Mutex? _singleInstanceMutex;
+
+        private bool _ownsSingleInstanceMutex;
+
         private MainWindow? _mainWindow;
 
         private Forms.NotifyIcon? _trayIcon;
@@ -27,6 +39,32 @@ namespace Popup
             StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            /*
+             * 첫 번째 실행만 이름이 지정된 Mutex의 소유자가 된다.
+             *
+             * 이미 실행 중인 Popup.exe가 있다면 createdNew가 false이므로
+             * 두 번째 프로세스는 트레이 아이콘이나 타이머를 만들지 않고
+             * 즉시 종료한다. 이로써 팝업 조회와 표시가 중복되지 않는다.
+             */
+            _singleInstanceMutex =
+                new Mutex(
+                    initiallyOwned: true,
+                    name: SingleInstanceMutexName,
+                    createdNew: out bool createdNew);
+
+            if (!createdNew)
+            {
+                _singleInstanceMutex.Dispose();
+                _singleInstanceMutex =
+                    null;
+
+                Shutdown();
+                return;
+            }
+
+            _ownsSingleInstanceMutex =
+                true;
 
             _mainWindow =
                 new MainWindow();
@@ -178,6 +216,28 @@ namespace Popup
 
             _mainWindow?.Close();
             Shutdown();
+        }
+
+        /*
+         * 앱이 정상 종료될 때 단일 실행 잠금을 해제한다.
+         * 이후 Popup.exe를 다시 실행하면 새 프로세스가 첫 실행이 된다.
+         */
+        protected override void OnExit(
+            ExitEventArgs e)
+        {
+            if (_ownsSingleInstanceMutex
+                && _singleInstanceMutex != null)
+            {
+                _singleInstanceMutex.ReleaseMutex();
+                _ownsSingleInstanceMutex =
+                    false;
+            }
+
+            _singleInstanceMutex?.Dispose();
+            _singleInstanceMutex =
+                null;
+
+            base.OnExit(e);
         }
     }
 }
