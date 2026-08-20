@@ -75,3 +75,8 @@ export interface AdminPopupDetail {
   questions: PopupQuestion[];
   content: Record<string, unknown>;
 }
+
+export interface AdminPopupInfo {
+  popup: AdminPopupDetail;
+  targetEmployeeNos: string[];
+}
