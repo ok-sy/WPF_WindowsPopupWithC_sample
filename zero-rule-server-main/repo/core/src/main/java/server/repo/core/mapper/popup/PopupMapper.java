@@ -4,6 +4,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import server.domain.popup.PopupEntity;
 import server.domain.popup.AdminPopupListItemDto;
+import server.domain.popup.AdminPopupSaveCommand;
 import server.domain.popup.PopupOptionEntity;
 import server.domain.popup.PopupQuestionEntity;
 import server.domain.popup.PopupSubmissionContext;
@@ -23,6 +24,18 @@ public interface PopupMapper {
 
     /** 관리자 편집·미리보기에서 사용할 팝업 한 건의 전체 표시 정보다. */
     PopupEntity selectAdminPopupById(@Param("popupId") String popupId);
+
+    /** 팝업의 공통 표시·기간·크기 설정을 등록하거나 수정한다. */
+    int upsertAdminPopupNotice(AdminPopupSaveCommand command);
+
+    /** 팝업 유형별 제목·본문·미디어·추가 옵션을 등록하거나 수정한다. */
+    int upsertAdminPopupContent(AdminPopupSaveCommand command);
+
+    /** 목록에서 팝업의 사용 여부만 빠르게 변경한다. */
+    int updateAdminPopupActive(
+            @Param("popupId") String popupId,
+            @Param("activeYn") String activeYn,
+            @Param("auditUser") String auditUser);
 
     List<PopupEntity> selectAvailablePopups(@Param("userId") String userId);
 
