@@ -564,4 +564,57 @@
           AND popup_id = #{popupId}
     </select>
 
+    <select id="countActiveUserAndPopup" resultType="int">
+        SELECT COUNT(*)
+        FROM popup.app_user usr
+        CROSS JOIN popup.popup_notice notice
+        WHERE usr.employee_no = #{userId}
+          AND usr.active_yn = 'Y'
+          AND notice.popup_id = #{popupId}
+          AND notice.active_yn = 'Y'
+    </select>
+
+    <!-- 표시 횟수와 닫은 시각을 누적하되 이미 완료된 상태는 유지한다. -->
+    <insert id="upsertPopupEvent">
+        INSERT INTO popup.user_popup_status AS current_status
+        (
+            employee_no, popup_id, popup_status,
+            first_displayed_at, last_displayed_at, display_count,
+            closed_at, completed_yn, created_by, updated_by
+        )
+        VALUES
+        (
+            #{userId}, #{popupId}, #{eventType},
+            CASE WHEN #{eventType} = 'DISPLAYED' THEN CURRENT_TIMESTAMP END,
+            CASE WHEN #{eventType} = 'DISPLAYED' THEN CURRENT_TIMESTAMP END,
+            CASE WHEN #{eventType} = 'DISPLAYED' THEN 1 ELSE 0 END,
+            CASE WHEN #{eventType} = 'CLOSED' THEN CURRENT_TIMESTAMP END,
+            'N', #{userId}, #{userId}
+        )
+        ON CONFLICT (employee_no, popup_id)
+        DO UPDATE SET
+            popup_status = CASE
+                WHEN current_status.completed_yn = 'Y' THEN 'COMPLETED'
+                WHEN #{eventType} = 'CLOSED' THEN 'CLOSED'
+                ELSE 'DISPLAYED'
+            END,
+            first_displayed_at = CASE
+                WHEN #{eventType} = 'DISPLAYED' THEN COALESCE(
+                    current_status.first_displayed_at, CURRENT_TIMESTAMP)
+                ELSE current_status.first_displayed_at
+            END,
+            last_displayed_at = CASE
+                WHEN #{eventType} = 'DISPLAYED' THEN CURRENT_TIMESTAMP
+                ELSE current_status.last_displayed_at
+            END,
+            display_count = current_status.display_count
+                + CASE WHEN #{eventType} = 'DISPLAYED' THEN 1 ELSE 0 END,
+            closed_at = CASE
+                WHEN #{eventType} = 'CLOSED' THEN CURRENT_TIMESTAMP
+                ELSE current_status.closed_at
+            END,
+            updated_by = #{userId},
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
 </mapper>

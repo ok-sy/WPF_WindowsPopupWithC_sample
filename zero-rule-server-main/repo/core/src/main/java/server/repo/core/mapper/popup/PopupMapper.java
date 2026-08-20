@@ -84,4 +84,13 @@ public interface PopupMapper {
     OffsetDateTime selectVideoCompletedAt(
             @Param("userId") String userId,
             @Param("popupId") String popupId);
+
+    int countActiveUserAndPopup(
+            @Param("userId") String userId,
+            @Param("popupId") String popupId);
+
+    int upsertPopupEvent(
+            @Param("userId") String userId,
+            @Param("popupId") String popupId,
+            @Param("eventType") String eventType);
 }
