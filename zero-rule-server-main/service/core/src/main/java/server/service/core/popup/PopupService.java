@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import server.domain.popup.PopupEntity;
+import server.domain.popup.PopupEventResponseDto;
 import server.domain.popup.PopupHideResponseDto;
 import server.domain.popup.PopupOptionDto;
 import server.domain.popup.PopupOptionEntity;
@@ -389,6 +390,43 @@ public class PopupService {
                 normalizedUserId, normalizedPopupId,
                 watchedRatio.doubleValue(), requiredRatio.doubleValue(),
                 completed, completedAt);
+    }
+
+    /** 팝업이 실제 표시되거나 닫힌 이벤트를 사용자 상태에 누적한다. */
+    @Transactional
+    public PopupEventResponseDto recordPopupEvent(
+            String popupId,
+            String userId,
+            String eventType) {
+        if (popupId == null || popupId.isBlank()) {
+            throw new IllegalArgumentException("팝업 ID는 필수입니다.");
+        }
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
+        }
+        if (eventType == null || eventType.isBlank()) {
+            throw new IllegalArgumentException("이벤트 유형은 필수입니다.");
+        }
+
+        String normalizedPopupId = popupId.trim();
+        String normalizedUserId = userId.trim();
+        String normalizedEventType = eventType.trim().toUpperCase();
+        if (!("DISPLAYED".equals(normalizedEventType)
+                || "CLOSED".equals(normalizedEventType))) {
+            throw new IllegalArgumentException(
+                    "이벤트 유형은 DISPLAYED 또는 CLOSED여야 합니다.");
+        }
+        if (popupMapper.countActiveUserAndPopup(
+                normalizedUserId, normalizedPopupId) == 0) {
+            throw new IllegalArgumentException("유효한 사용자 또는 팝업이 아닙니다.");
+        }
+        if (popupMapper.upsertPopupEvent(
+                normalizedUserId, normalizedPopupId, normalizedEventType) <= 0) {
+            throw new IllegalStateException("팝업 이벤트 저장에 실패했습니다.");
+        }
+        return new PopupEventResponseDto(
+                normalizedUserId, normalizedPopupId,
+                normalizedEventType, OffsetDateTime.now());
     }
 
     private Map<Long, List<PopupQuestionDto>> loadQuestions(List<Long> templateIds) {
