@@ -5,6 +5,7 @@ import type { AdminPopupListItem, ApiRequestContext, PopupDateValue } from '@loc
 import { Portlet, PortletContent } from '@local/ui';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import HistoryIcon from '@mui/icons-material/History';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Box,
@@ -59,6 +60,7 @@ export default function RgstPop() {
   const [keyword, setKeyword] = useState('');
   const [popupType, setPopupType] = useState('ALL');
   const [activeFilter, setActiveFilter] = useState('ALL');
+  const [recentOnly, setRecentOnly] = useState(false);
   const [selectedPopupId, setSelectedPopupId] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -90,7 +92,7 @@ export default function RgstPop() {
 
   const filteredPopups = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
-    return popups.filter((popup) => {
+    const filtered = popups.filter((popup) => {
       const keywordMatched =
         normalizedKeyword.length === 0 ||
         popup.popupId.toLowerCase().includes(normalizedKeyword) ||
@@ -99,7 +101,11 @@ export default function RgstPop() {
       const activeMatched = activeFilter === 'ALL' || popup.activeYn === activeFilter;
       return keywordMatched && typeMatched && activeMatched;
     });
-  }, [activeFilter, keyword, popupType, popups]);
+    const sorted = [...filtered].sort(
+      (left, right) => dateValue(right.createdAt) - dateValue(left.createdAt),
+    );
+    return recentOnly ? sorted.slice(0, 10) : sorted;
+  }, [activeFilter, keyword, popupType, popups, recentOnly]);
 
   const updateActive = async (popup: AdminPopupListItem, active: boolean) => {
     try {
@@ -134,6 +140,17 @@ export default function RgstPop() {
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <SubTitleAndIcon labelTitle="팝업 관리" />
             <Stack direction="row" spacing={1}>
+              <Button
+                variant={recentOnly ? 'contained' : 'outlined'}
+                size="small"
+                startIcon={<HistoryIcon />}
+                onClick={() => {
+                  setRecentOnly((value) => !value);
+                  setRefreshToken(Date.now());
+                }}
+              >
+                최근 생성 10개
+              </Button>
               <Button
                 variant="outlined"
                 size="small"
@@ -200,6 +217,7 @@ export default function RgstPop() {
                   <TableCell>노출 종료</TableCell>
                   <TableCell>크기</TableCell>
                   <TableCell align="center">활성</TableCell>
+                  <TableCell>생성일</TableCell>
                   <TableCell>최종 수정</TableCell>
                 </TableRow>
               </TableHead>
@@ -230,6 +248,12 @@ export default function RgstPop() {
                       />
                     </TableCell>
                     <TableCell>
+                      <Typography variant="body2">{formatPopupDate(popup.createdAt)}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {popup.createdBy}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
                       <Typography variant="body2">{formatPopupDate(popup.updatedAt)}</Typography>
                       <Typography variant="caption" color="text.secondary">
                         {popup.updatedBy}
@@ -239,7 +263,7 @@ export default function RgstPop() {
                 ))}
                 {!loading && filteredPopups.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                    <TableCell colSpan={9} align="center" sx={{ py: 5 }}>
                       조회된 팝업이 없습니다.
                     </TableCell>
                   </TableRow>
@@ -262,4 +286,14 @@ export default function RgstPop() {
       />
     </Box>
   );
+}
+
+function dateValue(value: PopupDateValue): number {
+  const numericValue = typeof value === 'number' ? value : Number.NaN;
+  const date = Number.isFinite(numericValue)
+    ? numericValue < 1_000_000_000_000
+      ? numericValue * 1000
+      : numericValue
+    : new Date(value).getTime();
+  return Number.isNaN(date) ? 0 : date;
 }
