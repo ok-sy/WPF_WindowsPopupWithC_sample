@@ -164,7 +164,12 @@ namespace Popup.Views.Windows
              * 표시 여부를 설정한다.
              */
             DoNotShowAgainCheckBox.Visibility =
-                _options.ShowDoNotShowAgain
+                _options.ShowFooter && _options.ShowDoNotShowAgain
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+
+            FooterCloseButton.Visibility =
+                _options.ShowCloseButton
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
