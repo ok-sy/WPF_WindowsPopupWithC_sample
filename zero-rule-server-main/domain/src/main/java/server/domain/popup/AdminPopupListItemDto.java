@@ -19,6 +19,8 @@ public record AdminPopupListItemDto(
         String activeYn,
         String periodMode,
         Long questionTemplateId,
+        String createdBy,
+        OffsetDateTime createdAt,
         String updatedBy,
         OffsetDateTime updatedAt
 ) {
