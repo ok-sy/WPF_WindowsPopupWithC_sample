@@ -4,6 +4,7 @@ import { useApi } from '@/provider';
 import type { AdminPopupListItem, ApiRequestContext, PopupDateValue } from '@local/domain';
 import { Portlet, PortletContent } from '@local/ui';
 import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Box,
@@ -24,6 +25,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import PopupEditorDialog from './PopupEditorDialog';
 
 const popupTypeLabels: Record<string, string> = {
   TEXT: '텍스트',
@@ -59,6 +61,8 @@ export default function RgstPop() {
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [selectedPopupId, setSelectedPopupId] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorPopupId, setEditorPopupId] = useState<string | null>(null);
 
   const loadPopups = useCallback(
     async (ctx: ApiRequestContext) => {
@@ -109,6 +113,19 @@ export default function RgstPop() {
     }
   };
 
+  const editorPopup = popups.find((popup) => popup.popupId === editorPopupId);
+
+  const openNewEditor = () => {
+    setEditorPopupId(null);
+    setEditorOpen(true);
+  };
+
+  const openSelectedEditor = (popupId = selectedPopupId) => {
+    if (popupId == null) return;
+    setEditorPopupId(popupId);
+    setEditorOpen(true);
+  };
+
   return (
     <Box className="RgstPop-root" sx={{ py: 1, pl: 1, pr: 3 }}>
       <Portlet>
@@ -125,7 +142,21 @@ export default function RgstPop() {
               >
                 새로고침
               </Button>
-              <Button variant="contained" size="small" startIcon={<AddIcon />} disabled>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<EditIcon />}
+                disabled={selectedPopupId == null}
+                onClick={() => openSelectedEditor()}
+              >
+                수정
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={openNewEditor}
+              >
                 신규 등록
               </Button>
             </Stack>
@@ -179,6 +210,7 @@ export default function RgstPop() {
                     key={popup.popupId}
                     selected={selectedPopupId === popup.popupId}
                     onClick={() => setSelectedPopupId(popup.popupId)}
+                    onDoubleClick={() => openSelectedEditor(popup.popupId)}
                     sx={{ cursor: 'pointer' }}
                   >
                     <TableCell>{popup.popupId}</TableCell>
@@ -217,6 +249,17 @@ export default function RgstPop() {
           </TableContainer>
         </PortletContent>
       </Portlet>
+      <PopupEditorDialog
+        open={editorOpen}
+        popupId={editorPopupId}
+        initialActive={editorPopupId == null ? true : editorPopup?.activeYn === 'Y'}
+        onClose={() => setEditorOpen(false)}
+        onSaved={(savedPopupId) => {
+          setEditorOpen(false);
+          setSelectedPopupId(savedPopupId);
+          setRefreshToken(Date.now());
+        }}
+      />
     </Box>
   );
 }
