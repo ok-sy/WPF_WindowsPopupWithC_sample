@@ -17,6 +17,7 @@ import {
 interface PopupPreviewProps {
   popup: AdminPopupDetail;
   standalone?: boolean;
+  fitContainer?: boolean;
   onClose?: () => void;
 }
 
@@ -176,20 +177,29 @@ function PopupBody({ popup }: PopupPreviewProps) {
     );
   }
 
+  const showRightSection =
+    content.showRightSection == null
+      ? Boolean(content.rightSectionTitle || content.rightSectionBody || content.additionalDescription)
+      : content.showRightSection === true;
+  const showHighlight =
+    content.showHighlight == null ? Boolean(content.highlightText) : content.showHighlight === true;
+
   return (
     <Stack spacing={2}>
       <Typography color="text.secondary">{description}</Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: showRightSection ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: 2 }}>
         <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
           <Typography fontWeight={700} sx={{ mb: 1 }}>
             {text(content.leftSectionTitle, '왼쪽 카드 제목')}
           </Typography>
           <Typography>{text(content.leftSectionBody, '왼쪽 카드 본문')}</Typography>
-          <Box sx={{ mt: 2, p: 1.5, border: '1px solid #93c5fd', borderRadius: 1, bgcolor: '#eff6ff', color: '#1d4ed8' }}>
-            {text(content.highlightText, '강조 문구')}
-          </Box>
+          {showHighlight && (
+            <Box sx={{ mt: 2, p: 1.5, border: '1px solid #93c5fd', borderRadius: 1, bgcolor: '#eff6ff', color: '#1d4ed8' }}>
+              {text(content.highlightText, '강조 문구')}
+            </Box>
+          )}
         </Paper>
-        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
+        {showRightSection && <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
           <Typography fontWeight={700} sx={{ mb: 1 }}>
             {text(content.rightSectionTitle, '오른쪽 카드 제목')}
           </Typography>
@@ -198,22 +208,32 @@ function PopupBody({ popup }: PopupPreviewProps) {
           <Typography color="text.secondary">
             {text(content.additionalDescription, '추가 설명')}
           </Typography>
-        </Paper>
+        </Paper>}
       </Box>
+      {Boolean(content.bottomDescription) && (
+        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8f9fc', whiteSpace: 'pre-wrap' }}>
+          {String(content.bottomDescription)}
+        </Paper>
+      )}
     </Stack>
   );
 }
 
-export default function PopupPreview({ popup, standalone = false, onClose }: PopupPreviewProps) {
-  const size = standalone ? { width: '100%', height: '100vh' } : previewSize(popup);
+export default function PopupPreview({ popup, standalone = false, fitContainer = false, onClose }: PopupPreviewProps) {
+  const size = standalone
+    ? { width: '100%', height: '100vh' }
+    : fitContainer
+      ? { width: '100%', height: '100%' }
+      : previewSize(popup);
   const contentTitle = text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
 
   return (
     <Box
       sx={{
-        minHeight: standalone ? '100vh' : 570,
-        p: standalone ? 0 : 2,
-        overflow: 'auto',
+        minHeight: standalone ? '100vh' : fitContainer ? 0 : 570,
+        height: fitContainer ? '100%' : undefined,
+        p: standalone || fitContainer ? 0 : 2,
+        overflow: 'hidden',
         borderRadius: 1,
         bgcolor: '#e9edf4',
         display: 'flex',
@@ -247,7 +267,7 @@ export default function PopupPreview({ popup, standalone = false, onClose }: Pop
           </Stack>
         )}
         {popup.showHeader && <Divider />}
-        <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: 3 }}>
+        <Box sx={{ flex: 1, minHeight: 0, overflow: fitContainer ? 'hidden' : 'auto', p: 3 }}>
           <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>
             {contentTitle}
           </Typography>
