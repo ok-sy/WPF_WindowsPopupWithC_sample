@@ -5,7 +5,9 @@ import org.apache.ibatis.annotations.Param;
 import server.domain.popup.PopupEntity;
 import server.domain.popup.PopupOptionEntity;
 import server.domain.popup.PopupQuestionEntity;
+import server.domain.popup.PopupSubmissionContext;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -29,4 +31,38 @@ public interface PopupMapper {
     OffsetDateTime selectHiddenUntil(
             @Param("userId") String userId,
             @Param("popupId") String popupId);
+
+    PopupSubmissionContext selectSubmissionContext(
+            @Param("userId") String userId,
+            @Param("popupId") String popupId);
+
+    Long upsertPopupResponse(
+            @Param("clientRequestId") String clientRequestId,
+            @Param("userId") String userId,
+            @Param("popupId") String popupId,
+            @Param("questionTemplateId") Long questionTemplateId,
+            @Param("responseStartedAt") OffsetDateTime responseStartedAt,
+            @Param("totalScore") BigDecimal totalScore,
+            @Param("passedYn") String passedYn);
+
+    int deleteResponseAnswers(@Param("responseId") Long responseId);
+
+    Long insertResponseAnswer(
+            @Param("responseId") Long responseId,
+            @Param("questionId") Long questionId,
+            @Param("textAnswer") String textAnswer,
+            @Param("earnedScore") BigDecimal earnedScore,
+            @Param("correctYn") String correctYn,
+            @Param("userId") String userId);
+
+    int insertResponseValue(
+            @Param("responseAnswerId") Long responseAnswerId,
+            @Param("optionId") Long optionId,
+            @Param("selectedValue") String selectedValue,
+            @Param("userId") String userId);
+
+    int markPopupCompleted(
+            @Param("userId") String userId,
+            @Param("popupId") String popupId,
+            @Param("passedYn") String passedYn);
 }
