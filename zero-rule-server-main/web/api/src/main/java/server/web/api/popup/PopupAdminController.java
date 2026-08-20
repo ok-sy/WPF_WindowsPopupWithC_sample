@@ -12,6 +12,8 @@ import server.service.core.popup.PopupService;
 import server.web.api.payload.popup.PopupAdminPayloads;
 import server.web.support.ApiBaseController;
 
+import static server.service.UserSecurityUtils.currentLgonId;
+
 /**
  * 로그인한 zero-rule-web 관리자가 사용하는 팝업 관리 API다.
  * WPF 공개 API와 달리 /apis/** 경로를 사용해 기존 인증 필터를 거친다.
@@ -47,6 +49,36 @@ public class PopupAdminController extends ApiBaseController {
                 "BE00000001",
                 PopupAdminPayloads.PopupInfoResponse.builder()
                         .popup(popupService.getAdminPopup(request.getPopupId()))
+                        .build());
+    }
+
+    /** 신규 팝업을 등록하거나 같은 ID의 기존 팝업을 수정한다. */
+    @Operation(summary = "관리자 팝업 등록·수정")
+    @PostMapping("/save")
+    public CLNewApiResponse<PopupAdminPayloads.PopupSaveResponse> savePopup(
+            @Valid @RequestBody PopupAdminPayloads.PopupSaveRequest request) {
+        return resultMsg(
+                "BE00000001",
+                PopupAdminPayloads.PopupSaveResponse.builder()
+                        .popup(popupService.saveAdminPopup(
+                                request.getPopup(),
+                                request.getActive(),
+                                currentLgonId()))
+                        .build());
+    }
+
+    /** 팝업의 내용은 유지하고 활성 여부만 변경한다. */
+    @Operation(summary = "관리자 팝업 활성 여부 변경")
+    @PostMapping("/active")
+    public CLNewApiResponse<PopupAdminPayloads.PopupSaveResponse> updateActive(
+            @Valid @RequestBody PopupAdminPayloads.PopupActiveRequest request) {
+        return resultMsg(
+                "BE00000001",
+                PopupAdminPayloads.PopupSaveResponse.builder()
+                        .popup(popupService.updateAdminPopupActive(
+                                request.getPopupId(),
+                                request.getActive(),
+                                currentLgonId()))
                         .build());
     }
 }

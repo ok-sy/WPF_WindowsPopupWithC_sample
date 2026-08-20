@@ -123,6 +123,161 @@
         WHERE popup.popup_id = #{popupId}
     </select>
 
+    <!-- popupId가 이미 존재하면 생성 정보는 유지하고 수정 정보만 갱신한다. -->
+    <insert id="upsertAdminPopupNotice">
+        INSERT INTO popup.popup_notice
+        (
+            popup_id,
+            question_template_id,
+            popup_type,
+            title,
+            show_on_login_yn,
+            show_on_schedule_yn,
+            display_start_at,
+            display_end_at,
+            display_mode,
+            period_mode,
+            repeat_interval,
+            repeat_day_of_week,
+            repeat_day_of_month,
+            active_yn,
+            size_mode,
+            popup_width,
+            popup_height,
+            width_ratio,
+            height_ratio,
+            minimum_width,
+            minimum_height,
+            maximum_width,
+            maximum_height,
+            show_header_yn,
+            show_close_button_yn,
+            show_footer_yn,
+            show_do_not_show_again_yn,
+            hide_days,
+            completion_ratio,
+            passing_score,
+            allow_close_before_complete_yn,
+            created_by,
+            updated_by
+        )
+        VALUES
+        (
+            #{popupId},
+            #{questionTemplateId},
+            #{popupType},
+            #{title},
+            'N',
+            'N',
+            #{displayStartAt},
+            #{displayEndAt},
+            #{displayMode},
+            #{periodMode},
+            #{repeatInterval},
+            #{repeatDayOfWeek},
+            #{repeatDayOfMonth},
+            #{activeYn},
+            #{sizeMode},
+            #{popupWidth},
+            #{popupHeight},
+            #{widthRatio},
+            #{heightRatio},
+            #{minimumWidth},
+            #{minimumHeight},
+            #{maximumWidth},
+            #{maximumHeight},
+            #{showHeaderYn},
+            #{showCloseButtonYn},
+            #{showFooterYn},
+            #{showDoNotShowAgainYn},
+            #{hideDays},
+            #{completionRatio},
+            #{passingScore},
+            #{allowCloseBeforeCompleteYn},
+            #{auditUser},
+            #{auditUser}
+        )
+        ON CONFLICT (popup_id) DO UPDATE
+        SET
+            question_template_id = EXCLUDED.question_template_id,
+            popup_type = EXCLUDED.popup_type,
+            title = EXCLUDED.title,
+            display_start_at = EXCLUDED.display_start_at,
+            display_end_at = EXCLUDED.display_end_at,
+            display_mode = EXCLUDED.display_mode,
+            period_mode = EXCLUDED.period_mode,
+            repeat_interval = EXCLUDED.repeat_interval,
+            repeat_day_of_week = EXCLUDED.repeat_day_of_week,
+            repeat_day_of_month = EXCLUDED.repeat_day_of_month,
+            active_yn = EXCLUDED.active_yn,
+            size_mode = EXCLUDED.size_mode,
+            popup_width = EXCLUDED.popup_width,
+            popup_height = EXCLUDED.popup_height,
+            width_ratio = EXCLUDED.width_ratio,
+            height_ratio = EXCLUDED.height_ratio,
+            minimum_width = EXCLUDED.minimum_width,
+            minimum_height = EXCLUDED.minimum_height,
+            maximum_width = EXCLUDED.maximum_width,
+            maximum_height = EXCLUDED.maximum_height,
+            show_header_yn = EXCLUDED.show_header_yn,
+            show_close_button_yn = EXCLUDED.show_close_button_yn,
+            show_footer_yn = EXCLUDED.show_footer_yn,
+            show_do_not_show_again_yn = EXCLUDED.show_do_not_show_again_yn,
+            hide_days = EXCLUDED.hide_days,
+            completion_ratio = EXCLUDED.completion_ratio,
+            passing_score = EXCLUDED.passing_score,
+            allow_close_before_complete_yn =
+                EXCLUDED.allow_close_before_complete_yn,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <insert id="upsertAdminPopupContent">
+        INSERT INTO popup.popup_content
+        (
+            popup_id,
+            content_title,
+            description,
+            content_body,
+            media_url,
+            link_url,
+            content_options,
+            created_by,
+            updated_by
+        )
+        VALUES
+        (
+            #{popupId},
+            #{contentTitle},
+            #{description},
+            #{contentBody},
+            #{mediaUrl},
+            #{linkUrl},
+            CAST(#{contentOptionsJson} AS JSONB),
+            #{auditUser},
+            #{auditUser}
+        )
+        ON CONFLICT (popup_id) DO UPDATE
+        SET
+            content_title = EXCLUDED.content_title,
+            description = EXCLUDED.description,
+            content_body = EXCLUDED.content_body,
+            media_url = EXCLUDED.media_url,
+            link_url = EXCLUDED.link_url,
+            content_options = EXCLUDED.content_options,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <update id="updateAdminPopupActive">
+        UPDATE popup.popup_notice
+        SET
+            active_yn = #{activeYn},
+            updated_by = #{auditUser},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE popup_id = #{popupId}
+    </update>
+
     <resultMap id="popupEntityResultMap"
                type="server.domain.popup.PopupEntity">
         <constructor>

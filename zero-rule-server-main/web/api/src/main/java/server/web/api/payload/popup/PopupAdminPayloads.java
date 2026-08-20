@@ -2,6 +2,7 @@ package server.web.api.payload.popup;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Data;
@@ -41,6 +42,39 @@ public final class PopupAdminPayloads {
     @Data
     public static class PopupInfoResponse {
         @Schema(description = "팝업 표시 설정과 유형별 콘텐츠")
+        private PopupResponseDto popup;
+    }
+
+    /** 신규 등록과 기존 팝업 수정이 함께 사용하는 저장 요청이다. */
+    @Schema(description = "관리자 팝업 등록·수정 요청")
+    @Data
+    public static class PopupSaveRequest {
+        @NotNull
+        @Schema(description = "WPF 표시 규격과 같은 팝업 상세 데이터")
+        private PopupResponseDto popup;
+
+        @NotNull
+        @Schema(description = "팝업 활성 여부", example = "true")
+        private Boolean active;
+    }
+
+    /** 목록에서 활성 여부만 변경할 때 사용하는 요청이다. */
+    @Schema(description = "관리자 팝업 활성 여부 변경 요청")
+    @Data
+    public static class PopupActiveRequest {
+        @NotBlank
+        @Size(max = 50)
+        private String popupId;
+
+        @NotNull
+        private Boolean active;
+    }
+
+    /** 저장 또는 활성 여부 변경 후 최신 팝업을 반환한다. */
+    @Schema(description = "관리자 팝업 저장 응답")
+    @Builder
+    @Data
+    public static class PopupSaveResponse {
         private PopupResponseDto popup;
     }
 }
