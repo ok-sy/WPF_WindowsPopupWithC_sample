@@ -15,6 +15,7 @@ import server.domain.popup.PopupEventResponseDto;
 import server.domain.popup.PopupResponseDto;
 import server.domain.popup.PopupSubmitResponseDto;
 import server.domain.popup.VideoProgressResponseDto;
+import server.domain.popup.UserPopupStatusDto;
 import server.service.core.popup.PopupService;
 import server.web.api.payload.popup.PopupHideRequest;
 import server.web.api.payload.popup.PopupEventRequest;
@@ -86,5 +87,13 @@ public class PopupController {
             @Valid @RequestBody PopupEventRequest request) {
         return popupService.recordPopupEvent(
                 popupId, request.userId(), request.eventType());
+    }
+
+    /** 사용자별 팝업 표시·숨김·완료 상태를 조회한다. */
+    @Operation(summary = "사용자 팝업 상태 목록 조회")
+    @GetMapping("/statuses")
+    public List<UserPopupStatusDto> getPopupStatuses(
+            @RequestParam String userId) {
+        return popupService.getPopupStatuses(userId);
     }
 }
