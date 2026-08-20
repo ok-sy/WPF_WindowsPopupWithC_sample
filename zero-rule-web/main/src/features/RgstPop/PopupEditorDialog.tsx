@@ -82,7 +82,23 @@ function createDefaultPopup(): AdminPopupDetail {
     content: {
       contentTitle: '',
       description: '',
+      leftSectionTitle: '',
       leftSectionBody: '',
+      highlightText: '',
+      rightSectionTitle: '',
+      rightSectionBody: '',
+      additionalDescription: '',
+      showDescription: true,
+      imageSizeMode: 'FIXED',
+      imageWidth: 0,
+      imageHeight: 0,
+      linkUrl: '',
+      showControls: true,
+      allowFullScreen: true,
+      allowPlaybackRateChange: true,
+      autoPlay: false,
+      isLoop: false,
+      defaultVolume: 0.7,
     },
   };
 }
@@ -165,7 +181,7 @@ export default function PopupEditorDialog({
     setPopup((previous) => ({ ...previous, [key]: value }));
   };
 
-  const updateContent = (key: string, value: string) => {
+  const updateContent = (key: string, value: unknown) => {
     setPopup((previous) => ({
       ...previous,
       content: { ...previous.content, [key]: value },
@@ -419,13 +435,46 @@ export default function PopupEditorDialog({
             onChange={(event) => updateContent('description', event.target.value)}
           />
           {popup.popupType === 'TEXT' && (
-            <TextField
-              label="본문"
-              value={contentValue(popup, 'leftSectionBody')}
-              multiline
-              minRows={5}
-              onChange={(event) => updateContent('leftSectionBody', event.target.value)}
-            />
+            <Stack spacing={2}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                <TextField
+                  label="왼쪽 카드 제목"
+                  value={contentValue(popup, 'leftSectionTitle')}
+                  onChange={(event) => updateContent('leftSectionTitle', event.target.value)}
+                />
+                <TextField
+                  label="오른쪽 카드 제목"
+                  value={contentValue(popup, 'rightSectionTitle')}
+                  onChange={(event) => updateContent('rightSectionTitle', event.target.value)}
+                />
+                <TextField
+                  label="왼쪽 카드 본문"
+                  value={contentValue(popup, 'leftSectionBody')}
+                  multiline
+                  minRows={4}
+                  onChange={(event) => updateContent('leftSectionBody', event.target.value)}
+                />
+                <TextField
+                  label="오른쪽 카드 본문"
+                  value={contentValue(popup, 'rightSectionBody')}
+                  multiline
+                  minRows={4}
+                  onChange={(event) => updateContent('rightSectionBody', event.target.value)}
+                />
+              </Box>
+              <TextField
+                label="강조 문구"
+                value={contentValue(popup, 'highlightText')}
+                onChange={(event) => updateContent('highlightText', event.target.value)}
+              />
+              <TextField
+                label="추가 설명"
+                value={contentValue(popup, 'additionalDescription')}
+                multiline
+                minRows={2}
+                onChange={(event) => updateContent('additionalDescription', event.target.value)}
+              />
+            </Stack>
           )}
           {isMedia && (
             <TextField
@@ -438,6 +487,48 @@ export default function PopupEditorDialog({
                 )
               }
             />
+          )}
+          {popup.popupType === 'IMAGE' && (
+            <Stack spacing={2}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+                <TextField
+                  select
+                  label="이미지 크기 모드"
+                  value={contentValue(popup, 'imageSizeMode') || 'FIXED'}
+                  onChange={(event) => updateContent('imageSizeMode', event.target.value)}
+                >
+                  <MenuItem value="FIXED">고정 영역</MenuItem>
+                  <MenuItem value="FIT_TO_IMAGE">원본에 맞춤</MenuItem>
+                  <MenuItem value="ADAPTIVE">화면에 맞춤</MenuItem>
+                </TextField>
+                <TextField
+                  type="number"
+                  label="이미지 너비"
+                  value={contentValue(popup, 'imageWidth')}
+                  onChange={(event) => updateContent('imageWidth', Number(event.target.value))}
+                />
+                <TextField
+                  type="number"
+                  label="이미지 높이"
+                  value={contentValue(popup, 'imageHeight')}
+                  onChange={(event) => updateContent('imageHeight', Number(event.target.value))}
+                />
+              </Box>
+              <TextField
+                label="클릭 연결 URL"
+                value={contentValue(popup, 'linkUrl')}
+                onChange={(event) => updateContent('linkUrl', event.target.value)}
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={popup.content.showDescription !== false}
+                    onChange={(_, value) => updateContent('showDescription', value)}
+                  />
+                }
+                label="이미지 설명 표시"
+              />
+            </Stack>
           )}
           {isSurvey && (
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
@@ -466,29 +557,63 @@ export default function PopupEditorDialog({
             </Box>
           )}
           {popup.popupType === 'VIDEO' && (
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-              <TextField
-                type="number"
-                label="완료 비율"
-                value={popup.completionRatio ?? ''}
-                inputProps={{ min: 0, max: 1, step: 0.05 }}
-                onChange={(event) =>
-                  updatePopup(
-                    'completionRatio',
-                    event.target.value ? Number(event.target.value) : null,
-                  )
-                }
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={popup.allowCloseBeforeComplete}
-                    onChange={(_, value) => updatePopup('allowCloseBeforeComplete', value)}
+            <Stack spacing={2}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                <TextField
+                  type="number"
+                  label="완료 비율"
+                  value={popup.completionRatio ?? ''}
+                  inputProps={{ min: 0, max: 1, step: 0.05 }}
+                  onChange={(event) =>
+                    updatePopup(
+                      'completionRatio',
+                      event.target.value ? Number(event.target.value) : null,
+                    )
+                  }
+                />
+                <TextField
+                  type="number"
+                  label="기본 음량"
+                  value={contentValue(popup, 'defaultVolume')}
+                  inputProps={{ min: 0, max: 1, step: 0.1 }}
+                  onChange={(event) => updateContent('defaultVolume', Number(event.target.value))}
+                />
+              </Box>
+              <Stack direction="row" flexWrap="wrap" gap={1}>
+                {[
+                  ['showDescription', '영상 설명 표시'],
+                  ['showControls', '컨트롤 표시'],
+                  ['allowFullScreen', '전체화면 허용'],
+                  ['allowPlaybackRateChange', '배속 변경 허용'],
+                  ['autoPlay', '자동 재생'],
+                  ['isLoop', '반복 재생'],
+                ].map(([key, label]) => (
+                  <FormControlLabel
+                    key={key}
+                    control={
+                      <Switch
+                        checked={
+                          popup.content[key] == null
+                            ? key !== 'autoPlay' && key !== 'isLoop'
+                            : popup.content[key] === true
+                        }
+                        onChange={(_, value) => updateContent(key, value)}
+                      />
+                    }
+                    label={label}
                   />
-                }
-                label="완료 전 닫기 허용"
-              />
-            </Box>
+                ))}
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={popup.allowCloseBeforeComplete}
+                      onChange={(_, value) => updatePopup('allowCloseBeforeComplete', value)}
+                    />
+                  }
+                  label="완료 전 닫기 허용"
+                />
+              </Stack>
+            </Stack>
           )}
 
           <Divider />
