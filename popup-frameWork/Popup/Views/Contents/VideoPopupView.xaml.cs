@@ -28,6 +28,16 @@ namespace Popup.Views.Contents
         private bool _isMediaOpened;
 
         /*
+         * 영상 파일, URL 또는 WebView 페이지를 불러오지 못해
+         * 사용자가 정상적으로 시청할 수 없는 상태인지 나타낸다.
+         *
+         * 이 값은 영상을 완료 처리하기 위한 값이 아니다.
+         * 필수 영상의 재생 자체가 불가능할 때 팝업 창을 닫을 수 있도록
+         * PopupWindow가 닫기 제한을 판단하는 데만 사용한다.
+         */
+        public bool HasPlaybackFailed { get; private set; }
+
+        /*
          * 영상 재생 위치와 UI를 동기화하는 타이머다.
          */
         private readonly DispatcherTimer _progressTimer;
@@ -1567,6 +1577,13 @@ namespace Popup.Views.Contents
             string message)
         {
             _isMediaOpened = false;
+
+            /*
+             * 로드 실패 후에도 완료 전 닫기 제한을 그대로 적용하면
+             * 사용자가 재생할 수 없는 팝업에 갇히게 된다.
+             * 실패 상태만 기록하며 시청 완료 상태나 진행률은 변경하지 않는다.
+             */
+            HasPlaybackFailed = true;
 
             VideoMessageText.Text =
                 message;

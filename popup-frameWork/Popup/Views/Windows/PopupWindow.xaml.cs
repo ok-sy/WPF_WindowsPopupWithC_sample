@@ -509,9 +509,10 @@ namespace Popup.Views.Windows
              * TEXT나 SURVEY 등 다른 팝업의 기존 닫기 동작에는
              * 영향을 주지 않도록 VIDEO 콘텐츠에만 적용한다.
              */
-            if (_options.Content is VideoPopupView &&
+            if (_options.Content is VideoPopupView videoPopupView &&
                 !_options.AllowCloseBeforeComplete &&
-                !_options.IsCompleted)
+                !_options.IsCompleted &&
+                !videoPopupView.HasPlaybackFailed)
             {
                 double requiredPercent =
                     Math.Clamp(
