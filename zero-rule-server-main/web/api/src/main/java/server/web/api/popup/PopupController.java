@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import server.domain.popup.PopupHideResponseDto;
 import server.domain.popup.PopupResponseDto;
+import server.domain.popup.PopupSubmitResponseDto;
 import server.service.core.popup.PopupService;
 import server.web.api.payload.popup.PopupHideRequest;
+import server.web.api.payload.popup.PopupSubmitRequest;
 
 import java.util.List;
 
@@ -44,5 +46,19 @@ public class PopupController {
             @Valid @RequestBody PopupHideRequest request) {
         return popupService.hidePopup(
                 popupId, request.userId(), request.hideDays());
+    }
+
+    /** 설문 답안을 검증·채점하고 사용자 응답으로 저장한다. */
+    @Operation(summary = "설문 답안 제출 및 서버 채점")
+    @PostMapping("/{popupId}/responses")
+    public PopupSubmitResponseDto submitResponse(
+            @PathVariable String popupId,
+            @Valid @RequestBody PopupSubmitRequest request) {
+        return popupService.submitResponse(
+                popupId,
+                request.clientRequestId(),
+                request.userId(),
+                request.responseStartedAt(),
+                request.toAnswers());
     }
 }
