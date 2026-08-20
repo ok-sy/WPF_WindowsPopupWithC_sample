@@ -21,6 +21,9 @@ public interface PopupMapper {
     /** 대상자·기간 필터를 적용하지 않은 관리자용 전체 목록이다. */
     List<AdminPopupListItemDto> selectAdminPopups();
 
+    /** 관리자 편집·미리보기에서 사용할 팝업 한 건의 전체 표시 정보다. */
+    PopupEntity selectAdminPopupById(@Param("popupId") String popupId);
+
     List<PopupEntity> selectAvailablePopups(@Param("userId") String userId);
 
     List<PopupQuestionEntity> selectQuestionsByTemplateIds(
