@@ -136,6 +136,14 @@ namespace Popup.Services
                     PropertyNamingPolicy =
                         JsonNamingPolicy.CamelCase
                 };
+
+            /*
+             * zero-server는 OffsetDateTime을 Unix epoch 초로 반환하고,
+             * 기존 popup-api는 ISO 문자열로 반환한다.
+             * 두 형식을 모두 같은 DateTimeOffset DTO로 읽는다.
+             */
+            _jsonOptions.Converters.Add(
+                new FlexibleDateTimeOffsetJsonConverter());
         }
 
         /*
