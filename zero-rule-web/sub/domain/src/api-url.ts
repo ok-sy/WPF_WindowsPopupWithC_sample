@@ -25,6 +25,14 @@ export const AUTH_API_URL = {
   isAvailableUserId: '/p/api/auth/is-available-user-id',
   signOut: '/api/auth/logout',
 };
+
+/** PopupAdminApiURL */
+export const POPUP_ADMIN_API_URL = {
+  list: '/apis/popup/list',
+  info: '/apis/popup/info',
+  save: '/apis/popup/save',
+  updateActive: '/apis/popup/active',
+};
 /**
  * CLCodeApiURL
  */

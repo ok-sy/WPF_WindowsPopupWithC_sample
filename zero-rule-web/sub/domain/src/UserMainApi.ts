@@ -21,6 +21,7 @@ import { ItemMgmtApi } from './user-apis/ItemMgmtApi';
 import { LayoutApi } from './user-apis/LayoutApi';
 import { LockApi } from './user-apis/LockApi';
 import { PdsApi } from './user-apis/PdsApi';
+import { PopupAdminApi } from './user-apis/PopupAdminApi';
 import { ProfileApi } from './user-apis/ProfileApi';
 import { RuleApi } from './user-apis/RuleApi';
 import { TeamApi } from './user-apis/TeamApi';
@@ -52,6 +53,7 @@ export class UserMainApi {
   interface: InterfaceApi;
   itemMgmt: ItemMgmtApi;
   lock: LockApi;
+  popupAdmin: PopupAdminApi;
   // 테스트
   layout: LayoutApi;
   grid: GridApi;
@@ -103,6 +105,7 @@ export class UserMainApi {
     this.interface = new InterfaceApi(helper);
     this.itemMgmt = new ItemMgmtApi(helper);
     this.lock = new LockApi(helper);
+    this.popupAdmin = new PopupAdminApi(helper);
     // 테스트
     this.layout = new LayoutApi(helper);
     this.grid = new GridApi(helper);
