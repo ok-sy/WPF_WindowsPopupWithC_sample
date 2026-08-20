@@ -16,6 +16,8 @@ import {
 
 interface PopupPreviewProps {
   popup: AdminPopupDetail;
+  standalone?: boolean;
+  onClose?: () => void;
 }
 
 function text(value: unknown, fallback: string): string {
@@ -147,15 +149,15 @@ function PopupBody({ popup }: PopupPreviewProps) {
   );
 }
 
-export default function PopupPreview({ popup }: PopupPreviewProps) {
-  const size = previewSize(popup);
+export default function PopupPreview({ popup, standalone = false, onClose }: PopupPreviewProps) {
+  const size = standalone ? { width: '100%', height: '100vh' } : previewSize(popup);
   const contentTitle = text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
 
   return (
     <Box
       sx={{
-        minHeight: 570,
-        p: 2,
+        minHeight: standalone ? '100vh' : 570,
+        p: standalone ? 0 : 2,
         overflow: 'auto',
         borderRadius: 1,
         bgcolor: '#e9edf4',
@@ -173,7 +175,7 @@ export default function PopupPreview({ popup }: PopupPreviewProps) {
           flexDirection: 'column',
           position: 'relative',
           overflow: 'hidden',
-          borderRadius: 2,
+          borderRadius: standalone ? 0 : 2,
           bgcolor: 'white',
         }}
       >
@@ -181,6 +183,7 @@ export default function PopupPreview({ popup }: PopupPreviewProps) {
           <IconButton
             size="small"
             aria-label="닫기 미리보기"
+            onClick={onClose}
             sx={{ position: 'absolute', top: 10, right: 10, zIndex: 1, bgcolor: 'white' }}
           >
             <CloseIcon fontSize="small" />
@@ -192,7 +195,7 @@ export default function PopupPreview({ popup }: PopupPreviewProps) {
               {text(popup.title, '팝업 제목')}
             </Typography>
             {popup.showCloseButton && (
-              <IconButton size="small" aria-label="닫기 미리보기">
+              <IconButton size="small" aria-label="닫기 미리보기" onClick={onClose}>
                 <CloseIcon fontSize="small" />
               </IconButton>
             )}
@@ -214,7 +217,7 @@ export default function PopupPreview({ popup }: PopupPreviewProps) {
               ) : (
                 <span />
               )}
-              <Button variant="contained" color="inherit" sx={{ minWidth: 92 }}>
+              <Button variant="contained" color="inherit" sx={{ minWidth: 92 }} onClick={onClose}>
                 닫기
               </Button>
             </Stack>
