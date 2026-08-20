@@ -82,8 +82,12 @@ function createDefaultPopup(): AdminPopupDetail {
     content: {
       contentTitle: '',
       description: '',
+      showContentHeader: true,
+      plainText: '',
+      showPlainText: true,
       leftSectionTitle: '',
       leftSectionBody: '',
+      showLeftSection: false,
       highlightText: '',
       showHighlight: false,
       rightSectionTitle: '',
@@ -91,6 +95,9 @@ function createDefaultPopup(): AdminPopupDetail {
       additionalDescription: '',
       showRightSection: false,
       bottomDescription: '',
+      showBottomDescription: false,
+      markdownMode: false,
+      markdownContent: '',
       showDescription: true,
       imageSizeMode: 'FIXED',
       imageWidth: 0,
@@ -282,6 +289,17 @@ export default function PopupEditorDialog({
     popup.content.showHighlight == null
       ? Boolean(contentValue(popup, 'highlightText'))
       : popup.content.showHighlight === true;
+  const showTextContentHeader = popup.content.showContentHeader !== false;
+  const showTextPlainText = popup.content.showPlainText !== false;
+  const showTextLeftSection =
+    popup.content.showLeftSection == null
+      ? Boolean(contentValue(popup, 'leftSectionTitle') || contentValue(popup, 'leftSectionBody'))
+      : popup.content.showLeftSection === true;
+  const showTextBottomDescription =
+    popup.content.showBottomDescription == null
+      ? Boolean(contentValue(popup, 'bottomDescription'))
+      : popup.content.showBottomDescription === true;
+  const markdownMode = popup.content.markdownMode === true;
 
   return (
     <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="xl">
@@ -457,11 +475,13 @@ export default function PopupEditorDialog({
           </Typography>
           <TextField
             label="콘텐츠 제목"
+            disabled={popup.popupType === 'TEXT' && !showTextContentHeader}
             value={contentValue(popup, titleKey)}
             onChange={(event) => updateContent(titleKey, event.target.value)}
           />
           <TextField
             label="설명"
+            disabled={popup.popupType === 'TEXT' && !showTextContentHeader}
             value={contentValue(popup, 'description')}
             multiline
             minRows={2}
@@ -473,12 +493,51 @@ export default function PopupEditorDialog({
                 <FormControlLabel
                   control={
                     <Switch
+                      checked={showTextContentHeader}
+                      onChange={(_, value) => updateContent('showContentHeader', value)}
+                    />
+                  }
+                  label="콘텐츠 제목·설명"
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={markdownMode}
+                      onChange={(_, value) => updateContent('markdownMode', value)}
+                    />
+                  }
+                  label="Markdown 모드"
+                />
+                {!markdownMode && <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showTextPlainText}
+                      onChange={(_, value) => updateContent('showPlainText', value)}
+                    />
+                  }
+                  label="일반 텍스트"
+                />}
+                {!markdownMode && <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showTextLeftSection}
+                      onChange={(_, value) => updateContent('showLeftSection', value)}
+                    />
+                  }
+                  label="왼쪽 카드"
+                />}
+                {!markdownMode && (
+                <FormControlLabel
+                  control={
+                    <Switch
                       checked={showTextRightSection}
                       onChange={(_, value) => updateContent('showRightSection', value)}
                     />
                   }
                   label="오른쪽 카드 사용"
                 />
+                )}
+                {!markdownMode && (
                 <FormControlLabel
                   control={
                     <Switch
@@ -488,10 +547,40 @@ export default function PopupEditorDialog({
                   }
                   label="강조 문구 사용"
                 />
+                )}
+                {!markdownMode && <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showTextBottomDescription}
+                      onChange={(_, value) => updateContent('showBottomDescription', value)}
+                    />
+                  }
+                  label="하단 설명"
+                />}
               </Stack>
+              {markdownMode ? (
+                <TextField
+                  label="Markdown 내용"
+                  value={contentValue(popup, 'markdownContent')}
+                  multiline
+                  minRows={14}
+                  placeholder={'# 제목\n\n일반 문장과 **강조 문장**\n\n- 목록 1\n- 목록 2'}
+                  onChange={(event) => updateContent('markdownContent', event.target.value)}
+                />
+              ) : (
+              <Stack spacing={2}>
+              <TextField
+                label="일반 텍스트"
+                disabled={!showTextPlainText}
+                value={contentValue(popup, 'plainText')}
+                multiline
+                minRows={4}
+                onChange={(event) => updateContent('plainText', event.target.value)}
+              />
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 <TextField
                   label="왼쪽 카드 제목"
+                  disabled={!showTextLeftSection}
                   value={contentValue(popup, 'leftSectionTitle')}
                   onChange={(event) => updateContent('leftSectionTitle', event.target.value)}
                 />
@@ -503,6 +592,7 @@ export default function PopupEditorDialog({
                 />
                 <TextField
                   label="왼쪽 카드 본문"
+                  disabled={!showTextLeftSection}
                   value={contentValue(popup, 'leftSectionBody')}
                   multiline
                   minRows={4}
@@ -533,11 +623,14 @@ export default function PopupEditorDialog({
               />
               <TextField
                 label="하단 설명"
+                disabled={!showTextBottomDescription}
                 value={contentValue(popup, 'bottomDescription')}
                 multiline
                 minRows={2}
                 onChange={(event) => updateContent('bottomDescription', event.target.value)}
               />
+              </Stack>
+              )}
             </Stack>
           )}
           {isMedia && (
