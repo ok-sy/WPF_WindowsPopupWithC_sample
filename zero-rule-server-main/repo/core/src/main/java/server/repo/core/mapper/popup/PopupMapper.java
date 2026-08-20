@@ -5,6 +5,8 @@ import org.apache.ibatis.annotations.Param;
 import server.domain.popup.PopupEntity;
 import server.domain.popup.AdminPopupListItemDto;
 import server.domain.popup.AdminPopupSaveCommand;
+import server.domain.popup.AdminPopupTargetCondition;
+import server.domain.popup.AdminPopupTargetRow;
 import server.domain.popup.PopupOptionEntity;
 import server.domain.popup.PopupQuestionEntity;
 import server.domain.popup.PopupSubmissionContext;
@@ -31,18 +33,23 @@ public interface PopupMapper {
     /** 팝업 유형별 제목·본문·미디어·추가 옵션을 등록하거나 수정한다. */
     int upsertAdminPopupContent(AdminPopupSaveCommand command);
 
-    List<String> selectAdminTargetEmployeeNos(@Param("popupId") String popupId);
+    List<AdminPopupTargetRow> selectAdminPopupTargets(@Param("popupId") String popupId);
 
-    int deleteAdminEmployeeTargets(@Param("popupId") String popupId);
+    int deleteAdminPopupTargets(@Param("popupId") String popupId);
 
-    Long insertAdminEmployeeTargetGroup(
+    int countAdminPopupTargetGroups(@Param("popupId") String popupId);
+
+    Long insertAdminTargetGroup(
             @Param("popupId") String popupId,
+            @Param("targetName") String targetName,
+            @Param("targetDescription") String targetDescription,
             @Param("groupOrder") int groupOrder,
             @Param("auditUser") String auditUser);
 
-    int insertAdminEmployeeTargetCondition(
+    int insertAdminTargetCondition(
             @Param("targetGroupId") Long targetGroupId,
-            @Param("employeeNo") String employeeNo,
+            @Param("condition") AdminPopupTargetCondition condition,
+            @Param("conditionOrder") int conditionOrder,
             @Param("auditUser") String auditUser);
 
     /** 목록에서 팝업의 사용 여부만 빠르게 변경한다. */
