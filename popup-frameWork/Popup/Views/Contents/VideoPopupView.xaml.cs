@@ -44,13 +44,14 @@ namespace Popup.Views.Contents
 
         /*
          * 서버 저장용 진행 상태를 일정 간격으로 외부에 전달하는 타이머다.
-         * 화면 갱신 타이머보다 느린 5초 간격을 사용하여 API 호출을 줄인다.
+         * 화면 갱신 타이머보다 느린 10초 간격을 사용하여 API 호출을 줄인다.
          */
         private readonly DispatcherTimer _progressSaveTimer;
 
         private double _maximumPositionSeconds;
         private double _watchedSeconds;
         private double _lastObservedPositionSeconds;
+        private VideoProgressSnapshot? _lastRequestedProgress;
 
         /// <summary>
         /// 현재 영상 진행 상태를 서버에 저장해야 할 때 발생한다.
@@ -156,7 +157,7 @@ namespace Popup.Views.Contents
                 new DispatcherTimer
                 {
                     Interval =
-                        TimeSpan.FromSeconds(5)
+                        TimeSpan.FromSeconds(10)
                 };
 
             _progressSaveTimer.Tick +=
@@ -509,8 +510,6 @@ namespace Popup.Views.Contents
             _lastObservedPositionSeconds =
                 0;
 
-            _progressSaveTimer.Start();
-
             PlayVideo();
         }
 
@@ -576,7 +575,7 @@ namespace Popup.Views.Contents
          * MediaElement의 현재 상태를 API 전달용 객체로 만들어
          * PopupManager에 알린다.
          */
-        private void RequestProgressSave()
+        private void RequestProgressSave(bool force = false)
         {
             if (!_isMediaOpened ||
                 !PopupVideo.NaturalDuration.HasTimeSpan)
@@ -601,8 +600,7 @@ namespace Popup.Views.Contents
             UpdatePlaybackMeasurements(
                 positionSeconds);
 
-            VideoProgressSaveRequested?.Invoke(
-                this,
+            VideoProgressSnapshot progress =
                 new VideoProgressSnapshot
                 {
                     DurationSeconds =
@@ -617,7 +615,23 @@ namespace Popup.Views.Contents
                         (decimal)Math.Min(
                             _watchedSeconds,
                             durationSeconds)
-                });
+                };
+
+            if (!force &&
+                _lastRequestedProgress != null &&
+                _lastRequestedProgress.PositionSeconds == progress.PositionSeconds &&
+                _lastRequestedProgress.MaximumPositionSeconds == progress.MaximumPositionSeconds &&
+                _lastRequestedProgress.WatchedSeconds == progress.WatchedSeconds)
+            {
+                return;
+            }
+
+            _lastRequestedProgress =
+                progress;
+
+            VideoProgressSaveRequested?.Invoke(
+                this,
+                progress);
         }
 
         private void ProgressSlider_PreviewMouseLeftButtonDown(
@@ -642,6 +656,7 @@ namespace Popup.Views.Contents
             _isSeeking = true;
 
             _controlHideTimer.Stop();
+            _progressSaveTimer.Stop();
 
             /*
              * 드래그 중에는 영상이 계속 흘러가지 않도록
@@ -772,6 +787,8 @@ namespace Popup.Views.Contents
                 PopupVideo.Pause();
 
                 _isPlaying = false;
+
+                RequestProgressSave(force: true);
 
                 /*
                  * 재생 버튼 아이콘을
@@ -1384,6 +1401,10 @@ namespace Popup.Views.Contents
         object sender,
         RoutedEventArgs e)
         {
+            _progressSaveTimer.Stop();
+
+            RequestProgressSave(force: true);
+
             _isPlaying = false;
 
             _progressTimer.Stop();
@@ -1413,7 +1434,6 @@ namespace Popup.Views.Contents
                     FormatTime(duration);
             }
 
-            RequestProgressSave();
         }
 
         private void PopupVideo_MediaFailed(
@@ -1422,6 +1442,7 @@ namespace Popup.Views.Contents
         {
 
             _progressTimer.Stop();
+            _progressSaveTimer.Stop();
 
             _isPlaying = false;
 
@@ -1528,6 +1549,7 @@ namespace Popup.Views.Contents
 
 
             _progressTimer.Start();
+            _progressSaveTimer.Start();
 
 
         }
@@ -1540,6 +1562,10 @@ namespace Popup.Views.Contents
             }
 
             PopupVideo.Pause();
+
+            _progressSaveTimer.Stop();
+
+            RequestProgressSave(force: true);
 
             _isPlaying = false;
 
@@ -1577,6 +1603,8 @@ namespace Popup.Views.Contents
             string message)
         {
             _isMediaOpened = false;
+            _progressTimer.Stop();
+            _progressSaveTimer.Stop();
 
             /*
              * 로드 실패 후에도 완료 전 닫기 제한을 그대로 적용하면
@@ -1608,7 +1636,7 @@ namespace Popup.Views.Contents
                 /*
                  * 영상 객체를 정리하기 전에 마지막 위치를 저장 요청한다.
                  */
-                RequestProgressSave();
+                RequestProgressSave(force: true);
 
                 _progressSaveTimer.Stop();
                 
