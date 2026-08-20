@@ -53,9 +53,12 @@ function PopupBody({ popup }: PopupPreviewProps) {
 
   if (popup.popupType === 'IMAGE') {
     const imageUrl = text(content.imageUrl, '');
+    const showDescription = content.showDescription !== false;
+    const imageWidth = Number(content.imageWidth) || undefined;
+    const imageHeight = Number(content.imageHeight) || undefined;
     return (
       <Stack spacing={1.5} alignItems="center" sx={{ height: '100%' }}>
-        <Typography color="text.secondary">{description}</Typography>
+        {showDescription && <Typography color="text.secondary">{description}</Typography>}
         {imageUrl ? (
           <Box
             component="img"
@@ -63,6 +66,8 @@ function PopupBody({ popup }: PopupPreviewProps) {
             alt="팝업 이미지 미리보기"
             sx={{
               width: '100%',
+              maxWidth: imageWidth,
+              maxHeight: imageHeight,
               flex: 1,
               minHeight: 150,
               borderRadius: 1,
@@ -94,9 +99,11 @@ function PopupBody({ popup }: PopupPreviewProps) {
   }
 
   if (popup.popupType === 'VIDEO') {
+    const showDescription = content.showDescription !== false;
+    const showControls = content.showControls !== false;
     return (
       <Stack spacing={1.5} sx={{ height: '100%' }}>
-        <Typography color="text.secondary">{description}</Typography>
+        {showDescription && <Typography color="text.secondary">{description}</Typography>}
         <Box
           sx={{
             flex: 1,
@@ -113,25 +120,55 @@ function PopupBody({ popup }: PopupPreviewProps) {
             <Typography variant="caption">영상 재생 영역</Typography>
           </Stack>
         </Box>
+        {showControls && (
+          <Stack direction="row" justifyContent="space-between" color="text.secondary">
+            <Typography variant="caption">▶ 00:00 / 00:00</Typography>
+            <Typography variant="caption">
+              {content.allowPlaybackRateChange !== false ? '1.0× · ' : ''}
+              {content.allowFullScreen !== false ? '전체화면' : '전체화면 제한'}
+            </Typography>
+          </Stack>
+        )}
         <Typography variant="caption" color="text.secondary">
-          완료 기준 {Math.round((popup.completionRatio ?? 0.8) * 100)}%
+          완료 기준 {Math.round((popup.completionRatio ?? 0.8) * 100)}% · 기본 음량{' '}
+          {Math.round((Number(content.defaultVolume) || 0.7) * 100)}%
         </Typography>
       </Stack>
     );
   }
 
   if (popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ') {
-    const questionTitle = popup.questions[0]?.title ?? '샘플 문항입니다.';
     return (
       <Stack spacing={1.5}>
         <Typography color="text.secondary">{description}</Typography>
-        <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography fontWeight={700}>{questionTitle}</Typography>
-          <Stack sx={{ mt: 1 }}>
-            <FormControlLabel control={<Radio size="small" />} label="보기 1" />
-            <FormControlLabel control={<Radio size="small" />} label="보기 2" />
-          </Stack>
-        </Paper>
+        {(popup.questions.length > 0 ? popup.questions : [null]).map((question, index) => (
+          <Paper variant="outlined" sx={{ p: 2 }} key={question?.questionId ?? 'sample'}>
+            <Typography fontWeight={700}>
+              {index + 1}. {question?.title ?? '샘플 문항입니다.'}
+              {question?.isRequired && <Typography component="span" color="error"> *</Typography>}
+            </Typography>
+            {question?.description && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {question.description}
+              </Typography>
+            )}
+            <Stack sx={{ mt: 1 }}>
+              {question?.questionType === 'TEXT' ? (
+                <Box sx={{ minHeight: 62, border: '1px solid', borderColor: 'divider', borderRadius: 1 }} />
+              ) : (
+                (question?.options.length ? question.options : [{ optionId: 0, text: '보기 1' }]).map(
+                  (option) => (
+                    <FormControlLabel
+                      key={option.optionId}
+                      control={<Radio size="small" />}
+                      label={option.text}
+                    />
+                  ),
+                )
+              )}
+            </Stack>
+          </Paper>
+        ))}
         <Button variant="contained" sx={{ alignSelf: 'flex-end' }}>
           제출
         </Button>
@@ -142,9 +179,27 @@ function PopupBody({ popup }: PopupPreviewProps) {
   return (
     <Stack spacing={2}>
       <Typography color="text.secondary">{description}</Typography>
-      <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8f9fc', whiteSpace: 'pre-wrap' }}>
-        {text(content.leftSectionBody, '텍스트 팝업 본문이 여기에 표시됩니다.')}
-      </Paper>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2 }}>
+        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
+          <Typography fontWeight={700} sx={{ mb: 1 }}>
+            {text(content.leftSectionTitle, '왼쪽 카드 제목')}
+          </Typography>
+          <Typography>{text(content.leftSectionBody, '왼쪽 카드 본문')}</Typography>
+          <Box sx={{ mt: 2, p: 1.5, border: '1px solid #93c5fd', borderRadius: 1, bgcolor: '#eff6ff', color: '#1d4ed8' }}>
+            {text(content.highlightText, '강조 문구')}
+          </Box>
+        </Paper>
+        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
+          <Typography fontWeight={700} sx={{ mb: 1 }}>
+            {text(content.rightSectionTitle, '오른쪽 카드 제목')}
+          </Typography>
+          <Typography>{text(content.rightSectionBody, '오른쪽 카드 본문')}</Typography>
+          <Divider sx={{ my: 2 }} />
+          <Typography color="text.secondary">
+            {text(content.additionalDescription, '추가 설명')}
+          </Typography>
+        </Paper>
+      </Box>
     </Stack>
   );
 }
@@ -179,16 +234,6 @@ export default function PopupPreview({ popup, standalone = false, onClose }: Pop
           bgcolor: 'white',
         }}
       >
-        {!popup.showHeader && popup.showCloseButton && (
-          <IconButton
-            size="small"
-            aria-label="닫기 미리보기"
-            onClick={onClose}
-            sx={{ position: 'absolute', top: 10, right: 10, zIndex: 1, bgcolor: 'white' }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        )}
         {popup.showHeader && (
           <Stack direction="row" alignItems="center" sx={{ minHeight: 52, px: 2 }}>
             <Typography fontWeight={700} sx={{ flex: 1 }} noWrap>
