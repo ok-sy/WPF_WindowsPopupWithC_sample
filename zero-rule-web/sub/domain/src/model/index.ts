@@ -35,3 +35,4 @@ export * from './ItemMgmt';
 export * from './LayoutApiData';
 export * from './CLGrid';
 export * from './EmailTransInfo';
+export * from './PopupAdmin';
