@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import server.domain.popup.PopupEntity;
 import server.domain.popup.AdminPopupListItemDto;
 import server.domain.popup.AdminPopupSaveCommand;
+import server.domain.popup.AdminPopupTargetCondition;
+import server.domain.popup.AdminPopupTargetGroup;
+import server.domain.popup.AdminPopupTargetRow;
 import server.domain.popup.PopupEventResponseDto;
 import server.domain.popup.PopupHideResponseDto;
 import server.domain.popup.PopupOptionDto;
@@ -24,6 +27,7 @@ import server.repo.core.mapper.popup.PopupMapper;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
 import java.math.RoundingMode;
 import java.util.LinkedHashMap;
 import java.util.HashSet;
@@ -87,11 +91,22 @@ public class PopupService {
         return toResponseDto(popup, questions);
     }
 
-    public List<String> getAdminTargetEmployeeNos(String popupId) {
+    public List<AdminPopupTargetGroup> getAdminTargetGroups(String popupId) {
         if (popupId == null || popupId.isBlank()) {
             throw new IllegalArgumentException("팝업 ID는 필수입니다.");
         }
-        return popupMapper.selectAdminTargetEmployeeNos(popupId.trim());
+        Map<Long, List<AdminPopupTargetRow>> rowsByGroup =
+                popupMapper.selectAdminPopupTargets(popupId.trim()).stream()
+                        .collect(Collectors.groupingBy(
+                                AdminPopupTargetRow::targetGroupId,
+                                LinkedHashMap::new,
+                                Collectors.toList()));
+        return rowsByGroup.values().stream()
+                .map(rows -> new AdminPopupTargetGroup(
+                        rows.get(0).targetName(),
+                        rows.get(0).targetDescription(),
+                        rows.stream().map(this::toTargetCondition).toList()))
+                .toList();
     }
 
     /**
@@ -102,13 +117,13 @@ public class PopupService {
     public PopupResponseDto saveAdminPopup(
             PopupResponseDto popup,
             Boolean active,
-            List<String> targetEmployeeNos,
+            List<AdminPopupTargetGroup> targetGroups,
             String auditUser) {
         validateAdminPopup(popup, active, auditUser);
-        List<String> normalizedEmployeeNos = normalizeTargetEmployeeNos(targetEmployeeNos);
-        if (Boolean.TRUE.equals(active) && normalizedEmployeeNos.isEmpty()) {
+        List<AdminPopupTargetGroup> normalizedGroups = normalizeTargetGroups(targetGroups);
+        if (Boolean.TRUE.equals(active) && normalizedGroups.isEmpty()) {
             throw new IllegalArgumentException(
-                    "활성 팝업은 대상 사번을 한 명 이상 지정해야 합니다.");
+                    "활성 팝업은 대상 조건 그룹을 한 개 이상 지정해야 합니다.");
         }
 
         AdminPopupSaveCommand command = toAdminSaveCommand(
@@ -119,36 +134,91 @@ public class PopupService {
             throw new IllegalStateException("팝업 저장에 실패했습니다.");
         }
 
-        // 아직 UI가 지원하지 않는 부서·직급·입사일 조건은 그대로 보존한다.
-        popupMapper.deleteAdminEmployeeTargets(command.popupId());
-        for (int index = 0; index < normalizedEmployeeNos.size(); index++) {
-            Long targetGroupId = popupMapper.insertAdminEmployeeTargetGroup(
-                    command.popupId(), index + 1, command.auditUser());
-            if (targetGroupId == null
-                    || popupMapper.insertAdminEmployeeTargetCondition(
-                            targetGroupId, normalizedEmployeeNos.get(index),
-                            command.auditUser()) <= 0) {
-                throw new IllegalStateException("팝업 대상자 저장에 실패했습니다.");
+        popupMapper.deleteAdminPopupTargets(command.popupId());
+        for (int groupIndex = 0; groupIndex < normalizedGroups.size(); groupIndex++) {
+            AdminPopupTargetGroup group = normalizedGroups.get(groupIndex);
+            Long targetGroupId = popupMapper.insertAdminTargetGroup(
+                    command.popupId(), group.targetName(), group.targetDescription(),
+                    groupIndex + 1, command.auditUser());
+            if (targetGroupId == null) {
+                throw new IllegalStateException("팝업 대상 그룹 저장에 실패했습니다.");
+            }
+            for (int conditionIndex = 0;
+                    conditionIndex < group.conditions().size(); conditionIndex++) {
+                if (popupMapper.insertAdminTargetCondition(
+                        targetGroupId, group.conditions().get(conditionIndex),
+                        conditionIndex + 1, command.auditUser()) <= 0) {
+                    throw new IllegalStateException("팝업 대상 조건 저장에 실패했습니다.");
+                }
             }
         }
 
         return getAdminPopup(command.popupId());
     }
 
-    private List<String> normalizeTargetEmployeeNos(List<String> employeeNos) {
-        if (employeeNos == null) {
-            throw new IllegalArgumentException("대상 사번 목록은 필수입니다.");
+    private List<AdminPopupTargetGroup> normalizeTargetGroups(
+            List<AdminPopupTargetGroup> groups) {
+        if (groups == null) {
+            throw new IllegalArgumentException("대상 조건 그룹은 필수입니다.");
         }
-        return employeeNos.stream()
-                .map(value -> value == null ? "" : value.trim())
-                .filter(value -> !value.isBlank())
-                .peek(value -> {
-                    if (value.length() > 30) {
-                        throw new IllegalArgumentException("대상 사번은 30자 이하여야 합니다.");
-                    }
-                })
-                .distinct()
-                .toList();
+        List<AdminPopupTargetGroup> normalized = new java.util.ArrayList<>();
+        for (int groupIndex = 0; groupIndex < groups.size(); groupIndex++) {
+            AdminPopupTargetGroup group = groups.get(groupIndex);
+            if (group == null || group.conditions() == null
+                    || group.conditions().isEmpty()) {
+                throw new IllegalArgumentException("각 대상 그룹에는 조건이 한 개 이상 필요합니다.");
+            }
+            List<AdminPopupTargetCondition> conditions = group.conditions().stream()
+                    .map(this::normalizeTargetCondition)
+                    .toList();
+            String name = normalizeText(group.targetName());
+            String description = normalizeText(group.targetDescription());
+            normalized.add(new AdminPopupTargetGroup(
+                    name == null ? "대상 그룹 " + (groupIndex + 1) : name,
+                    description == null ? "관리자 화면에서 등록한 대상 조건" : description,
+                    conditions));
+        }
+        return normalized;
+    }
+
+    private AdminPopupTargetCondition normalizeTargetCondition(
+            AdminPopupTargetCondition condition) {
+        if (condition == null) {
+            throw new IllegalArgumentException("대상 조건은 비어 있을 수 없습니다.");
+        }
+        String type = normalizeUpper(condition.conditionType());
+        String operator = normalizeText(condition.conditionOperator());
+        String value = normalizeText(condition.value());
+        if (!Set.of("DEPARTMENT", "POSITION", "EMPLOYEE", "HIRE_DATE").contains(type)) {
+            throw new IllegalArgumentException("지원하지 않는 대상 조건 유형입니다: " + type);
+        }
+        Set<String> operators = "HIRE_DATE".equals(type)
+                ? Set.of("=", "!=", "<", "<=", ">", ">=")
+                : Set.of("=", "!=");
+        if (!operators.contains(operator) || value == null) {
+            throw new IllegalArgumentException("대상 조건의 연산자와 값이 올바르지 않습니다.");
+        }
+        if ("HIRE_DATE".equals(type)) {
+            LocalDate.parse(value);
+        } else if (value.length() > 30) {
+            throw new IllegalArgumentException("부서·직급·사번 값은 30자 이하여야 합니다.");
+        }
+        boolean includeChild = "DEPARTMENT".equals(type) && condition.includeChild();
+        return new AdminPopupTargetCondition(type, operator, value, includeChild);
+    }
+
+    private AdminPopupTargetCondition toTargetCondition(AdminPopupTargetRow row) {
+        String value = switch (row.conditionType()) {
+            case "DEPARTMENT" -> row.departmentId();
+            case "POSITION" -> row.positionId();
+            case "EMPLOYEE" -> row.employeeNo();
+            case "HIRE_DATE" -> row.conditionDateValue() == null
+                    ? null : row.conditionDateValue().toString();
+            default -> null;
+        };
+        return new AdminPopupTargetCondition(
+                row.conditionType(), row.conditionOperator(), value,
+                "Y".equalsIgnoreCase(row.includeChildYn()));
     }
 
     /** 팝업의 나머지 설정은 유지하고 활성 여부만 변경한다. */
@@ -165,6 +235,11 @@ public class PopupService {
         }
         if (auditUser == null || auditUser.isBlank()) {
             throw new IllegalArgumentException("수정자 정보는 필수입니다.");
+        }
+        if (Boolean.TRUE.equals(active)
+                && popupMapper.countAdminPopupTargetGroups(popupId.trim()) == 0) {
+            throw new IllegalArgumentException(
+                    "대상 조건이 없는 팝업은 활성화할 수 없습니다.");
         }
 
         String normalizedPopupId = popupId.trim();
