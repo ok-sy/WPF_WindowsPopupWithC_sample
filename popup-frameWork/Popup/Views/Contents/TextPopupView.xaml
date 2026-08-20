@@ -124,7 +124,8 @@
         </Grid.RowDefinitions>
 
         <!-- 텍스트 팝업 전용 제목/설명 영역 -->
-        <StackPanel Grid.Row="0"
+        <StackPanel x:Name="ContentHeaderPanel"
+                    Grid.Row="0"
                 Margin="0,0,0,20">
 
             <TextBlock x:Name="ContentTitleText"
@@ -141,17 +142,29 @@
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility ="Disabled">
 
+            <StackPanel>
+            <TextBlock x:Name="PlainTextBlock"
+                       Margin="0,0,0,16"
+                       Style="{StaticResource BodyTextStyle}"
+                       TextWrapping="Wrap"
+                       Visibility="Collapsed"/>
+
+            <StackPanel x:Name="MarkdownPanel"
+                        Visibility="Collapsed"/>
+
             <!--
             Grid를 사용해서 본문을 2개 단으로 나눈다.
             -->
-            <Grid MinWidth="560">
+            <Grid x:Name="ContentColumnsGrid"
+                  MinWidth="560">
                 <Grid.ColumnDefinitions>
 
                     <!--
                     왼쪽 카드와 오른쪽 카드가
                     사용 가능한 공간을 같은 비율로 나눠 가진다.
                     -->
-                    <ColumnDefinition Width="*"
+                    <ColumnDefinition x:Name="LeftSectionColumn"
+                                      Width="*"
                           MinWidth="260"/>
 
                     <!-- 두 단 사이 간격 -->
@@ -167,7 +180,8 @@
                 <!--
                 왼쪽 카드
                 -->
-                <Border Grid.Column="0"
+                <Border x:Name="LeftSectionCard"
+                        Grid.Column="0"
                         Style="{StaticResource CardBorderStyle}">
 
                     <StackPanel>
@@ -183,25 +197,6 @@
                         <TextBlock x:Name="LeftSectionBodyText"
                                    Style="{StaticResource BodyTextStyle}"
                                    Text="이 영역은 일반 텍스트를 여러 줄로 표시하는 예제입니다. TextWrapping 속성을 사용하면 창의 너비에 맞춰 자동으로 줄바꿈됩니다."/>    
-
-                        <!--
-                        Border를 사용한 강조 문구
-                        -->
-                        <Border x:Name="HighlightContainer"
-                                Margin="0,18,0,18"
-                                Padding="14"
-                                Background="#EFF6FF"
-                                BorderBrush="#93C5FD"
-                                BorderThickness="1"
-                                CornerRadius="6">
-
-                            <TextBlock x:Name="HighlightTextBlock"
-                                       Style="{StaticResource BodyTextStyle}"
-                                       Foreground="#1D4ED8"
-                                       FontWeight="SemiBold"
-                                       Text="중요한 안내는 별도의 배경색과 테두리를 사용해 강조할 수 있습니다."/>
-
-                        </Border>
 
                         <TextBlock Style="{StaticResource BodyTextStyle}"
                                    Margin="0,0,0,10"
@@ -296,6 +291,24 @@
                 </Border>
 
             </Grid>
+
+            <Border x:Name="HighlightContainer"
+                    Margin="0,16,0,0"
+                    Padding="14"
+                    Background="#EFF6FF"
+                    BorderBrush="#93C5FD"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Visibility="Collapsed">
+
+                <TextBlock x:Name="HighlightTextBlock"
+                           Style="{StaticResource BodyTextStyle}"
+                           Foreground="#1D4ED8"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"/>
+
+            </Border>
+            </StackPanel>
 
         </ScrollViewer>
 

@@ -13,6 +13,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import type { ReactNode } from 'react';
 
 interface PopupPreviewProps {
   popup: AdminPopupDetail;
@@ -30,6 +31,37 @@ function titleKey(type: AdminPopupDetail['popupType']): string {
   if (type === 'VIDEO') return 'videoTitle';
   if (type === 'SURVEY' || type === 'QUIZ') return 'surveyTitle';
   return 'contentTitle';
+}
+
+function inlineMarkdown(value: string): ReactNode[] {
+  return value.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean).map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return <Box component="code" key={index} sx={{ px: 0.5, bgcolor: '#eef1f5', borderRadius: 0.5 }}>{part.slice(1, -1)}</Box>;
+    }
+    return part;
+  });
+}
+
+function MarkdownView({ value }: { value: string }) {
+  return (
+    <Stack spacing={1}>
+      {value.split(/\r?\n/).map((line, index) => {
+        if (!line.trim()) return <Box key={index} sx={{ height: 6 }} />;
+        const heading = line.match(/^(#{1,3})\s+(.+)$/);
+        if (heading) {
+          const variant = heading[1].length === 1 ? 'h5' : heading[1].length === 2 ? 'h6' : 'subtitle1';
+          return <Typography key={index} variant={variant} fontWeight={700}>{inlineMarkdown(heading[2])}</Typography>;
+        }
+        if (/^[-*]\s+/.test(line)) {
+          return <Typography key={index} sx={{ pl: 2 }}>• {inlineMarkdown(line.replace(/^[-*]\s+/, ''))}</Typography>;
+        }
+        return <Typography key={index}>{inlineMarkdown(line)}</Typography>;
+      })}
+    </Stack>
+  );
 }
 
 function previewSize(popup: AdminPopupDetail) {
@@ -178,6 +210,13 @@ function PopupBody({ popup }: PopupPreviewProps) {
     );
   }
 
+  const markdownMode = content.markdownMode === true;
+  const showContentHeader = content.showContentHeader !== false;
+  const showPlainText = content.showPlainText !== false;
+  const showLeftSection =
+    content.showLeftSection == null
+      ? Boolean(content.leftSectionTitle || content.leftSectionBody)
+      : content.showLeftSection === true;
   const showRightSection =
     content.showRightSection == null
       ? Boolean(content.rightSectionTitle || content.rightSectionBody || content.additionalDescription)
@@ -185,21 +224,36 @@ function PopupBody({ popup }: PopupPreviewProps) {
   const showHighlight =
     content.showHighlight == null ? Boolean(content.highlightText) : content.showHighlight === true;
 
+  const showBottomDescription =
+    content.showBottomDescription == null
+      ? Boolean(content.bottomDescription)
+      : content.showBottomDescription === true;
+
+  if (markdownMode) {
+    return (
+      <Stack spacing={2}>
+        {showContentHeader && <Typography color="text.secondary">{description}</Typography>}
+        <MarkdownView value={text(content.markdownContent, 'Markdown 내용을 입력해 주세요.')} />
+      </Stack>
+    );
+  }
+
   return (
     <Stack spacing={2}>
-      <Typography color="text.secondary">{description}</Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: showRightSection ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: 2 }}>
-        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
+      {showContentHeader && <Typography color="text.secondary">{description}</Typography>}
+      {showPlainText && (
+        <Typography sx={{ whiteSpace: 'pre-wrap' }}>
+          {String(content.plainText ?? '')}
+        </Typography>
+      )}
+      {(showLeftSection || showRightSection) && (
+      <Box sx={{ display: 'grid', gridTemplateColumns: showLeftSection && showRightSection ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: 2 }}>
+        {showLeftSection && <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
           <Typography fontWeight={700} sx={{ mb: 1 }}>
             {text(content.leftSectionTitle, '왼쪽 카드 제목')}
           </Typography>
           <Typography>{text(content.leftSectionBody, '왼쪽 카드 본문')}</Typography>
-          {showHighlight && (
-            <Box sx={{ mt: 2, p: 1.5, border: '1px solid #93c5fd', borderRadius: 1, bgcolor: '#eff6ff', color: '#1d4ed8' }}>
-              {text(content.highlightText, '강조 문구')}
-            </Box>
-          )}
-        </Paper>
+        </Paper>}
         {showRightSection && <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
           <Typography fontWeight={700} sx={{ mb: 1 }}>
             {text(content.rightSectionTitle, '오른쪽 카드 제목')}
@@ -211,7 +265,13 @@ function PopupBody({ popup }: PopupPreviewProps) {
           </Typography>
         </Paper>}
       </Box>
-      {Boolean(content.bottomDescription) && (
+      )}
+      {showHighlight && (
+        <Box sx={{ p: 1.5, border: '1px solid #93c5fd', borderRadius: 1, bgcolor: '#eff6ff', color: '#1d4ed8' }}>
+          {text(content.highlightText, '강조 문구')}
+        </Box>
+      )}
+      {showBottomDescription && (
         <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8f9fc', whiteSpace: 'pre-wrap' }}>
           {String(content.bottomDescription)}
         </Paper>
@@ -227,6 +287,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
       ? { width: '100%', height: '100%' }
       : previewSize(popup);
   const contentTitle = text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
+  const showContentTitle = popup.popupType !== 'TEXT' || popup.content.showContentHeader !== false;
 
   return (
     <Box
@@ -269,9 +330,11 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
         )}
         {popup.showHeader && <Divider />}
         <Box sx={{ flex: 1, minHeight: 0, overflow: fitContainer ? 'hidden' : 'auto', p: 3 }}>
-          <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>
-            {contentTitle}
-          </Typography>
+          {showContentTitle && (
+            <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>
+              {contentTitle}
+            </Typography>
+          )}
           <PopupBody popup={popup} />
         </Box>
         {popup.showFooter && (
@@ -283,9 +346,11 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
               ) : (
                 <span />
               )}
-              <Button variant="contained" color="inherit" sx={{ minWidth: 92 }} onClick={onClose}>
-                닫기
-              </Button>
+              {popup.showCloseButton && (
+                <Button variant="contained" color="inherit" sx={{ minWidth: 92 }} onClick={onClose}>
+                  닫기
+                </Button>
+              )}
             </Stack>
           </>
         )}

@@ -453,7 +453,8 @@
                     상단 X 버튼과 동일한
                     CloseButton_Click 이벤트를 사용한다.
                     -->
-                    <Button Grid.Column="1"
+                    <Button x:Name="FooterCloseButton"
+                            Grid.Column="1"
                             Style="{StaticResource PopupButtonStyle}"
                             Content="닫기"
                             Click="CloseButton_Click"/>

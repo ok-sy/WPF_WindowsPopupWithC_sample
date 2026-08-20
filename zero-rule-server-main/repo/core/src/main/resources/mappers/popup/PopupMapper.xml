@@ -18,6 +18,8 @@
             <arg column="ACTIVE_YN" javaType="java.lang.String"/>
             <arg column="PERIOD_MODE" javaType="java.lang.String"/>
             <arg column="QUESTION_TEMPLATE_ID" javaType="java.lang.Long"/>
+            <arg column="CREATED_BY" javaType="java.lang.String"/>
+            <arg column="CREATED_AT" javaType="java.time.OffsetDateTime"/>
             <arg column="UPDATED_BY" javaType="java.lang.String"/>
             <arg column="UPDATED_AT" javaType="java.time.OffsetDateTime"/>
         </constructor>
@@ -37,10 +39,12 @@
             popup.active_yn,
             popup.period_mode,
             popup.question_template_id,
+            popup.created_by,
+            popup.created_at AT TIME ZONE 'Asia/Seoul' AS created_at,
             popup.updated_by,
             popup.updated_at AT TIME ZONE 'Asia/Seoul' AS updated_at
         FROM popup.popup_notice popup
-        ORDER BY popup.updated_at DESC, popup.popup_id
+        ORDER BY popup.created_at DESC, popup.popup_id
     </select>
 
     <!--
