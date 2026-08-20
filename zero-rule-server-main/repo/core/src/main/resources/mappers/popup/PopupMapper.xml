@@ -5,6 +5,44 @@
 
 <mapper namespace="server.repo.core.mapper.popup.PopupMapper">
 
+    <resultMap id="adminPopupListItemResultMap"
+               type="server.domain.popup.AdminPopupListItemDto">
+        <constructor>
+            <idArg column="POPUP_ID" javaType="java.lang.String"/>
+            <arg column="POPUP_TYPE" javaType="java.lang.String"/>
+            <arg column="TITLE" javaType="java.lang.String"/>
+            <arg column="DISPLAY_START_AT" javaType="java.time.OffsetDateTime"/>
+            <arg column="DISPLAY_END_AT" javaType="java.time.OffsetDateTime"/>
+            <arg column="DISPLAY_MODE" javaType="java.lang.String"/>
+            <arg column="SIZE_MODE" javaType="java.lang.String"/>
+            <arg column="ACTIVE_YN" javaType="java.lang.String"/>
+            <arg column="PERIOD_MODE" javaType="java.lang.String"/>
+            <arg column="QUESTION_TEMPLATE_ID" javaType="java.lang.Long"/>
+            <arg column="UPDATED_BY" javaType="java.lang.String"/>
+            <arg column="UPDATED_AT" javaType="java.time.OffsetDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <!-- 관리자 화면은 비활성 및 게시 기간이 지난 팝업도 관리해야 하므로 전부 조회한다. -->
+    <select id="selectAdminPopups"
+            resultMap="adminPopupListItemResultMap">
+        SELECT
+            popup.popup_id,
+            popup.popup_type,
+            popup.title,
+            popup.display_start_at AT TIME ZONE 'Asia/Seoul' AS display_start_at,
+            popup.display_end_at AT TIME ZONE 'Asia/Seoul' AS display_end_at,
+            popup.display_mode,
+            popup.size_mode,
+            popup.active_yn,
+            popup.period_mode,
+            popup.question_template_id,
+            popup.updated_by,
+            popup.updated_at AT TIME ZONE 'Asia/Seoul' AS updated_at
+        FROM popup.popup_notice popup
+        ORDER BY popup.updated_at DESC, popup.popup_id
+    </select>
+
     <resultMap id="popupEntityResultMap"
                type="server.domain.popup.PopupEntity">
         <constructor>
