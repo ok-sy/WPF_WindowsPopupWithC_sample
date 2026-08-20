@@ -14,10 +14,13 @@ import server.domain.popup.PopupResponseDto;
 import server.domain.popup.PopupSubmissionContext;
 import server.domain.popup.PopupSubmitAnswer;
 import server.domain.popup.PopupSubmitResponseDto;
+import server.domain.popup.VideoPopupContext;
+import server.domain.popup.VideoProgressResponseDto;
 import server.repo.core.mapper.popup.PopupMapper;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.math.RoundingMode;
 import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -321,6 +324,71 @@ public class PopupService {
             BigDecimal earnedScore,
             String correctYn
     ) {
+    }
+
+    /** 영상 누적 시청시간을 기준으로 진행률과 완료 여부를 계산해 저장한다. */
+    @Transactional
+    public VideoProgressResponseDto saveVideoProgress(
+            String popupId,
+            String userId,
+            BigDecimal durationSeconds,
+            BigDecimal positionSeconds,
+            BigDecimal maximumPositionSeconds,
+            BigDecimal watchedSeconds) {
+        if (popupId == null || popupId.isBlank()) {
+            throw new IllegalArgumentException("팝업 ID는 필수입니다.");
+        }
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
+        }
+        if (durationSeconds == null || durationSeconds.signum() <= 0
+                || positionSeconds == null || positionSeconds.signum() < 0
+                || maximumPositionSeconds == null
+                || maximumPositionSeconds.signum() < 0
+                || watchedSeconds == null || watchedSeconds.signum() < 0) {
+            throw new IllegalArgumentException("영상 재생시간 값이 올바르지 않습니다.");
+        }
+        if (positionSeconds.compareTo(durationSeconds) > 0
+                || maximumPositionSeconds.compareTo(durationSeconds) > 0) {
+            throw new IllegalArgumentException(
+                    "영상 재생 위치는 전체 재생시간을 초과할 수 없습니다.");
+        }
+
+        String normalizedPopupId = popupId.trim();
+        String normalizedUserId = userId.trim();
+        VideoPopupContext context = popupMapper.selectVideoPopupContext(
+                normalizedUserId, normalizedPopupId);
+        if (context == null) {
+            throw new IllegalArgumentException(
+                    "현재 사용자에게 유효한 영상 팝업이 아닙니다.");
+        }
+
+        BigDecimal normalizedWatchedSeconds = watchedSeconds.min(durationSeconds);
+        BigDecimal watchedRatio = normalizedWatchedSeconds.divide(
+                durationSeconds, 4, RoundingMode.DOWN).min(BigDecimal.ONE);
+        BigDecimal requiredRatio = context.completionRatio() == null
+                ? BigDecimal.ONE : context.completionRatio();
+        boolean completed = watchedRatio.compareTo(requiredRatio) >= 0;
+        String completedYn = completed ? "Y" : "N";
+
+        int affectedRows = popupMapper.upsertVideoProgress(
+                normalizedUserId, normalizedPopupId,
+                durationSeconds, positionSeconds, maximumPositionSeconds,
+                normalizedWatchedSeconds, watchedRatio, completedYn);
+        if (affectedRows <= 0) {
+            throw new IllegalStateException("영상 진행률 저장에 실패했습니다.");
+        }
+        popupMapper.markPopupCompleted(
+                normalizedUserId, normalizedPopupId, completedYn);
+        OffsetDateTime completedAt = completed
+                ? popupMapper.selectVideoCompletedAt(
+                        normalizedUserId, normalizedPopupId)
+                : null;
+
+        return new VideoProgressResponseDto(
+                normalizedUserId, normalizedPopupId,
+                watchedRatio.doubleValue(), requiredRatio.doubleValue(),
+                completed, completedAt);
     }
 
     private Map<Long, List<PopupQuestionDto>> loadQuestions(List<Long> templateIds) {
