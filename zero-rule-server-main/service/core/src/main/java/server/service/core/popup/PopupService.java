@@ -17,6 +17,7 @@ import server.domain.popup.PopupSubmitAnswer;
 import server.domain.popup.PopupSubmitResponseDto;
 import server.domain.popup.VideoPopupContext;
 import server.domain.popup.VideoProgressResponseDto;
+import server.domain.popup.UserPopupStatusDto;
 import server.repo.core.mapper.popup.PopupMapper;
 
 import java.math.BigDecimal;
@@ -427,6 +428,15 @@ public class PopupService {
         return new PopupEventResponseDto(
                 normalizedUserId, normalizedPopupId,
                 normalizedEventType, OffsetDateTime.now());
+    }
+
+    /** 사용자의 팝업별 표시·숨김·완료 상태를 조회한다. */
+    @Transactional(readOnly = true)
+    public List<UserPopupStatusDto> getPopupStatuses(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
+        }
+        return popupMapper.selectPopupStatuses(userId.trim());
     }
 
     private Map<Long, List<PopupQuestionDto>> loadQuestions(List<Long> templateIds) {
