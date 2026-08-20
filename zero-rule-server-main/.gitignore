@@ -339,5 +339,6 @@ gradle-app.setting
 /nbdist/
 /.nb-gradle/
 
-
+# IntelliJ project display name (generated locally)
+/.idea/.name
 
