@@ -1,4 +1,5 @@
-﻿using System.Windows.Controls;
+﻿using System.Windows;
+using System.Windows.Controls;
 
 namespace Popup.Views.Contents
 {
@@ -29,7 +30,10 @@ namespace Popup.Views.Contents
             string highlightText,
             string rightSectionTitle,
             string rightSectionBody,
-            string additionalDescription)
+            string additionalDescription,
+            bool showHighlight,
+            bool showRightSection,
+            string bottomDescription)
             {
                 /*
                  * TextPopupView.xaml을 읽어서
@@ -67,6 +71,31 @@ namespace Popup.Views.Contents
 
                 AdditionalDescriptionText.Text =
                     additionalDescription;
+
+                HighlightContainer.Visibility = showHighlight
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+
+                RightSectionCard.Visibility = showRightSection
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+
+                RightSectionSpacerColumn.Width = showRightSection
+                    ? new GridLength(18)
+                    : new GridLength(0);
+
+                RightSectionColumn.Width = showRightSection
+                    ? new GridLength(1, GridUnitType.Star)
+                    : new GridLength(0);
+                RightSectionColumn.MinWidth = showRightSection
+                    ? 260
+                    : 0;
+
+                BottomDescriptionText.Text = bottomDescription;
+                BottomDescriptionText.Visibility =
+                    string.IsNullOrWhiteSpace(bottomDescription)
+                        ? Visibility.Collapsed
+                        : Visibility.Visible;
             }
         }
 }
