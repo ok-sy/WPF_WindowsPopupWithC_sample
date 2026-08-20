@@ -7,6 +7,7 @@ import server.domain.popup.PopupOptionEntity;
 import server.domain.popup.PopupQuestionEntity;
 import server.domain.popup.PopupSubmissionContext;
 import server.domain.popup.VideoPopupContext;
+import server.domain.popup.UserPopupStatusDto;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -93,4 +94,7 @@ public interface PopupMapper {
             @Param("userId") String userId,
             @Param("popupId") String popupId,
             @Param("eventType") String eventType);
+
+    List<UserPopupStatusDto> selectPopupStatuses(
+            @Param("userId") String userId);
 }
