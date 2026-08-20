@@ -11,14 +11,20 @@ import server.domain.popup.PopupOptionEntity;
 import server.domain.popup.PopupQuestionDto;
 import server.domain.popup.PopupQuestionEntity;
 import server.domain.popup.PopupResponseDto;
+import server.domain.popup.PopupSubmissionContext;
+import server.domain.popup.PopupSubmitAnswer;
+import server.domain.popup.PopupSubmitResponseDto;
 import server.repo.core.mapper.popup.PopupMapper;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** 팝업 조회 결과를 기존 WPF 응답 형식으로 조립한다. */
@@ -96,6 +102,225 @@ public class PopupService {
 
         return new PopupHideResponseDto(
                 normalizedUserId, normalizedPopupId, "UNTIL", hiddenUntil);
+    }
+
+    /**
+     * 설문 답안을 서버의 문항·정답과 대조해 채점하고 관련 응답 테이블에 저장한다.
+     * 모든 저장은 한 트랜잭션이므로 중간 실패 시 일부 답안만 남지 않는다.
+     */
+    @Transactional
+    public PopupSubmitResponseDto submitResponse(
+            String popupId,
+            String clientRequestId,
+            String userId,
+            OffsetDateTime responseStartedAt,
+            List<PopupSubmitAnswer> answers) {
+        if (popupId == null || popupId.isBlank()) {
+            throw new IllegalArgumentException("팝업 ID는 필수입니다.");
+        }
+        if (clientRequestId == null || clientRequestId.isBlank()) {
+            throw new IllegalArgumentException("요청 ID는 필수입니다.");
+        }
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
+        }
+        if (answers == null || answers.isEmpty()) {
+            throw new IllegalArgumentException("하나 이상의 답안이 필요합니다.");
+        }
+
+        String normalizedPopupId = popupId.trim();
+        String normalizedRequestId = clientRequestId.trim();
+        String normalizedUserId = userId.trim();
+
+        boolean eligible = popupMapper.selectAvailablePopups(normalizedUserId).stream()
+                .anyMatch(popup -> normalizedPopupId.equals(popup.popupId()));
+        if (!eligible) {
+            throw new IllegalArgumentException(
+                    "현재 사용자에게 제출 가능한 팝업이 아닙니다.");
+        }
+
+        PopupSubmissionContext context = popupMapper.selectSubmissionContext(
+                normalizedUserId, normalizedPopupId);
+        if (context == null
+                || !("SURVEY".equalsIgnoreCase(context.popupType())
+                || "QUIZ".equalsIgnoreCase(context.popupType()))
+                || context.questionTemplateId() == null) {
+            throw new IllegalArgumentException("설문형 팝업만 답안을 제출할 수 있습니다.");
+        }
+
+        List<PopupQuestionEntity> questions =
+                popupMapper.selectQuestionsByTemplateIds(
+                        List.of(context.questionTemplateId()));
+        Map<Long, PopupQuestionEntity> questionById = questions.stream()
+                .collect(Collectors.toMap(
+                        PopupQuestionEntity::questionId, Function.identity()));
+
+        Set<Long> submittedQuestionIds = new HashSet<>();
+        for (PopupSubmitAnswer answer : answers) {
+            if (answer == null || answer.questionId() == null) {
+                throw new IllegalArgumentException("문항 ID는 필수입니다.");
+            }
+            if (!submittedQuestionIds.add(answer.questionId())) {
+                throw new IllegalArgumentException(
+                        "같은 문항을 중복 제출할 수 없습니다. questionId="
+                                + answer.questionId());
+            }
+            if (!questionById.containsKey(answer.questionId())) {
+                throw new IllegalArgumentException(
+                        "현재 설문에 포함되지 않은 문항입니다. questionId="
+                                + answer.questionId());
+            }
+        }
+
+        for (PopupQuestionEntity question : questions) {
+            if (isYes(question.requiredYn())
+                    && !hasRequiredAnswer(question, answers)) {
+                throw new IllegalArgumentException(
+                        "필수 문항에 답해야 합니다. questionId="
+                                + question.questionId());
+            }
+        }
+
+        List<Long> questionIds = questions.stream()
+                .map(PopupQuestionEntity::questionId)
+                .toList();
+        Map<Long, List<PopupOptionEntity>> optionsByQuestion = questionIds.isEmpty()
+                ? Map.of()
+                : popupMapper.selectOptionsByQuestionIds(questionIds).stream()
+                .collect(Collectors.groupingBy(PopupOptionEntity::questionId));
+
+        List<GradedAnswer> gradedAnswers = answers.stream()
+                .map(answer -> gradeAnswer(
+                        questionById.get(answer.questionId()),
+                        answer,
+                        optionsByQuestion.getOrDefault(
+                                answer.questionId(), List.of())))
+                .toList();
+        BigDecimal totalScore = gradedAnswers.stream()
+                .map(GradedAnswer::earnedScore)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal passingScore = context.passingScore() == null
+                ? BigDecimal.ZERO : context.passingScore();
+        String passedYn = totalScore.compareTo(passingScore) >= 0 ? "Y" : "N";
+
+        Long responseId = popupMapper.upsertPopupResponse(
+                normalizedRequestId, normalizedUserId, normalizedPopupId,
+                context.questionTemplateId(), responseStartedAt,
+                totalScore, passedYn);
+        if (responseId == null) {
+            throw new IllegalStateException("설문 응답 저장에 실패했습니다.");
+        }
+        popupMapper.deleteResponseAnswers(responseId);
+
+        for (GradedAnswer graded : gradedAnswers) {
+            Long responseAnswerId = popupMapper.insertResponseAnswer(
+                    responseId,
+                    graded.question().questionId(),
+                    normalizeText(graded.answer().textAnswer()),
+                    graded.earnedScore(),
+                    graded.correctYn(),
+                    normalizedUserId);
+            for (PopupOptionEntity selectedOption : graded.selectedOptions()) {
+                popupMapper.insertResponseValue(
+                        responseAnswerId,
+                        selectedOption.optionId(),
+                        selectedOption.optionValue(),
+                        normalizedUserId);
+            }
+        }
+
+        popupMapper.markPopupCompleted(
+                normalizedUserId, normalizedPopupId, passedYn);
+        return new PopupSubmitResponseDto(
+                responseId, normalizedRequestId, normalizedUserId,
+                normalizedPopupId, "SUBMITTED", totalScore.doubleValue(),
+                "Y".equals(passedYn), OffsetDateTime.now());
+    }
+
+    private boolean hasRequiredAnswer(
+            PopupQuestionEntity question,
+            List<PopupSubmitAnswer> answers) {
+        return answers.stream()
+                .filter(answer -> question.questionId().equals(answer.questionId()))
+                .anyMatch(answer -> "TEXT".equalsIgnoreCase(question.questionType())
+                        ? normalizeText(answer.textAnswer()) != null
+                        : !answer.optionIds().isEmpty());
+    }
+
+    private GradedAnswer gradeAnswer(
+            PopupQuestionEntity question,
+            PopupSubmitAnswer answer,
+            List<PopupOptionEntity> availableOptions) {
+        if ("TEXT".equalsIgnoreCase(question.questionType())) {
+            if (!answer.optionIds().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "서술형 문항에는 선택지를 제출할 수 없습니다. questionId="
+                                + question.questionId());
+            }
+            return new GradedAnswer(question, answer, List.of(), null, null);
+        }
+
+        if (normalizeText(answer.textAnswer()) != null) {
+            throw new IllegalArgumentException(
+                    "선택형 문항에는 textAnswer를 제출할 수 없습니다. questionId="
+                            + question.questionId());
+        }
+        if ("SINGLE_CHOICE".equalsIgnoreCase(question.questionType())
+                && answer.optionIds().size() > 1) {
+            throw new IllegalArgumentException(
+                    "단일 선택 문항은 하나만 선택할 수 있습니다. questionId="
+                            + question.questionId());
+        }
+
+        Set<Long> uniqueOptionIds = new HashSet<>(answer.optionIds());
+        if (uniqueOptionIds.size() != answer.optionIds().size()) {
+            throw new IllegalArgumentException(
+                    "같은 선택지를 중복 제출할 수 없습니다. questionId="
+                            + question.questionId());
+        }
+        Map<Long, PopupOptionEntity> optionById = availableOptions.stream()
+                .collect(Collectors.toMap(
+                        PopupOptionEntity::optionId, Function.identity()));
+        List<PopupOptionEntity> selectedOptions = answer.optionIds().stream()
+                .map(optionId -> {
+                    PopupOptionEntity option = optionById.get(optionId);
+                    if (option == null) {
+                        throw new IllegalArgumentException(
+                                "현재 문항에 포함되지 않은 선택지입니다. optionId="
+                                        + optionId);
+                    }
+                    return option;
+                })
+                .toList();
+
+        if (!isYes(question.scoredYn())) {
+            return new GradedAnswer(
+                    question, answer, selectedOptions, null, null);
+        }
+        Set<Long> correctOptionIds = availableOptions.stream()
+                .filter(option -> isYes(option.correctYn()))
+                .map(PopupOptionEntity::optionId)
+                .collect(Collectors.toSet());
+        boolean correct = uniqueOptionIds.equals(correctOptionIds);
+        BigDecimal earnedScore = correct
+                ? question.questionScore() : BigDecimal.ZERO;
+        return new GradedAnswer(
+                question, answer, selectedOptions,
+                earnedScore, correct ? "Y" : "N");
+    }
+
+    private String normalizeText(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private record GradedAnswer(
+            PopupQuestionEntity question,
+            PopupSubmitAnswer answer,
+            List<PopupOptionEntity> selectedOptions,
+            BigDecimal earnedScore,
+            String correctYn
+    ) {
     }
 
     private Map<Long, List<PopupQuestionDto>> loadQuestions(List<Long> templateIds) {
