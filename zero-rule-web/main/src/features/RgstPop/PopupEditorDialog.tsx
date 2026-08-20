@@ -5,8 +5,13 @@ import type {
   PopupDateValue,
   PopupDisplayMode,
   PopupSizeMode,
+  PopupTargetCondition,
+  PopupTargetConditionType,
+  PopupTargetGroup,
   PopupType,
 } from '@local/domain';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   Box,
@@ -17,6 +22,7 @@ import {
   DialogTitle,
   Divider,
   FormControlLabel,
+  IconButton,
   LinearProgress,
   MenuItem,
   Stack,
@@ -153,7 +159,7 @@ export default function PopupEditorDialog({
   const api = useApi();
   const [popup, setPopup] = useState<AdminPopupDetail>(createDefaultPopup);
   const [active, setActive] = useState(true);
-  const [targetEmployeeText, setTargetEmployeeText] = useState('');
+  const [targetGroups, setTargetGroups] = useState<PopupTargetGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const editing = popupId != null;
 
@@ -163,7 +169,7 @@ export default function PopupEditorDialog({
 
     if (popupId == null) {
       setPopup(createDefaultPopup());
-      setTargetEmployeeText('');
+      setTargetGroups([]);
       return;
     }
 
@@ -174,7 +180,7 @@ export default function PopupEditorDialog({
       .then(({ body }) => {
         if (!canceled) {
           setPopup(body.popup);
-          setTargetEmployeeText((body.targetEmployeeNos ?? []).join(', '));
+          setTargetGroups(body.targetGroups ?? []);
         }
       })
       .catch((error) => {
@@ -211,6 +217,65 @@ export default function PopupEditorDialog({
     }));
   };
 
+  const addTargetGroup = () => {
+    setTargetGroups((groups) => [
+      ...groups,
+      {
+        targetName: `대상 그룹 ${groups.length + 1}`,
+        targetDescription: '',
+        conditions: [
+          { conditionType: 'EMPLOYEE', conditionOperator: '=', value: '', includeChild: false },
+        ],
+      },
+    ]);
+  };
+
+  const removeTargetGroup = (groupIndex: number) => {
+    setTargetGroups((groups) => groups.filter((_, index) => index !== groupIndex));
+  };
+
+  const updateTargetGroup = (groupIndex: number, patch: Partial<PopupTargetGroup>) => {
+    setTargetGroups((groups) =>
+      groups.map((group, index) => index === groupIndex ? { ...group, ...patch } : group),
+    );
+  };
+
+  const addTargetCondition = (groupIndex: number) => {
+    const condition: PopupTargetCondition = {
+      conditionType: 'EMPLOYEE', conditionOperator: '=', value: '', includeChild: false,
+    };
+    setTargetGroups((groups) => groups.map((group, index) =>
+      index === groupIndex
+        ? { ...group, conditions: [...group.conditions, condition] }
+        : group,
+    ));
+  };
+
+  const updateTargetCondition = (
+    groupIndex: number,
+    conditionIndex: number,
+    patch: Partial<PopupTargetCondition>,
+  ) => {
+    setTargetGroups((groups) => groups.map((group, index) =>
+      index === groupIndex
+        ? {
+            ...group,
+            conditions: group.conditions.map((condition, currentIndex) =>
+              currentIndex === conditionIndex ? { ...condition, ...patch } : condition,
+            ),
+          }
+        : group,
+    ));
+  };
+
+  const removeTargetCondition = (groupIndex: number, conditionIndex: number) => {
+    setTargetGroups((groups) => groups.map((group, index) =>
+      index === groupIndex
+        ? { ...group, conditions: group.conditions.filter((_, i) => i !== conditionIndex) }
+        : group,
+    ));
+  };
+
   const savePopup = async () => {
     if (!popup.popupId.trim() || !popup.title.trim()) {
       toast.warn('팝업 ID와 제목을 입력해 주세요.');
@@ -226,20 +291,22 @@ export default function PopupEditorDialog({
         displayStartAt: toApiDate(toDateTimeLocal(popup.displayStartAt)),
         displayEndAt: toApiDate(toDateTimeLocal(popup.displayEndAt)),
       };
-      const targetEmployeeNos = targetEmployeeText
-        .split(/[\s,]+/)
-        .map((value) => value.trim())
-        .filter((value, index, values) =>
-          value.length > 0 && values.indexOf(value) === index,
-        );
-      if (active && targetEmployeeNos.length === 0) {
-        toast.warn('활성 팝업은 대상 사번을 한 명 이상 입력해 주세요.');
+      const hasInvalidTarget = targetGroups.some(
+        (group) => group.conditions.length === 0
+          || group.conditions.some((condition) => !condition.value.trim()),
+      );
+      if (active && targetGroups.length === 0) {
+        toast.warn('활성 팝업은 대상 조건 그룹을 한 개 이상 추가해 주세요.');
+        return;
+      }
+      if (hasInvalidTarget) {
+        toast.warn('대상 그룹의 모든 조건 값을 입력해 주세요.');
         return;
       }
       const { body } = await api.popupAdmin.save({
         popup: requestPopup,
         active,
-        targetEmployeeNos,
+        targetGroups,
       });
       toast.success('팝업을 저장했습니다.');
       onSaved(body.popup.popupId);
@@ -390,13 +457,149 @@ export default function PopupEditorDialog({
           <Typography variant="subtitle1" fontWeight={700}>
             노출 대상
           </Typography>
-          <TextField
-            label="대상 사번"
-            value={targetEmployeeText}
-            placeholder="E1002, E1003"
-            helperText="쉼표 또는 공백으로 여러 사번을 입력할 수 있으며, 각 사번은 OR 조건으로 적용됩니다."
-            onChange={(event) => setTargetEmployeeText(event.target.value)}
-          />
+          <Typography variant="caption" color="text.secondary">
+            같은 그룹의 조건은 모두 충족(AND), 그룹 사이는 하나만 충족(OR)하면 노출됩니다.
+          </Typography>
+          {targetGroups.map((group, groupIndex) => (
+            <Box
+              key={`target-group-${groupIndex}`}
+              sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}
+            >
+              <Stack spacing={1.5}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <TextField
+                    size="small"
+                    label={`그룹 ${groupIndex + 1} 이름`}
+                    value={group.targetName}
+                    onChange={(event) =>
+                      updateTargetGroup(groupIndex, { targetName: event.target.value })
+                    }
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    size="small"
+                    label="설명"
+                    value={group.targetDescription}
+                    onChange={(event) =>
+                      updateTargetGroup(groupIndex, { targetDescription: event.target.value })
+                    }
+                    sx={{ flex: 2 }}
+                  />
+                  <IconButton
+                    aria-label="대상 그룹 삭제"
+                    onClick={() => removeTargetGroup(groupIndex)}
+                  >
+                    <DeleteOutlineIcon />
+                  </IconButton>
+                </Stack>
+
+                {group.conditions.map((condition, conditionIndex) => {
+                  const dateCondition = condition.conditionType === 'HIRE_DATE';
+                  return (
+                    <Stack
+                      key={`target-condition-${groupIndex}-${conditionIndex}`}
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                    >
+                      <TextField
+                        select
+                        size="small"
+                        label="조건 유형"
+                        value={condition.conditionType}
+                        onChange={(event) => {
+                          const conditionType = event.target.value as PopupTargetConditionType;
+                          updateTargetCondition(groupIndex, conditionIndex, {
+                            conditionType,
+                            conditionOperator: '=',
+                            value: '',
+                            includeChild: false,
+                          });
+                        }}
+                        sx={{ width: 150 }}
+                      >
+                        <MenuItem value="DEPARTMENT">부서</MenuItem>
+                        <MenuItem value="POSITION">직급</MenuItem>
+                        <MenuItem value="EMPLOYEE">사번</MenuItem>
+                        <MenuItem value="HIRE_DATE">입사일</MenuItem>
+                      </TextField>
+                      <TextField
+                        select
+                        size="small"
+                        label="비교"
+                        value={condition.conditionOperator}
+                        onChange={(event) => updateTargetCondition(groupIndex, conditionIndex, {
+                          conditionOperator: event.target.value as PopupTargetCondition['conditionOperator'],
+                        })}
+                        sx={{ width: 100 }}
+                      >
+                        <MenuItem value="=">같음</MenuItem>
+                        <MenuItem value="!=">같지 않음</MenuItem>
+                        {dateCondition && <MenuItem value="<">이전</MenuItem>}
+                        {dateCondition && <MenuItem value="<=">이전 또는 당일</MenuItem>}
+                        {dateCondition && <MenuItem value=">">이후</MenuItem>}
+                        {dateCondition && <MenuItem value=">=">이후 또는 당일</MenuItem>}
+                      </TextField>
+                      <TextField
+                        size="small"
+                        type={dateCondition ? 'date' : 'text'}
+                        label={dateCondition ? '기준 입사일' : '조건 값'}
+                        value={condition.value}
+                        InputLabelProps={dateCondition ? { shrink: true } : undefined}
+                        placeholder={
+                          condition.conditionType === 'DEPARTMENT' ? '부서 ID'
+                            : condition.conditionType === 'POSITION' ? '직급 ID'
+                              : condition.conditionType === 'EMPLOYEE' ? 'E1002'
+                                : undefined
+                        }
+                        onChange={(event) => updateTargetCondition(groupIndex, conditionIndex, {
+                          value: event.target.value,
+                        })}
+                        sx={{ flex: 1 }}
+                      />
+                      {condition.conditionType === 'DEPARTMENT' && (
+                        <FormControlLabel
+                          control={(
+                            <Switch
+                              size="small"
+                              checked={condition.includeChild}
+                              onChange={(_, value) => updateTargetCondition(
+                                groupIndex, conditionIndex, { includeChild: value },
+                              )}
+                            />
+                          )}
+                          label="하위 포함"
+                        />
+                      )}
+                      <IconButton
+                        aria-label="대상 조건 삭제"
+                        onClick={() => removeTargetCondition(groupIndex, conditionIndex)}
+                      >
+                        <DeleteOutlineIcon />
+                      </IconButton>
+                    </Stack>
+                  );
+                })}
+
+                <Button
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => addTargetCondition(groupIndex)}
+                  sx={{ alignSelf: 'flex-start' }}
+                >
+                  AND 조건 추가
+                </Button>
+              </Stack>
+            </Box>
+          ))}
+          <Button
+            variant="outlined"
+            startIcon={<AddIcon />}
+            onClick={addTargetGroup}
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            OR 대상 그룹 추가
+          </Button>
 
           <Divider />
           <Typography variant="subtitle1" fontWeight={700}>

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Data;
 import server.domain.popup.AdminPopupListItemDto;
+import server.domain.popup.AdminPopupTargetGroup;
 import server.domain.popup.PopupResponseDto;
 
 import java.util.List;
@@ -44,8 +45,8 @@ public final class PopupAdminPayloads {
         @Schema(description = "팝업 표시 설정과 유형별 콘텐츠")
         private PopupResponseDto popup;
 
-        @Schema(description = "직접 노출 대상 사번 목록")
-        private List<String> targetEmployeeNos;
+        @Schema(description = "그룹 간 OR, 그룹 내부 AND로 적용되는 대상 조건")
+        private List<AdminPopupTargetGroup> targetGroups;
     }
 
     /** 신규 등록과 기존 팝업 수정이 함께 사용하는 저장 요청이다. */
@@ -61,8 +62,8 @@ public final class PopupAdminPayloads {
         private Boolean active;
 
         @NotNull
-        @Schema(description = "직접 노출 대상 사번 목록", example = "[\"E1002\"]")
-        private List<@NotBlank @Size(max = 30) String> targetEmployeeNos;
+        @Schema(description = "그룹 간 OR, 그룹 내부 AND로 적용되는 대상 조건")
+        private List<AdminPopupTargetGroup> targetGroups;
     }
 
     /** 목록에서 활성 여부만 변경할 때 사용하는 요청이다. */

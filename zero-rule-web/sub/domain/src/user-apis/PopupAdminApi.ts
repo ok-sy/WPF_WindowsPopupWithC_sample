@@ -6,7 +6,12 @@ import {
   POPUP_ADMIN_API_URL,
   splitParams,
 } from '..';
-import type { AdminPopupDetail, AdminPopupInfo, AdminPopupListItem } from '../model';
+import type {
+  AdminPopupDetail,
+  AdminPopupInfo,
+  AdminPopupListItem,
+  PopupTargetGroup,
+} from '../model';
 
 /** zero-rule-web의 팝업 관리자 화면이 사용하는 인증 API다. */
 export class PopupAdminApi {
@@ -35,7 +40,7 @@ export class PopupAdminApi {
     params: {
       popup: AdminPopupDetail;
       active: boolean;
-      targetEmployeeNos: string[];
+      targetGroups: PopupTargetGroup[];
     } & BaseRequest,
   ): Promise<ApiResponseWithData<{ popup: AdminPopupDetail }>> => {
     return this.withData.postJson(POPUP_ADMIN_API_URL.save, ...splitParams(params));

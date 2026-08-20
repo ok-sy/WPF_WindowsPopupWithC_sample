@@ -76,7 +76,26 @@ export interface AdminPopupDetail {
   content: Record<string, unknown>;
 }
 
+export type PopupTargetConditionType =
+  | 'DEPARTMENT'
+  | 'POSITION'
+  | 'EMPLOYEE'
+  | 'HIRE_DATE';
+
+export interface PopupTargetCondition {
+  conditionType: PopupTargetConditionType;
+  conditionOperator: '=' | '!=' | '<' | '<=' | '>' | '>=';
+  value: string;
+  includeChild: boolean;
+}
+
+export interface PopupTargetGroup {
+  targetName: string;
+  targetDescription: string;
+  conditions: PopupTargetCondition[];
+}
+
 export interface AdminPopupInfo {
   popup: AdminPopupDetail;
-  targetEmployeeNos: string[];
+  targetGroups: PopupTargetGroup[];
 }
