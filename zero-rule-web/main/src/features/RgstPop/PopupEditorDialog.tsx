@@ -25,6 +25,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import PopupPreview from './PopupPreview';
 
 interface PopupEditorDialogProps {
   open: boolean;
@@ -445,6 +446,17 @@ export default function PopupEditorDialog({
               />
             </Box>
           )}
+
+          <Divider />
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="subtitle1" fontWeight={700}>
+              팝업 미리보기
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              입력값과 표시 옵션이 실시간으로 반영됩니다.
+            </Typography>
+          </Stack>
+          <PopupPreview popup={popup} />
         </Stack>
       </DialogContent>
       <DialogActions>
