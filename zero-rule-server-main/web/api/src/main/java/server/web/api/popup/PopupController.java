@@ -42,7 +42,8 @@ public class PopupController {
     /** 기존 popup-api와 같은 JSON 배열 계약을 유지한다. */
     @Operation(summary = "사용자에게 표시할 팝업 목록 조회")
     @GetMapping
-    public List<PopupResponseDto> getPopups(@RequestParam String userId) {
+    public List<PopupResponseDto> getPopups(
+            @RequestParam("userId") String userId) {
         return popupService.getPopups(userId);
     }
 
@@ -50,7 +51,7 @@ public class PopupController {
     @Operation(summary = "사용자 팝업 숨김 기간 저장")
     @PostMapping("/{popupId}/hide")
     public PopupHideResponseDto hidePopup(
-            @PathVariable String popupId,
+            @PathVariable("popupId") String popupId,
             @Valid @RequestBody PopupHideRequest request) {
         return popupService.hidePopup(
                 popupId, request.userId(), request.hideDays());
@@ -60,7 +61,7 @@ public class PopupController {
     @Operation(summary = "설문 답안 제출 및 서버 채점")
     @PostMapping("/{popupId}/responses")
     public PopupSubmitResponseDto submitResponse(
-            @PathVariable String popupId,
+            @PathVariable("popupId") String popupId,
             @Valid @RequestBody PopupSubmitRequest request) {
         return popupService.submitResponse(
                 popupId,
@@ -74,7 +75,7 @@ public class PopupController {
     @Operation(summary = "영상 시청 진행률 저장")
     @PostMapping("/{popupId}/video-progress")
     public VideoProgressResponseDto saveVideoProgress(
-            @PathVariable String popupId,
+            @PathVariable("popupId") String popupId,
             @Valid @RequestBody VideoProgressRequest request) {
         return popupService.saveVideoProgress(
                 popupId, request.userId(), request.durationSeconds(),
@@ -86,7 +87,7 @@ public class PopupController {
     @Operation(summary = "팝업 표시·닫기 이벤트 저장")
     @PostMapping("/{popupId}/events")
     public PopupEventResponseDto recordPopupEvent(
-            @PathVariable String popupId,
+            @PathVariable("popupId") String popupId,
             @Valid @RequestBody PopupEventRequest request) {
         return popupService.recordPopupEvent(
                 popupId, request.userId(), request.eventType());
@@ -96,7 +97,7 @@ public class PopupController {
     @Operation(summary = "사용자 팝업 상태 목록 조회")
     @GetMapping("/statuses")
     public List<UserPopupStatusDto> getPopupStatuses(
-            @RequestParam String userId) {
+            @RequestParam("userId") String userId) {
         return popupService.getPopupStatuses(userId);
     }
 }
