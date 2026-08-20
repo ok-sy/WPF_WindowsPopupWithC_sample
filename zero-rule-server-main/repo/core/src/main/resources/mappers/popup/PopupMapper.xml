@@ -43,6 +43,86 @@
         ORDER BY popup.updated_at DESC, popup.popup_id
     </select>
 
+    <!--
+        관리자 상세조회는 사용자 대상·게시 기간·활성 여부를 검사하지 않는다.
+        반환 구조는 WPF 응답과 같아서 이후 웹 CSS 미리보기에도 그대로 사용한다.
+    -->
+    <select id="selectAdminPopupById"
+            resultMap="popupEntityResultMap">
+        SELECT
+            popup.popup_id,
+            popup.popup_type,
+            popup.title,
+            popup.display_start_at AT TIME ZONE 'Asia/Seoul' AS display_start_at,
+            popup.display_end_at AT TIME ZONE 'Asia/Seoul' AS display_end_at,
+            popup.display_mode,
+            popup.size_mode,
+            popup.popup_width,
+            popup.popup_height,
+            popup.width_ratio,
+            popup.height_ratio,
+            popup.minimum_width,
+            popup.minimum_height,
+            popup.maximum_width,
+            popup.maximum_height,
+            popup.show_header_yn,
+            popup.show_close_button_yn,
+            popup.show_footer_yn,
+            popup.show_do_not_show_again_yn AS show_dont_show_yn,
+            (
+                CASE popup.popup_type
+                    WHEN 'TEXT' THEN JSONB_BUILD_OBJECT(
+                        'contentTitle', content.content_title,
+                        'description', content.description,
+                        'leftSectionBody', content.content_body
+                    )
+                    WHEN 'IMAGE' THEN JSONB_BUILD_OBJECT(
+                        'imageTitle', content.content_title,
+                        'imageUrl', content.media_url,
+                        'description', content.description,
+                        'linkUrl', content.link_url
+                    )
+                    WHEN 'VIDEO' THEN JSONB_BUILD_OBJECT(
+                        'videoTitle', content.content_title,
+                        'videoUrl', content.media_url,
+                        'description', content.description,
+                        'completionRatio', popup.completion_ratio,
+                        'allowCloseBeforeCompletion',
+                            popup.allow_close_before_complete_yn = 'Y'
+                    )
+                    WHEN 'SURVEY' THEN JSONB_BUILD_OBJECT(
+                        'surveyTitle', content.content_title,
+                        'description', content.description,
+                        'passingScore', popup.passing_score,
+                        'validateRequiredQuestions', TRUE
+                    )
+                    WHEN 'QUIZ' THEN JSONB_BUILD_OBJECT(
+                        'surveyTitle', content.content_title,
+                        'description', content.description,
+                        'passingScore', popup.passing_score,
+                        'validateRequiredQuestions', TRUE
+                    )
+                    ELSE '{}'::JSONB
+                END
+                || COALESCE(content.content_options, '{}'::JSONB)
+            )::TEXT AS content_json,
+            1 AS display_order,
+            popup.active_yn AS use_yn,
+            popup.question_template_id,
+            popup.period_mode,
+            popup.repeat_interval,
+            popup.repeat_day_of_week,
+            popup.repeat_day_of_month,
+            popup.hide_days,
+            popup.completion_ratio,
+            popup.passing_score,
+            popup.allow_close_before_complete_yn
+        FROM popup.popup_notice popup
+        LEFT JOIN popup.popup_content content
+          ON content.popup_id = popup.popup_id
+        WHERE popup.popup_id = #{popupId}
+    </select>
+
     <resultMap id="popupEntityResultMap"
                type="server.domain.popup.PopupEntity">
         <constructor>

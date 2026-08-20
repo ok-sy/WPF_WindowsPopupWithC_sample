@@ -54,6 +54,31 @@ public class PopupService {
         return popupMapper.selectAdminPopups();
     }
 
+    /**
+     * 관리자 편집 화면과 CSS 미리보기에 필요한 팝업 한 건을 조회한다.
+     * 사용자 대상이나 노출 기간을 검사하지 않으므로 비활성 팝업도 미리볼 수 있다.
+     */
+    @Transactional(readOnly = true)
+    public PopupResponseDto getAdminPopup(String popupId) {
+        if (popupId == null || popupId.isBlank()) {
+            throw new IllegalArgumentException("팝업 ID는 필수입니다.");
+        }
+
+        String normalizedPopupId = popupId.trim();
+        PopupEntity popup = popupMapper.selectAdminPopupById(normalizedPopupId);
+        if (popup == null) {
+            throw new IllegalArgumentException(
+                    "등록된 팝업을 찾을 수 없습니다. popupId=" + normalizedPopupId);
+        }
+
+        List<PopupQuestionDto> questions = popup.questionTemplateId() == null
+                ? List.of()
+                : loadQuestions(List.of(popup.questionTemplateId()))
+                        .getOrDefault(popup.questionTemplateId(), List.of());
+
+        return toResponseDto(popup, questions);
+    }
+
     /** 사용자별 기간·대상·숨김 조건을 통과한 팝업을 조회한다. */
     @Transactional(readOnly = true)
     public List<PopupResponseDto> getPopups(String userId) {
