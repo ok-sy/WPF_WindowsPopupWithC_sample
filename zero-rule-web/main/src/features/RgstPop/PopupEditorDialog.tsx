@@ -7,6 +7,7 @@ import type {
   PopupSizeMode,
   PopupType,
 } from '@local/domain';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   Box,
   Button,
@@ -193,6 +194,49 @@ export default function PopupEditorDialog({
       handleError(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openPreviewWindow = () => {
+    const storageKey = `popup-admin-preview:${Date.now()}`;
+    localStorage.setItem(storageKey, JSON.stringify(popup));
+
+    const availableWidth = window.screen.availWidth;
+    const availableHeight = window.screen.availHeight;
+    const requestedWidth =
+      popup.sizeMode === 'FULLSCREEN'
+        ? availableWidth
+        : popup.sizeMode === 'RATIO'
+          ? availableWidth * popup.widthRatio
+          : popup.width;
+    const requestedHeight =
+      popup.sizeMode === 'FULLSCREEN'
+        ? availableHeight
+        : popup.sizeMode === 'RATIO'
+          ? availableHeight * popup.heightRatio
+          : popup.height;
+    const width =
+      popup.sizeMode === 'FULLSCREEN'
+        ? requestedWidth
+        : Math.max(popup.minimumWidth, Math.min(popup.maximumWidth, requestedWidth));
+    const height =
+      popup.sizeMode === 'FULLSCREEN'
+        ? requestedHeight
+        : Math.max(popup.minimumHeight, Math.min(popup.maximumHeight, requestedHeight));
+    const windowWidth = Math.round(Math.max(320, Math.min(availableWidth, width)));
+    const windowHeight = Math.round(Math.max(260, Math.min(availableHeight, height)));
+    const left = Math.max(0, Math.round((availableWidth - windowWidth) / 2));
+    const top = Math.max(0, Math.round((availableHeight - windowHeight) / 2));
+    const url = `/popup-preview/?key=${encodeURIComponent(storageKey)}`;
+    const previewWindow = window.open(
+      url,
+      `popup-preview-${popup.popupId || 'new'}`,
+      `popup=yes,width=${windowWidth},height=${windowHeight},left=${left},top=${top}`,
+    );
+
+    if (previewWindow == null) {
+      localStorage.removeItem(storageKey);
+      toast.warn('브라우저에서 팝업을 허용해 주세요.');
     }
   };
 
@@ -452,9 +496,14 @@ export default function PopupEditorDialog({
             <Typography variant="subtitle1" fontWeight={700}>
               팝업 미리보기
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              입력값과 표시 옵션이 실시간으로 반영됩니다.
-            </Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="caption" color="text.secondary">
+                입력값과 표시 옵션이 실시간으로 반영됩니다.
+              </Typography>
+              <Button size="small" variant="outlined" startIcon={<OpenInNewIcon />} onClick={openPreviewWindow}>
+                새 창으로 보기
+              </Button>
+            </Stack>
           </Stack>
           <PopupPreview popup={popup} />
         </Stack>
