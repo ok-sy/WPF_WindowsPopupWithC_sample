@@ -282,56 +282,81 @@
         WHERE popup_id = #{popupId}
     </update>
 
-    <select id="selectAdminTargetEmployeeNos" resultType="string">
-        SELECT DISTINCT condition.employee_no
+    <resultMap id="adminPopupTargetRowResultMap"
+               type="server.domain.popup.AdminPopupTargetRow">
+        <constructor>
+            <idArg column="TARGET_GROUP_ID" javaType="java.lang.Long"/>
+            <arg column="TARGET_NAME" javaType="java.lang.String"/>
+            <arg column="TARGET_DESCRIPTION" javaType="java.lang.String"/>
+            <arg column="GROUP_ORDER" javaType="java.lang.Integer"/>
+            <arg column="CONDITION_TYPE" javaType="java.lang.String"/>
+            <arg column="CONDITION_OPERATOR" javaType="java.lang.String"/>
+            <arg column="DEPARTMENT_ID" javaType="java.lang.String"/>
+            <arg column="POSITION_ID" javaType="java.lang.String"/>
+            <arg column="EMPLOYEE_NO" javaType="java.lang.String"/>
+            <arg column="CONDITION_DATE_VALUE" javaType="java.time.LocalDate"/>
+            <arg column="INCLUDE_CHILD_YN" javaType="java.lang.String"/>
+            <arg column="CONDITION_ORDER" javaType="java.lang.Integer"/>
+        </constructor>
+    </resultMap>
+
+    <select id="selectAdminPopupTargets"
+            resultMap="adminPopupTargetRowResultMap">
+        SELECT target.target_group_id,
+               target.target_name,
+               target.target_description,
+               target.group_order,
+               condition.condition_type,
+               condition.condition_operator,
+               condition.department_id,
+               condition.position_id,
+               condition.employee_no,
+               condition.condition_date_value,
+               condition.include_child_yn,
+               condition.condition_order
         FROM popup.popup_target_group target
         JOIN popup.popup_target_condition condition
           ON condition.target_group_id = target.target_group_id
         WHERE target.popup_id = #{popupId}
-          AND condition.condition_type = 'EMPLOYEE'
-          AND condition.condition_operator = '='
-        ORDER BY condition.employee_no
+        ORDER BY target.group_order, condition.condition_order
     </select>
 
-    <delete id="deleteAdminEmployeeTargets">
-        DELETE FROM popup.popup_target_group target
-        WHERE target.popup_id = #{popupId}
-          AND EXISTS
-          (
-              SELECT 1 FROM popup.popup_target_condition condition
-              WHERE condition.target_group_id = target.target_group_id
-                AND condition.condition_type = 'EMPLOYEE'
-                AND condition.condition_operator = '='
-          )
-          AND NOT EXISTS
-          (
-              SELECT 1 FROM popup.popup_target_condition condition
-              WHERE condition.target_group_id = target.target_group_id
-                AND (condition.condition_type != 'EMPLOYEE'
-                     OR condition.condition_operator != '=')
-          )
+    <delete id="deleteAdminPopupTargets">
+        DELETE FROM popup.popup_target_group WHERE popup_id = #{popupId}
     </delete>
 
-    <select id="insertAdminEmployeeTargetGroup"
+    <select id="countAdminPopupTargetGroups" resultType="int">
+        SELECT COUNT(*) FROM popup.popup_target_group WHERE popup_id = #{popupId}
+    </select>
+
+    <select id="insertAdminTargetGroup"
             resultType="long" affectData="true" flushCache="true">
         INSERT INTO popup.popup_target_group
         (popup_id, target_name, target_description, group_order, created_by, updated_by)
         VALUES
-        (#{popupId}, CONCAT('사번 대상 ', #{groupOrder}),
-         '관리자 팝업 등록 화면에서 지정한 직접 대상',
-         (SELECT COALESCE(MAX(existing.group_order), 0) + 1
-            FROM popup.popup_target_group existing
-           WHERE existing.popup_id = #{popupId}),
+        (#{popupId}, #{targetName}, #{targetDescription}, #{groupOrder},
          #{auditUser}, #{auditUser})
         RETURNING target_group_id
     </select>
 
-    <insert id="insertAdminEmployeeTargetCondition">
+    <insert id="insertAdminTargetCondition">
         INSERT INTO popup.popup_target_condition
-        (target_group_id, condition_type, condition_operator, employee_no,
+        (target_group_id, condition_type, condition_operator,
+         department_id, position_id, employee_no, condition_date_value,
          include_child_yn, condition_order, created_by, updated_by)
         VALUES
-        (#{targetGroupId}, 'EMPLOYEE', '=', #{employeeNo}, 'N', 1,
+        (#{targetGroupId}, #{condition.conditionType},
+         #{condition.conditionOperator},
+         CASE WHEN #{condition.conditionType} = 'DEPARTMENT'
+              THEN #{condition.value} END,
+         CASE WHEN #{condition.conditionType} = 'POSITION'
+              THEN #{condition.value} END,
+         CASE WHEN #{condition.conditionType} = 'EMPLOYEE'
+              THEN #{condition.value} END,
+         CASE WHEN #{condition.conditionType} = 'HIRE_DATE'
+              THEN CAST(#{condition.value} AS DATE) END,
+         CASE WHEN #{condition.includeChild} THEN 'Y' ELSE 'N' END,
+         #{conditionOrder},
          #{auditUser}, #{auditUser})
     </insert>
 
