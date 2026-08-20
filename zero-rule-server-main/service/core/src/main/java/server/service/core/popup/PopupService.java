@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import server.domain.popup.PopupEntity;
+import server.domain.popup.AdminPopupListItemDto;
 import server.domain.popup.PopupEventResponseDto;
 import server.domain.popup.PopupHideResponseDto;
 import server.domain.popup.PopupOptionDto;
@@ -42,6 +43,15 @@ public class PopupService {
     public PopupService(PopupMapper popupMapper, ObjectMapper objectMapper) {
         this.popupMapper = popupMapper;
         this.objectMapper = objectMapper;
+    }
+
+    /**
+     * 관리자 화면에서 사용할 전체 팝업 목록을 조회한다.
+     * 사용자 대상, 게시 기간, 숨김 여부를 적용하지 않는 것이 WPF 조회와의 차이다.
+     */
+    @Transactional(readOnly = true)
+    public List<AdminPopupListItemDto> getAdminPopups() {
+        return popupMapper.selectAdminPopups();
     }
 
     /** 사용자별 기간·대상·숨김 조건을 통과한 팝업을 조회한다. */
