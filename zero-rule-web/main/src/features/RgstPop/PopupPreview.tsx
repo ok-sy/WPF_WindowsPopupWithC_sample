@@ -101,6 +101,7 @@ function PopupBody({ popup }: PopupPreviewProps) {
   if (popup.popupType === 'VIDEO') {
     const showDescription = content.showDescription !== false;
     const showControls = content.showControls !== false;
+    const defaultVolume = Number(content.defaultVolume);
     return (
       <Stack spacing={1.5} sx={{ height: '100%' }}>
         {showDescription && <Typography color="text.secondary">{description}</Typography>}
@@ -131,7 +132,7 @@ function PopupBody({ popup }: PopupPreviewProps) {
         )}
         <Typography variant="caption" color="text.secondary">
           완료 기준 {Math.round((popup.completionRatio ?? 0.8) * 100)}% · 기본 음량{' '}
-          {Math.round((Number(content.defaultVolume) || 0.7) * 100)}%
+          {Math.round((Number.isFinite(defaultVolume) ? defaultVolume : 0.7) * 100)}%
         </Typography>
       </Stack>
     );
