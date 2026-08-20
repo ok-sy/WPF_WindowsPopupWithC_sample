@@ -617,4 +617,22 @@
             updated_at = CURRENT_TIMESTAMP
     </insert>
 
+    <select id="selectPopupStatuses"
+            resultType="server.domain.popup.UserPopupStatusDto">
+        SELECT
+            status.employee_no AS userId,
+            status.popup_id AS popupId,
+            status.popup_status AS popupStatus,
+            status.first_displayed_at AT TIME ZONE 'Asia/Seoul' AS firstDisplayedAt,
+            status.last_displayed_at AT TIME ZONE 'Asia/Seoul' AS lastDisplayedAt,
+            status.display_count AS displayCount,
+            status.closed_at AT TIME ZONE 'Asia/Seoul' AS closedAt,
+            status.hidden_until_at AT TIME ZONE 'Asia/Seoul' AS hiddenUntilAt,
+            (status.completed_yn = 'Y') AS completed,
+            status.completed_at AT TIME ZONE 'Asia/Seoul' AS completedAt
+        FROM popup.user_popup_status status
+        WHERE status.employee_no = #{userId}
+        ORDER BY status.popup_id
+    </select>
+
 </mapper>
