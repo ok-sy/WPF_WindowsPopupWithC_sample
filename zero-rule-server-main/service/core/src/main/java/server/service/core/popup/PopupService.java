@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import server.domain.popup.PopupEntity;
+import server.domain.popup.PopupHideResponseDto;
 import server.domain.popup.PopupOptionDto;
 import server.domain.popup.PopupOptionEntity;
 import server.domain.popup.PopupQuestionDto;
@@ -13,6 +14,7 @@ import server.domain.popup.PopupResponseDto;
 import server.repo.core.mapper.popup.PopupMapper;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +54,48 @@ public class PopupService {
                         questionsByTemplate.getOrDefault(
                                 popup.questionTemplateId(), List.of())))
                 .toList();
+    }
+
+    /**
+     * 사용자가 선택한 기간 동안 팝업을 숨긴다.
+     * 상태 저장과 저장 결과 재조회를 하나의 트랜잭션으로 묶는다.
+     */
+    @Transactional
+    public PopupHideResponseDto hidePopup(
+            String popupId,
+            String userId,
+            Integer hideDays) {
+        if (popupId == null || popupId.isBlank()) {
+            throw new IllegalArgumentException("팝업 ID는 필수입니다.");
+        }
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
+        }
+        if (hideDays == null || hideDays < 1 || hideDays > 3650) {
+            throw new IllegalArgumentException(
+                    "숨김 일수는 1일 이상 3650일 이하여야 합니다.");
+        }
+
+        String normalizedPopupId = popupId.trim();
+        String normalizedUserId = userId.trim();
+        int affectedRows = popupMapper.upsertPopupHide(
+                normalizedUserId, normalizedPopupId, hideDays);
+        if (affectedRows <= 0) {
+            throw new IllegalStateException(
+                    "팝업 숨김 상태 저장에 실패했습니다. userId="
+                            + normalizedUserId + ", popupId=" + normalizedPopupId);
+        }
+
+        OffsetDateTime hiddenUntil = popupMapper.selectHiddenUntil(
+                normalizedUserId, normalizedPopupId);
+        if (hiddenUntil == null) {
+            throw new IllegalStateException(
+                    "팝업 숨김 만료 일시를 조회할 수 없습니다. userId="
+                            + normalizedUserId + ", popupId=" + normalizedPopupId);
+        }
+
+        return new PopupHideResponseDto(
+                normalizedUserId, normalizedPopupId, "UNTIL", hiddenUntil);
     }
 
     private Map<Long, List<PopupQuestionDto>> loadQuestions(List<Long> templateIds) {

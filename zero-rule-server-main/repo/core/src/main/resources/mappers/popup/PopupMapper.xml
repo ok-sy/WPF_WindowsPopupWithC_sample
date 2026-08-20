@@ -326,4 +326,47 @@
         ORDER BY question_id, sort_order
     </select>
 
+    <!-- 사용자와 팝업 조합이 없으면 생성하고, 있으면 숨김 기간을 갱신한다. -->
+    <insert id="upsertPopupHide">
+        INSERT INTO popup.user_popup_status
+        (
+            employee_no,
+            popup_id,
+            popup_status,
+            display_count,
+            hidden_from_at,
+            hidden_until_at,
+            completed_yn,
+            created_by,
+            updated_by
+        )
+        VALUES
+        (
+            #{userId},
+            #{popupId},
+            'HIDDEN',
+            0,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP + (#{hideDays} * INTERVAL '1 day'),
+            'N',
+            #{userId},
+            #{userId}
+        )
+        ON CONFLICT (employee_no, popup_id)
+        DO UPDATE SET
+            popup_status = 'HIDDEN',
+            hidden_from_at = CURRENT_TIMESTAMP,
+            hidden_until_at = CURRENT_TIMESTAMP + (#{hideDays} * INTERVAL '1 day'),
+            updated_by = #{userId},
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectHiddenUntil"
+            resultType="java.time.OffsetDateTime">
+        SELECT hidden_until_at AT TIME ZONE 'Asia/Seoul'
+        FROM popup.user_popup_status
+        WHERE employee_no = #{userId}
+          AND popup_id = #{popupId}
+    </select>
+
 </mapper>
