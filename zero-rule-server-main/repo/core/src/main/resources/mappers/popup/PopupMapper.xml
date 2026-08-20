@@ -54,10 +54,6 @@
             <arg column="SCORED_YN" javaType="java.lang.String"/>
             <arg column="QUESTION_SCORE" javaType="java.math.BigDecimal"/>
             <arg column="SORT_ORDER" javaType="java.lang.Integer"/>
-            <arg column="CREATED_BY" javaType="java.lang.String"/>
-            <arg column="CREATED_AT" javaType="java.time.LocalDateTime"/>
-            <arg column="UPDATED_BY" javaType="java.lang.String"/>
-            <arg column="UPDATED_AT" javaType="java.time.LocalDateTime"/>
         </constructor>
     </resultMap>
 
@@ -70,10 +66,6 @@
             <arg column="OPTION_TEXT" javaType="java.lang.String"/>
             <arg column="CORRECT_YN" javaType="java.lang.String"/>
             <arg column="SORT_ORDER" javaType="java.lang.Integer"/>
-            <arg column="CREATED_BY" javaType="java.lang.String"/>
-            <arg column="CREATED_AT" javaType="java.time.LocalDateTime"/>
-            <arg column="UPDATED_BY" javaType="java.lang.String"/>
-            <arg column="UPDATED_AT" javaType="java.time.LocalDateTime"/>
         </constructor>
     </resultMap>
 
