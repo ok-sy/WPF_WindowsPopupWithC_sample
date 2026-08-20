@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import server.domain.popup.PopupEntity;
 import server.domain.popup.AdminPopupListItemDto;
+import server.domain.popup.AdminPopupSaveCommand;
 import server.domain.popup.PopupEventResponseDto;
 import server.domain.popup.PopupHideResponseDto;
 import server.domain.popup.PopupOptionDto;
@@ -36,6 +37,13 @@ import java.util.stream.Collectors;
 /** 팝업 조회 결과를 기존 WPF 응답 형식으로 조립한다. */
 @Service
 public class PopupService {
+
+    private static final Set<String> POPUP_TYPES =
+            Set.of("TEXT", "IMAGE", "VIDEO", "SURVEY", "QUIZ");
+    private static final Set<String> DISPLAY_MODES =
+            Set.of("SEQUENTIAL", "SIMULTANEOUS");
+    private static final Set<String> SIZE_MODES =
+            Set.of("FIXED", "RATIO", "FULLSCREEN");
 
     private final PopupMapper popupMapper;
     private final ObjectMapper objectMapper;
@@ -77,6 +85,55 @@ public class PopupService {
                         .getOrDefault(popup.questionTemplateId(), List.of());
 
         return toResponseDto(popup, questions);
+    }
+
+    /**
+     * 팝업 공통 설정과 유형별 콘텐츠를 하나의 트랜잭션으로 저장한다.
+     * popupId가 없으면 등록되고, 이미 존재하면 해당 행이 수정된다.
+     */
+    @Transactional
+    public PopupResponseDto saveAdminPopup(
+            PopupResponseDto popup,
+            Boolean active,
+            String auditUser) {
+        validateAdminPopup(popup, active, auditUser);
+
+        AdminPopupSaveCommand command = toAdminSaveCommand(
+                popup, active, auditUser.trim());
+        int noticeRows = popupMapper.upsertAdminPopupNotice(command);
+        int contentRows = popupMapper.upsertAdminPopupContent(command);
+        if (noticeRows <= 0 || contentRows <= 0) {
+            throw new IllegalStateException("팝업 저장에 실패했습니다.");
+        }
+
+        return getAdminPopup(command.popupId());
+    }
+
+    /** 팝업의 나머지 설정은 유지하고 활성 여부만 변경한다. */
+    @Transactional
+    public PopupResponseDto updateAdminPopupActive(
+            String popupId,
+            Boolean active,
+            String auditUser) {
+        if (popupId == null || popupId.isBlank()) {
+            throw new IllegalArgumentException("팝업 ID는 필수입니다.");
+        }
+        if (active == null) {
+            throw new IllegalArgumentException("활성 여부는 필수입니다.");
+        }
+        if (auditUser == null || auditUser.isBlank()) {
+            throw new IllegalArgumentException("수정자 정보는 필수입니다.");
+        }
+
+        String normalizedPopupId = popupId.trim();
+        int affectedRows = popupMapper.updateAdminPopupActive(
+                normalizedPopupId, toYn(active), auditUser.trim());
+        if (affectedRows <= 0) {
+            throw new IllegalArgumentException(
+                    "활성 여부를 변경할 팝업을 찾을 수 없습니다. popupId="
+                            + normalizedPopupId);
+        }
+        return getAdminPopup(normalizedPopupId);
     }
 
     /** 사용자별 기간·대상·숨김 조건을 통과한 팝업을 조회한다. */
@@ -501,6 +558,168 @@ public class PopupService {
                                 optionsByQuestion.getOrDefault(
                                         question.questionId(), List.of())),
                         Collectors.toList())));
+    }
+
+    private void validateAdminPopup(
+            PopupResponseDto popup,
+            Boolean active,
+            String auditUser) {
+        if (popup == null) {
+            throw new IllegalArgumentException("팝업 정보는 필수입니다.");
+        }
+        if (popup.popupId() == null || popup.popupId().isBlank()
+                || popup.popupId().trim().length() > 50) {
+            throw new IllegalArgumentException("팝업 ID는 1~50자여야 합니다.");
+        }
+        if (popup.title() == null || popup.title().isBlank()
+                || popup.title().trim().length() > 200) {
+            throw new IllegalArgumentException("팝업 제목은 1~200자여야 합니다.");
+        }
+        if (!POPUP_TYPES.contains(normalizeUpper(popup.popupType()))) {
+            throw new IllegalArgumentException("지원하지 않는 팝업 유형입니다.");
+        }
+        if (!DISPLAY_MODES.contains(normalizeUpper(popup.displayMode()))) {
+            throw new IllegalArgumentException("지원하지 않는 표시 모드입니다.");
+        }
+        if (!SIZE_MODES.contains(normalizeUpper(popup.sizeMode()))) {
+            throw new IllegalArgumentException("지원하지 않는 크기 모드입니다.");
+        }
+        if (popup.periodMode() == null || popup.periodMode().isBlank()) {
+            throw new IllegalArgumentException("기간 모드는 필수입니다.");
+        }
+        if (popup.displayStartAt() == null || popup.displayEndAt() == null
+                || popup.displayEndAt().isBefore(popup.displayStartAt())) {
+            throw new IllegalArgumentException("팝업 노출 종료일은 시작일 이후여야 합니다.");
+        }
+        validatePositiveNumber(popup.width(), "팝업 너비");
+        validatePositiveNumber(popup.height(), "팝업 높이");
+        validatePositiveNumber(popup.widthRatio(), "너비 비율");
+        validatePositiveNumber(popup.heightRatio(), "높이 비율");
+        validatePositiveNumber(popup.minimumWidth(), "최소 너비");
+        validatePositiveNumber(popup.minimumHeight(), "최소 높이");
+        validatePositiveNumber(popup.maximumWidth(), "최대 너비");
+        validatePositiveNumber(popup.maximumHeight(), "최대 높이");
+        if (popup.maximumWidth() < popup.minimumWidth()
+                || popup.maximumHeight() < popup.minimumHeight()) {
+            throw new IllegalArgumentException("최대 크기는 최소 크기보다 작을 수 없습니다.");
+        }
+        if (popup.hideDays() != null && popup.hideDays() < 1) {
+            throw new IllegalArgumentException("숨김 일수는 1일 이상이어야 합니다.");
+        }
+        if (popup.completionRatio() != null
+                && (popup.completionRatio() < 0 || popup.completionRatio() > 1)) {
+            throw new IllegalArgumentException("완료 비율은 0~1 사이여야 합니다.");
+        }
+        if (popup.passingScore() != null && popup.passingScore() < 0) {
+            throw new IllegalArgumentException("통과 점수는 0 이상이어야 합니다.");
+        }
+        if (active == null) {
+            throw new IllegalArgumentException("활성 여부는 필수입니다.");
+        }
+        if (auditUser == null || auditUser.isBlank()
+                || auditUser.trim().length() > 30) {
+            throw new IllegalArgumentException("등록·수정자 정보는 1~30자여야 합니다.");
+        }
+    }
+
+    private static void validatePositiveNumber(double value, String fieldName) {
+        if (!Double.isFinite(value) || value <= 0) {
+            throw new IllegalArgumentException(fieldName + "는 0보다 커야 합니다.");
+        }
+    }
+
+    private AdminPopupSaveCommand toAdminSaveCommand(
+            PopupResponseDto popup,
+            boolean active,
+            String auditUser) {
+        Map<String, Object> content = popup.content();
+        String popupType = normalizeUpper(popup.popupType());
+
+        return new AdminPopupSaveCommand(
+                popup.popupId().trim(),
+                popup.questionTemplateId(),
+                popupType,
+                popup.title().trim(),
+                popup.displayStartAt(),
+                popup.displayEndAt(),
+                normalizeUpper(popup.displayMode()),
+                normalizeUpper(popup.periodMode()),
+                popup.repeatInterval(),
+                normalizeUpper(popup.repeatDayOfWeek()),
+                popup.repeatDayOfMonth(),
+                toYn(active),
+                normalizeUpper(popup.sizeMode()),
+                BigDecimal.valueOf(popup.width()),
+                BigDecimal.valueOf(popup.height()),
+                BigDecimal.valueOf(popup.widthRatio()),
+                BigDecimal.valueOf(popup.heightRatio()),
+                BigDecimal.valueOf(popup.minimumWidth()),
+                BigDecimal.valueOf(popup.minimumHeight()),
+                BigDecimal.valueOf(popup.maximumWidth()),
+                BigDecimal.valueOf(popup.maximumHeight()),
+                toYn(popup.showHeader()),
+                toYn(popup.showCloseButton()),
+                toYn(popup.showFooter()),
+                toYn(popup.showDoNotShowAgain()),
+                popup.hideDays(),
+                toBigDecimal(popup.completionRatio()),
+                toBigDecimal(popup.passingScore()),
+                toYn(popup.allowCloseBeforeComplete()),
+                contentText(content, contentTitleKey(popupType)),
+                contentText(content, "description"),
+                contentText(content, "leftSectionBody"),
+                contentText(content, mediaUrlKey(popupType)),
+                contentText(content, "linkUrl"),
+                writeContentJson(popup.popupId(), content),
+                auditUser);
+    }
+
+    private String writeContentJson(String popupId, Map<String, Object> content) {
+        try {
+            return objectMapper.writeValueAsString(content == null ? Map.of() : content);
+        } catch (Exception exception) {
+            throw new IllegalArgumentException(
+                    "팝업 콘텐츠를 JSON으로 변환할 수 없습니다. popupId=" + popupId,
+                    exception);
+        }
+    }
+
+    private static String contentTitleKey(String popupType) {
+        return switch (popupType) {
+            case "IMAGE" -> "imageTitle";
+            case "VIDEO" -> "videoTitle";
+            case "SURVEY", "QUIZ" -> "surveyTitle";
+            default -> "contentTitle";
+        };
+    }
+
+    private static String mediaUrlKey(String popupType) {
+        return switch (popupType) {
+            case "IMAGE" -> "imageUrl";
+            case "VIDEO" -> "videoUrl";
+            default -> "";
+        };
+    }
+
+    private static String contentText(Map<String, Object> content, String key) {
+        if (content == null || key == null || key.isBlank()) {
+            return null;
+        }
+        Object value = content.get(key);
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private static String normalizeUpper(String value) {
+        return value == null || value.isBlank()
+                ? null : value.trim().toUpperCase();
+    }
+
+    private static String toYn(boolean value) {
+        return value ? "Y" : "N";
+    }
+
+    private static BigDecimal toBigDecimal(Double value) {
+        return value == null ? null : BigDecimal.valueOf(value);
     }
 
     private PopupQuestionDto toQuestionDto(
