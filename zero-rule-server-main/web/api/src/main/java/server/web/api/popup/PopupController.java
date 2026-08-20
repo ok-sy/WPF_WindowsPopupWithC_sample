@@ -11,11 +11,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import server.domain.popup.PopupHideResponseDto;
+import server.domain.popup.PopupEventResponseDto;
 import server.domain.popup.PopupResponseDto;
 import server.domain.popup.PopupSubmitResponseDto;
 import server.domain.popup.VideoProgressResponseDto;
 import server.service.core.popup.PopupService;
 import server.web.api.payload.popup.PopupHideRequest;
+import server.web.api.payload.popup.PopupEventRequest;
 import server.web.api.payload.popup.PopupSubmitRequest;
 import server.web.api.payload.popup.VideoProgressRequest;
 
@@ -74,5 +76,15 @@ public class PopupController {
                 popupId, request.userId(), request.durationSeconds(),
                 request.positionSeconds(), request.maximumPositionSeconds(),
                 request.watchedSeconds());
+    }
+
+    /** 팝업 표시·닫기 이벤트를 사용자 상태에 기록한다. */
+    @Operation(summary = "팝업 표시·닫기 이벤트 저장")
+    @PostMapping("/{popupId}/events")
+    public PopupEventResponseDto recordPopupEvent(
+            @PathVariable String popupId,
+            @Valid @RequestBody PopupEventRequest request) {
+        return popupService.recordPopupEvent(
+                popupId, request.userId(), request.eventType());
     }
 }
