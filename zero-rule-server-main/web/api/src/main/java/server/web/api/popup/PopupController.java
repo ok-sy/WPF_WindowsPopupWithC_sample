@@ -24,10 +24,13 @@ import server.web.api.payload.popup.VideoProgressRequest;
 
 import java.util.List;
 
-/** WPF 팝업 클라이언트가 사용하는 공개 조회 API다. */
+/**
+ * WPF 팝업 클라이언트가 JWT 로그인 없이 사용하는 공개 API다.
+ * zero-server의 공개 URL 규칙인 /p/** 아래에 두어 인증 필터가 통과시킨다.
+ */
 @Tag(name = "Popup")
 @RestController
-@RequestMapping("/api/popups")
+@RequestMapping("/p/api/popups")
 public class PopupController {
 
     private final PopupService popupService;
