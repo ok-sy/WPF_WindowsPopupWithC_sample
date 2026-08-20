@@ -36,6 +36,8 @@ export interface AdminPopupListItem {
   activeYn: 'Y' | 'N';
   periodMode: string;
   questionTemplateId?: number | null;
+  createdBy: string;
+  createdAt: PopupDateValue;
   updatedBy: string;
   updatedAt: PopupDateValue;
 }
