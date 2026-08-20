@@ -66,8 +66,8 @@ namespace Popup.Services
  * → Java Spring Boot 팝업 API의 기본 주소
  *
  * 예:
- * http://localhost:8080
- * https://popup-api.company.com
+ * http://localhost:8080/zero-rule-server/p
+ * https://zero-rule.company.com/zero-rule-server/p
  */
         public PopupApiService(
             string baseUrl)
@@ -90,10 +90,10 @@ namespace Popup.Services
              * 마지막 슬래시를 제거한다.
              *
              * 예:
-             * http://localhost:8080/
+             * http://localhost:8080/zero-rule-server/p/
              *
              * 변경:
-             * http://localhost:8080
+             * http://localhost:8080/zero-rule-server/p
              *
              * 이후 /api/popups를 붙였을 때
              * //api/popups가 되는 것을 방지한다.
@@ -179,7 +179,7 @@ namespace Popup.Services
              *
              * 완성되는 주소 예:
              *
-             * http://localhost:8080/api/popups?userId=TEST_USER
+             * http://localhost:8080/zero-rule-server/p/api/popups?userId=TEST_USER
              */
             string requestUrl =
             $"{_baseUrl}/api/popups" +

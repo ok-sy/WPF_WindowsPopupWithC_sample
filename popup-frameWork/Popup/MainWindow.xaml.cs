@@ -74,7 +74,7 @@ namespace Popup
          * 현재 사용자 ID를 함께 읽는다.
          *
          * 반환 예:
-         * BaseUrl = http://localhost:8080
+         * BaseUrl = http://localhost:8080/zero-rule-server/p
          * UserId  = E1002
          */
         private static PopupClientSettings LoadPopupClientSettings()
