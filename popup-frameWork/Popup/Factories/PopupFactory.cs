@@ -168,7 +168,17 @@ namespace Popup.Factories
                     ?? (!string.IsNullOrWhiteSpace(contentDto.RightSectionTitle)
                         || !string.IsNullOrWhiteSpace(contentDto.RightSectionBody)
                         || !string.IsNullOrWhiteSpace(contentDto.AdditionalDescription)),
-                contentDto.BottomDescription);
+                contentDto.BottomDescription,
+                contentDto.ShowContentHeader,
+                contentDto.ShowPlainText,
+                contentDto.PlainText,
+                contentDto.ShowLeftSection
+                    ?? (!string.IsNullOrWhiteSpace(contentDto.LeftSectionTitle)
+                        || !string.IsNullOrWhiteSpace(contentDto.LeftSectionBody)),
+                contentDto.ShowBottomDescription
+                    ?? !string.IsNullOrWhiteSpace(contentDto.BottomDescription),
+                contentDto.MarkdownMode,
+                contentDto.MarkdownContent);
         }
 
         /*
