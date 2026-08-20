@@ -24,7 +24,6 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'react-toastify';
 
 const popupTypeLabels: Record<string, string> = {
   TEXT: '텍스트',
@@ -68,7 +67,7 @@ export default function RgstPop() {
         const { body } = await api.popupAdmin.list({ ctx });
         if (!ctx.canceled) setPopups(body.popups ?? []);
       } catch (error) {
-        if (!ctx.canceled) toast.error(handleError(error));
+        if (!ctx.canceled) handleError(error);
       } finally {
         if (!ctx.canceled) setLoading(false);
       }
@@ -104,7 +103,7 @@ export default function RgstPop() {
       await api.popupAdmin.updateActive({ popupId: popup.popupId, active });
       setRefreshToken(Date.now());
     } catch (error) {
-      toast.error(handleError(error));
+      handleError(error);
     } finally {
       setLoading(false);
     }
