@@ -12,7 +12,7 @@ import type {
 } from '@local/domain';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PreviewIcon from '@mui/icons-material/Preview';
 import {
   Box,
   Button,
@@ -160,6 +160,7 @@ export default function PopupEditorDialog({
   const [popup, setPopup] = useState<AdminPopupDetail>(createDefaultPopup);
   const [active, setActive] = useState(true);
   const [targetGroups, setTargetGroups] = useState<PopupTargetGroup[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const editing = popupId != null;
 
@@ -317,12 +318,9 @@ export default function PopupEditorDialog({
     }
   };
 
-  const openPreviewWindow = () => {
-    const storageKey = `popup-admin-preview:${Date.now()}`;
-    localStorage.setItem(storageKey, JSON.stringify(popup));
-
-    const availableWidth = window.screen.availWidth;
-    const availableHeight = window.screen.availHeight;
+  const previewDialogSize = () => {
+    const availableWidth = window.innerWidth;
+    const availableHeight = window.innerHeight;
     const requestedWidth =
       popup.sizeMode === 'FULLSCREEN'
         ? availableWidth
@@ -343,21 +341,10 @@ export default function PopupEditorDialog({
       popup.sizeMode === 'FULLSCREEN'
         ? requestedHeight
         : Math.max(popup.minimumHeight, Math.min(popup.maximumHeight, requestedHeight));
-    const windowWidth = Math.round(Math.max(320, Math.min(availableWidth, width)));
-    const windowHeight = Math.round(Math.max(260, Math.min(availableHeight, height)));
-    const left = Math.max(0, Math.round((availableWidth - windowWidth) / 2));
-    const top = Math.max(0, Math.round((availableHeight - windowHeight) / 2));
-    const url = `/popup-preview/?key=${encodeURIComponent(storageKey)}`;
-    const previewWindow = window.open(
-      url,
-      `popup-preview-${popup.popupId || 'new'}`,
-      `popup=yes,width=${windowWidth},height=${windowHeight},left=${left},top=${top}`,
-    );
-
-    if (previewWindow == null) {
-      localStorage.removeItem(storageKey);
-      toast.warn('브라우저에서 팝업을 허용해 주세요.');
-    }
+    return {
+      width: Math.round(Math.max(320, Math.min(availableWidth * 0.96, width))),
+      height: Math.round(Math.max(260, Math.min(availableHeight * 0.96, height))),
+    };
   };
 
   const titleKey = contentTitleKey(popup.popupType);
@@ -386,6 +373,9 @@ export default function PopupEditorDialog({
       ? Boolean(contentValue(popup, 'bottomDescription'))
       : popup.content.showBottomDescription === true;
   const markdownMode = popup.content.markdownMode === true;
+  const modalPreviewSize = previewOpen && typeof window !== 'undefined'
+    ? previewDialogSize()
+    : { width: popup.width, height: popup.height };
 
   return (
     <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="xl">
@@ -1015,8 +1005,13 @@ export default function PopupEditorDialog({
             <Typography variant="subtitle1" fontWeight={700}>
               팝업 미리보기
             </Typography>
-              <Button size="small" variant="outlined" startIcon={<OpenInNewIcon />} onClick={openPreviewWindow}>
-                새 창으로 보기
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<PreviewIcon />}
+                onClick={() => setPreviewOpen(true)}
+              >
+                실제 크기로 보기
               </Button>
               </Stack>
               <PopupPreview popup={popup} fitContainer />
@@ -1032,6 +1027,34 @@ export default function PopupEditorDialog({
           저장
         </Button>
       </DialogActions>
+      <Dialog
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        fullScreen={popup.sizeMode === 'FULLSCREEN'}
+        maxWidth={false}
+        PaperProps={
+          popup.sizeMode === 'FULLSCREEN'
+            ? undefined
+            : {
+                sx: {
+                  width: modalPreviewSize.width,
+                  height: modalPreviewSize.height,
+                  maxWidth: '96vw',
+                  maxHeight: '96vh',
+                  m: 1,
+                  overflow: 'hidden',
+                },
+              }
+        }
+      >
+        <DialogContent sx={{ p: 0, overflow: 'hidden' }}>
+          <PopupPreview
+            popup={popup}
+            fitContainer
+            onClose={() => setPreviewOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

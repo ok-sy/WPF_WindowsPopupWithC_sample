@@ -41,7 +41,7 @@ namespace Popup.Views.Contents
             string plainText,
             bool showLeftSection,
             bool showBottomDescription,
-            bool markdownMode,
+            bool? markdownMode,
             string markdownContent)
             {
                 /*
@@ -67,8 +67,12 @@ namespace Popup.Views.Contents
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
+                bool useMarkdown = markdownMode == true
+                    || (markdownMode == null
+                        && !string.IsNullOrWhiteSpace(markdownContent));
+
                 PlainTextBlock.Text = plainText;
-                PlainTextBlock.Visibility = !markdownMode && showPlainText
+                PlainTextBlock.Visibility = !useMarkdown && showPlainText
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
@@ -120,11 +124,11 @@ namespace Popup.Views.Contents
                 RightSectionSpacerColumn.Width = showLeftSection && showRightSection
                     ? new GridLength(18)
                     : new GridLength(0);
-                ContentColumnsGrid.Visibility = !markdownMode && (showLeftSection || showRightSection)
+                ContentColumnsGrid.Visibility = !useMarkdown && (showLeftSection || showRightSection)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
-                HighlightContainer.Visibility = !markdownMode && showHighlight
+                HighlightContainer.Visibility = !useMarkdown && showHighlight
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
@@ -134,10 +138,10 @@ namespace Popup.Views.Contents
                         ? Visibility.Collapsed
                         : Visibility.Visible;
 
-                MarkdownPanel.Visibility = markdownMode
+                MarkdownPanel.Visibility = useMarkdown
                     ? Visibility.Visible
                     : Visibility.Collapsed;
-                if (markdownMode)
+                if (useMarkdown)
                 {
                     RenderMarkdown(markdownContent);
                 }
@@ -192,15 +196,39 @@ namespace Popup.Views.Contents
             while (position < content.Length)
             {
                 int boldStart = content.IndexOf("**", position, StringComparison.Ordinal);
-                if (boldStart < 0)
+                int codeStart = content.IndexOf('`', position);
+                int tokenStart = boldStart < 0
+                    ? codeStart
+                    : codeStart < 0 ? boldStart : Math.Min(boldStart, codeStart);
+                if (tokenStart < 0)
                 {
                     block.Inlines.Add(new Run(content.Substring(position)));
                     break;
                 }
-                if (boldStart > position)
+                if (tokenStart > position)
                 {
-                    block.Inlines.Add(new Run(content.Substring(position, boldStart - position)));
+                    block.Inlines.Add(new Run(content.Substring(position, tokenStart - position)));
                 }
+
+                if (tokenStart == codeStart)
+                {
+                    int codeEnd = content.IndexOf('`', codeStart + 1);
+                    if (codeEnd < 0)
+                    {
+                        block.Inlines.Add(new Run(content.Substring(codeStart)));
+                        break;
+                    }
+                    block.Inlines.Add(new Run(content.Substring(
+                        codeStart + 1, codeEnd - codeStart - 1))
+                    {
+                        FontFamily = new System.Windows.Media.FontFamily("Consolas"),
+                        Background = new System.Windows.Media.SolidColorBrush(
+                            System.Windows.Media.Color.FromRgb(238, 241, 245))
+                    });
+                    position = codeEnd + 1;
+                    continue;
+                }
+
                 int boldEnd = content.IndexOf("**", boldStart + 2, StringComparison.Ordinal);
                 if (boldEnd < 0)
                 {
