@@ -120,6 +120,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- 텍스트 팝업 전용 제목/설명 영역 -->
@@ -154,9 +155,11 @@
                           MinWidth="260"/>
 
                     <!-- 두 단 사이 간격 -->
-                    <ColumnDefinition Width="18"/>
+                    <ColumnDefinition x:Name="RightSectionSpacerColumn"
+                                      Width="18"/>
 
-                    <ColumnDefinition Width="*"
+                    <ColumnDefinition x:Name="RightSectionColumn"
+                                      Width="*"
                           MinWidth="260"/>
 
                 </Grid.ColumnDefinitions>
@@ -184,7 +187,8 @@
                         <!--
                         Border를 사용한 강조 문구
                         -->
-                        <Border Margin="0,18,0,18"
+                        <Border x:Name="HighlightContainer"
+                                Margin="0,18,0,18"
                                 Padding="14"
                                 Background="#EFF6FF"
                                 BorderBrush="#93C5FD"
@@ -234,7 +238,8 @@
                 <!--
                 오른쪽 카드
                 -->
-                <Border Grid.Column="2"
+                <Border x:Name="RightSectionCard"
+                        Grid.Column="2"
                         Style="{StaticResource CardBorderStyle}">
 
                     <StackPanel>
@@ -293,6 +298,15 @@
             </Grid>
 
         </ScrollViewer>
+
+        <TextBlock x:Name="BottomDescriptionText"
+                   Grid.Row="2"
+                   Margin="0,16,0,0"
+                   Padding="14"
+                   Style="{StaticResource BodyTextStyle}"
+                   Background="#F9FAFB"
+                   TextWrapping="Wrap"
+                   Visibility="Collapsed"/>
 
     </Grid>
 

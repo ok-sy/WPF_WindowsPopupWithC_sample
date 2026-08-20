@@ -161,7 +161,14 @@ namespace Popup.Factories
                 contentDto.HighlightText,
                 contentDto.RightSectionTitle,
                 contentDto.RightSectionBody,
-                contentDto.AdditionalDescription);
+                contentDto.AdditionalDescription,
+                contentDto.ShowHighlight
+                    ?? !string.IsNullOrWhiteSpace(contentDto.HighlightText),
+                contentDto.ShowRightSection
+                    ?? (!string.IsNullOrWhiteSpace(contentDto.RightSectionTitle)
+                        || !string.IsNullOrWhiteSpace(contentDto.RightSectionBody)
+                        || !string.IsNullOrWhiteSpace(contentDto.AdditionalDescription)),
+                contentDto.BottomDescription);
         }
 
         /*

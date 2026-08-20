@@ -85,9 +85,12 @@ function createDefaultPopup(): AdminPopupDetail {
       leftSectionTitle: '',
       leftSectionBody: '',
       highlightText: '',
+      showHighlight: false,
       rightSectionTitle: '',
       rightSectionBody: '',
       additionalDescription: '',
+      showRightSection: false,
+      bottomDescription: '',
       showDescription: true,
       imageSizeMode: 'FIXED',
       imageWidth: 0,
@@ -188,6 +191,14 @@ export default function PopupEditorDialog({
     }));
   };
 
+  const updateFooter = (showFooter: boolean) => {
+    setPopup((previous) => ({
+      ...previous,
+      showFooter,
+      showDoNotShowAgain: showFooter ? previous.showDoNotShowAgain : false,
+    }));
+  };
+
   const savePopup = async () => {
     if (!popup.popupId.trim() || !popup.title.trim()) {
       toast.warn('팝업 ID와 제목을 입력해 주세요.');
@@ -259,13 +270,27 @@ export default function PopupEditorDialog({
   const titleKey = contentTitleKey(popup.popupType);
   const isMedia = popup.popupType === 'IMAGE' || popup.popupType === 'VIDEO';
   const isSurvey = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
+  const showTextRightSection =
+    popup.content.showRightSection == null
+      ? Boolean(
+          contentValue(popup, 'rightSectionTitle') ||
+            contentValue(popup, 'rightSectionBody') ||
+            contentValue(popup, 'additionalDescription'),
+        )
+      : popup.content.showRightSection === true;
+  const showTextHighlight =
+    popup.content.showHighlight == null
+      ? Boolean(contentValue(popup, 'highlightText'))
+      : popup.content.showHighlight === true;
 
   return (
-    <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="lg">
+    <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="xl">
       <DialogTitle>{editing ? '팝업 수정' : '팝업 신규 등록'}</DialogTitle>
       {loading && <LinearProgress />}
-      <DialogContent dividers>
-        <Stack spacing={2}>
+      <DialogContent dividers sx={{ p: 0, overflow: 'hidden' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(520px, 1fr) minmax(520px, 1fr)', height: 'calc(100vh - 150px)' }}>
+          <Box sx={{ overflowY: 'auto', p: 3 }}>
+            <Stack spacing={2}>
           <Typography variant="subtitle1" fontWeight={700}>
             기본 정보
           </Typography>
@@ -378,7 +403,14 @@ export default function PopupEditorDialog({
           <Stack direction="row" flexWrap="wrap" gap={1}>
             <FormControlLabel
               control={<Switch checked={active} onChange={(_, value) => setActive(value)} />}
-              label="활성"
+              label={
+                <Box>
+                  <Typography variant="body2">팝업 활성화</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    켜면 사용자 팝업 조회 대상에 포함됩니다.
+                  </Typography>
+                </Box>
+              }
             />
             <FormControlLabel
               control={
@@ -402,7 +434,7 @@ export default function PopupEditorDialog({
               control={
                 <Switch
                   checked={popup.showFooter}
-                  onChange={(_, value) => updatePopup('showFooter', value)}
+                  onChange={(_, value) => updateFooter(value)}
                 />
               }
               label="푸터 표시"
@@ -411,6 +443,7 @@ export default function PopupEditorDialog({
               control={
                 <Switch
                   checked={popup.showDoNotShowAgain}
+                  disabled={!popup.showFooter}
                   onChange={(_, value) => updatePopup('showDoNotShowAgain', value)}
                 />
               }
@@ -436,6 +469,26 @@ export default function PopupEditorDialog({
           />
           {popup.popupType === 'TEXT' && (
             <Stack spacing={2}>
+              <Stack direction="row" flexWrap="wrap" gap={1}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showTextRightSection}
+                      onChange={(_, value) => updateContent('showRightSection', value)}
+                    />
+                  }
+                  label="오른쪽 카드 사용"
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={showTextHighlight}
+                      onChange={(_, value) => updateContent('showHighlight', value)}
+                    />
+                  }
+                  label="강조 문구 사용"
+                />
+              </Stack>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                 <TextField
                   label="왼쪽 카드 제목"
@@ -444,6 +497,7 @@ export default function PopupEditorDialog({
                 />
                 <TextField
                   label="오른쪽 카드 제목"
+                  disabled={!showTextRightSection}
                   value={contentValue(popup, 'rightSectionTitle')}
                   onChange={(event) => updateContent('rightSectionTitle', event.target.value)}
                 />
@@ -456,6 +510,7 @@ export default function PopupEditorDialog({
                 />
                 <TextField
                   label="오른쪽 카드 본문"
+                  disabled={!showTextRightSection}
                   value={contentValue(popup, 'rightSectionBody')}
                   multiline
                   minRows={4}
@@ -464,15 +519,24 @@ export default function PopupEditorDialog({
               </Box>
               <TextField
                 label="강조 문구"
+                disabled={!showTextHighlight}
                 value={contentValue(popup, 'highlightText')}
                 onChange={(event) => updateContent('highlightText', event.target.value)}
               />
               <TextField
                 label="추가 설명"
+                disabled={!showTextRightSection}
                 value={contentValue(popup, 'additionalDescription')}
                 multiline
                 minRows={2}
                 onChange={(event) => updateContent('additionalDescription', event.target.value)}
+              />
+              <TextField
+                label="하단 설명"
+                value={contentValue(popup, 'bottomDescription')}
+                multiline
+                minRows={2}
+                onChange={(event) => updateContent('bottomDescription', event.target.value)}
               />
             </Stack>
           )}
@@ -616,22 +680,22 @@ export default function PopupEditorDialog({
             </Stack>
           )}
 
-          <Divider />
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            </Stack>
+          </Box>
+          <Box sx={{ minWidth: 0, overflow: 'hidden', p: 2, bgcolor: '#f3f5f9', borderLeft: '1px solid', borderColor: 'divider' }}>
+            <Stack spacing={1.5} sx={{ height: '100%' }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Typography variant="subtitle1" fontWeight={700}>
               팝업 미리보기
             </Typography>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                입력값과 표시 옵션이 실시간으로 반영됩니다.
-              </Typography>
               <Button size="small" variant="outlined" startIcon={<OpenInNewIcon />} onClick={openPreviewWindow}>
                 새 창으로 보기
               </Button>
+              </Stack>
+              <PopupPreview popup={popup} fitContainer />
             </Stack>
-          </Stack>
-          <PopupPreview popup={popup} />
-        </Stack>
+          </Box>
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={loading}>
