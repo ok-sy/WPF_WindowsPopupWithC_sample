@@ -40,6 +40,9 @@
         public string HighlightText { get; set; } =
             string.Empty;
 
+        /* 강조 문구 표시 여부. null이면 문구 존재 여부로 판단한다. */
+        public bool? ShowHighlight { get; set; }
+
         /*
          * 오른쪽 카드 제목
          */
@@ -56,6 +59,13 @@
          * 오른쪽 카드 하단에 표시할 추가 설명
          */
         public string AdditionalDescription { get; set; } =
+            string.Empty;
+
+        /* 오른쪽 카드 표시 여부. null이면 오른쪽 콘텐츠 존재 여부로 판단한다. */
+        public bool? ShowRightSection { get; set; }
+
+        /* 좌우 카드 아래에 표시할 하단 설명 */
+        public string BottomDescription { get; set; } =
             string.Empty;
     }
 }
