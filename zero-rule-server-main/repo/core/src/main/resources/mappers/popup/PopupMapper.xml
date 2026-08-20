@@ -490,4 +490,78 @@
             updated_at = CURRENT_TIMESTAMP
     </insert>
 
+    <select id="selectVideoPopupContext"
+            resultType="server.domain.popup.VideoPopupContext">
+        SELECT
+            notice.popup_id AS popupId,
+            notice.popup_type AS popupType,
+            notice.completion_ratio AS completionRatio
+        FROM popup.popup_notice notice
+        JOIN popup.app_user usr
+          ON usr.employee_no = #{userId}
+         AND usr.active_yn = 'Y'
+        WHERE notice.popup_id = #{popupId}
+          AND notice.popup_type = 'VIDEO'
+          AND notice.active_yn = 'Y'
+          AND CURRENT_TIMESTAMP BETWEEN notice.display_start_at AND notice.display_end_at
+    </select>
+
+    <!-- 낮은 재생값으로 다시 전송돼도 누적 최대값과 완료 상태는 되돌리지 않는다. -->
+    <insert id="upsertVideoProgress">
+        INSERT INTO popup.video_view_status AS current_view
+        (
+            employee_no, popup_id, total_duration_seconds,
+            last_position_seconds, maximum_position_seconds,
+            watched_seconds, watched_ratio, completed_yn,
+            first_played_at, last_played_at, completed_at,
+            created_by, updated_by
+        )
+        VALUES
+        (
+            #{userId}, #{popupId}, #{durationSeconds},
+            #{positionSeconds}, #{maximumPositionSeconds},
+            #{watchedSeconds}, #{watchedRatio}, #{completedYn},
+            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+            CASE WHEN #{completedYn} = 'Y' THEN CURRENT_TIMESTAMP ELSE NULL END,
+            #{userId}, #{userId}
+        )
+        ON CONFLICT (employee_no, popup_id)
+        DO UPDATE SET
+            total_duration_seconds = EXCLUDED.total_duration_seconds,
+            last_position_seconds = EXCLUDED.last_position_seconds,
+            maximum_position_seconds = GREATEST(
+                current_view.maximum_position_seconds,
+                EXCLUDED.maximum_position_seconds
+            ),
+            watched_seconds = GREATEST(
+                current_view.watched_seconds,
+                EXCLUDED.watched_seconds
+            ),
+            watched_ratio = GREATEST(
+                current_view.watched_ratio,
+                EXCLUDED.watched_ratio
+            ),
+            completed_yn = CASE
+                WHEN current_view.completed_yn = 'Y' THEN 'Y'
+                ELSE EXCLUDED.completed_yn
+            END,
+            last_played_at = CURRENT_TIMESTAMP,
+            completed_at = CASE
+                WHEN current_view.completed_at IS NOT NULL
+                    THEN current_view.completed_at
+                WHEN EXCLUDED.completed_yn = 'Y' THEN CURRENT_TIMESTAMP
+                ELSE NULL
+            END,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="selectVideoCompletedAt"
+            resultType="java.time.OffsetDateTime">
+        SELECT completed_at AT TIME ZONE 'Asia/Seoul'
+        FROM popup.video_view_status
+        WHERE employee_no = #{userId}
+          AND popup_id = #{popupId}
+    </select>
+
 </mapper>

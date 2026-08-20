@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 import server.domain.popup.PopupHideResponseDto;
 import server.domain.popup.PopupResponseDto;
 import server.domain.popup.PopupSubmitResponseDto;
+import server.domain.popup.VideoProgressResponseDto;
 import server.service.core.popup.PopupService;
 import server.web.api.payload.popup.PopupHideRequest;
 import server.web.api.payload.popup.PopupSubmitRequest;
+import server.web.api.payload.popup.VideoProgressRequest;
 
 import java.util.List;
 
@@ -60,5 +62,17 @@ public class PopupController {
                 request.userId(),
                 request.responseStartedAt(),
                 request.toAnswers());
+    }
+
+    /** 영상 시청률을 서버에서 계산하고 완료 여부를 저장한다. */
+    @Operation(summary = "영상 시청 진행률 저장")
+    @PostMapping("/{popupId}/video-progress")
+    public VideoProgressResponseDto saveVideoProgress(
+            @PathVariable String popupId,
+            @Valid @RequestBody VideoProgressRequest request) {
+        return popupService.saveVideoProgress(
+                popupId, request.userId(), request.durationSeconds(),
+                request.positionSeconds(), request.maximumPositionSeconds(),
+                request.watchedSeconds());
     }
 }
