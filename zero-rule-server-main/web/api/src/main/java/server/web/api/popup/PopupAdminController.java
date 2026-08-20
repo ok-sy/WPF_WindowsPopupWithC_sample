@@ -49,8 +49,7 @@ public class PopupAdminController extends ApiBaseController {
                 "BE00000001",
                 PopupAdminPayloads.PopupInfoResponse.builder()
                         .popup(popupService.getAdminPopup(request.getPopupId()))
-                        .targetEmployeeNos(
-                                popupService.getAdminTargetEmployeeNos(request.getPopupId()))
+                        .targetGroups(popupService.getAdminTargetGroups(request.getPopupId()))
                         .build());
     }
 
@@ -65,7 +64,7 @@ public class PopupAdminController extends ApiBaseController {
                         .popup(popupService.saveAdminPopup(
                                 request.getPopup(),
                                 request.getActive(),
-                                request.getTargetEmployeeNos(),
+                                request.getTargetGroups(),
                                 currentLgonId()))
                         .build());
     }
