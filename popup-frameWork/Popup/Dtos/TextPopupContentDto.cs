@@ -78,7 +78,7 @@
 
         public bool? ShowBottomDescription { get; set; }
 
-        public bool MarkdownMode { get; set; }
+        public bool? MarkdownMode { get; set; }
 
         public string MarkdownContent { get; set; } = string.Empty;
     }
