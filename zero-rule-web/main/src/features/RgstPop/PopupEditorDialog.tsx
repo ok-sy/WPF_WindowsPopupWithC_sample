@@ -153,6 +153,7 @@ export default function PopupEditorDialog({
   const api = useApi();
   const [popup, setPopup] = useState<AdminPopupDetail>(createDefaultPopup);
   const [active, setActive] = useState(true);
+  const [targetEmployeeText, setTargetEmployeeText] = useState('');
   const [loading, setLoading] = useState(false);
   const editing = popupId != null;
 
@@ -162,6 +163,7 @@ export default function PopupEditorDialog({
 
     if (popupId == null) {
       setPopup(createDefaultPopup());
+      setTargetEmployeeText('');
       return;
     }
 
@@ -170,7 +172,10 @@ export default function PopupEditorDialog({
     api.popupAdmin
       .info({ popupId })
       .then(({ body }) => {
-        if (!canceled) setPopup(body.popup);
+        if (!canceled) {
+          setPopup(body.popup);
+          setTargetEmployeeText((body.targetEmployeeNos ?? []).join(', '));
+        }
       })
       .catch((error) => {
         if (!canceled) handleError(error);
@@ -221,7 +226,21 @@ export default function PopupEditorDialog({
         displayStartAt: toApiDate(toDateTimeLocal(popup.displayStartAt)),
         displayEndAt: toApiDate(toDateTimeLocal(popup.displayEndAt)),
       };
-      const { body } = await api.popupAdmin.save({ popup: requestPopup, active });
+      const targetEmployeeNos = targetEmployeeText
+        .split(/[\s,]+/)
+        .map((value) => value.trim())
+        .filter((value, index, values) =>
+          value.length > 0 && values.indexOf(value) === index,
+        );
+      if (active && targetEmployeeNos.length === 0) {
+        toast.warn('활성 팝업은 대상 사번을 한 명 이상 입력해 주세요.');
+        return;
+      }
+      const { body } = await api.popupAdmin.save({
+        popup: requestPopup,
+        active,
+        targetEmployeeNos,
+      });
       toast.success('팝업을 저장했습니다.');
       onSaved(body.popup.popupId);
     } catch (error) {
@@ -366,6 +385,18 @@ export default function PopupEditorDialog({
               onChange={(event) => updatePopup('displayEndAt', event.target.value)}
             />
           </Box>
+
+          <Divider />
+          <Typography variant="subtitle1" fontWeight={700}>
+            노출 대상
+          </Typography>
+          <TextField
+            label="대상 사번"
+            value={targetEmployeeText}
+            placeholder="E1002, E1003"
+            helperText="쉼표 또는 공백으로 여러 사번을 입력할 수 있으며, 각 사번은 OR 조건으로 적용됩니다."
+            onChange={(event) => setTargetEmployeeText(event.target.value)}
+          />
 
           <Divider />
           <Typography variant="subtitle1" fontWeight={700}>
