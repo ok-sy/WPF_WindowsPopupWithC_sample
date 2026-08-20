@@ -22,6 +22,12 @@
         public string Description { get; set; } =
             string.Empty;
 
+        public bool ShowContentHeader { get; set; } = true;
+
+        public string PlainText { get; set; } = string.Empty;
+
+        public bool ShowPlainText { get; set; } = true;
+
         /*
          * 왼쪽 카드 제목
          */
@@ -33,6 +39,8 @@
          */
         public string LeftSectionBody { get; set; } =
             string.Empty;
+
+        public bool? ShowLeftSection { get; set; }
 
         /*
          * 왼쪽 카드 안에 표시할 강조 문구
@@ -67,5 +75,11 @@
         /* 좌우 카드 아래에 표시할 하단 설명 */
         public string BottomDescription { get; set; } =
             string.Empty;
+
+        public bool? ShowBottomDescription { get; set; }
+
+        public bool MarkdownMode { get; set; }
+
+        public string MarkdownContent { get; set; } = string.Empty;
     }
 }
