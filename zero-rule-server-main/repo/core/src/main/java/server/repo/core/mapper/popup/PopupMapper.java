@@ -3,6 +3,7 @@ package server.repo.core.mapper.popup;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import server.domain.popup.PopupEntity;
+import server.domain.popup.AdminPopupListItemDto;
 import server.domain.popup.PopupOptionEntity;
 import server.domain.popup.PopupQuestionEntity;
 import server.domain.popup.PopupSubmissionContext;
@@ -16,6 +17,9 @@ import java.util.List;
 /** popup 스키마의 팝업 표시 데이터를 조회한다. */
 @Mapper
 public interface PopupMapper {
+
+    /** 대상자·기간 필터를 적용하지 않은 관리자용 전체 목록이다. */
+    List<AdminPopupListItemDto> selectAdminPopups();
 
     List<PopupEntity> selectAvailablePopups(@Param("userId") String userId);
 
