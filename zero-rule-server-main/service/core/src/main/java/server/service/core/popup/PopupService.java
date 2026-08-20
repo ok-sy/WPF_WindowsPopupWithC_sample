@@ -87,6 +87,13 @@ public class PopupService {
         return toResponseDto(popup, questions);
     }
 
+    public List<String> getAdminTargetEmployeeNos(String popupId) {
+        if (popupId == null || popupId.isBlank()) {
+            throw new IllegalArgumentException("팝업 ID는 필수입니다.");
+        }
+        return popupMapper.selectAdminTargetEmployeeNos(popupId.trim());
+    }
+
     /**
      * 팝업 공통 설정과 유형별 콘텐츠를 하나의 트랜잭션으로 저장한다.
      * popupId가 없으면 등록되고, 이미 존재하면 해당 행이 수정된다.
@@ -95,8 +102,14 @@ public class PopupService {
     public PopupResponseDto saveAdminPopup(
             PopupResponseDto popup,
             Boolean active,
+            List<String> targetEmployeeNos,
             String auditUser) {
         validateAdminPopup(popup, active, auditUser);
+        List<String> normalizedEmployeeNos = normalizeTargetEmployeeNos(targetEmployeeNos);
+        if (Boolean.TRUE.equals(active) && normalizedEmployeeNos.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "활성 팝업은 대상 사번을 한 명 이상 지정해야 합니다.");
+        }
 
         AdminPopupSaveCommand command = toAdminSaveCommand(
                 popup, active, auditUser.trim());
@@ -106,7 +119,36 @@ public class PopupService {
             throw new IllegalStateException("팝업 저장에 실패했습니다.");
         }
 
+        // 아직 UI가 지원하지 않는 부서·직급·입사일 조건은 그대로 보존한다.
+        popupMapper.deleteAdminEmployeeTargets(command.popupId());
+        for (int index = 0; index < normalizedEmployeeNos.size(); index++) {
+            Long targetGroupId = popupMapper.insertAdminEmployeeTargetGroup(
+                    command.popupId(), index + 1, command.auditUser());
+            if (targetGroupId == null
+                    || popupMapper.insertAdminEmployeeTargetCondition(
+                            targetGroupId, normalizedEmployeeNos.get(index),
+                            command.auditUser()) <= 0) {
+                throw new IllegalStateException("팝업 대상자 저장에 실패했습니다.");
+            }
+        }
+
         return getAdminPopup(command.popupId());
+    }
+
+    private List<String> normalizeTargetEmployeeNos(List<String> employeeNos) {
+        if (employeeNos == null) {
+            throw new IllegalArgumentException("대상 사번 목록은 필수입니다.");
+        }
+        return employeeNos.stream()
+                .map(value -> value == null ? "" : value.trim())
+                .filter(value -> !value.isBlank())
+                .peek(value -> {
+                    if (value.length() > 30) {
+                        throw new IllegalArgumentException("대상 사번은 30자 이하여야 합니다.");
+                    }
+                })
+                .distinct()
+                .toList();
     }
 
     /** 팝업의 나머지 설정은 유지하고 활성 여부만 변경한다. */

@@ -31,6 +31,20 @@ public interface PopupMapper {
     /** 팝업 유형별 제목·본문·미디어·추가 옵션을 등록하거나 수정한다. */
     int upsertAdminPopupContent(AdminPopupSaveCommand command);
 
+    List<String> selectAdminTargetEmployeeNos(@Param("popupId") String popupId);
+
+    int deleteAdminEmployeeTargets(@Param("popupId") String popupId);
+
+    Long insertAdminEmployeeTargetGroup(
+            @Param("popupId") String popupId,
+            @Param("groupOrder") int groupOrder,
+            @Param("auditUser") String auditUser);
+
+    int insertAdminEmployeeTargetCondition(
+            @Param("targetGroupId") Long targetGroupId,
+            @Param("employeeNo") String employeeNo,
+            @Param("auditUser") String auditUser);
+
     /** 목록에서 팝업의 사용 여부만 빠르게 변경한다. */
     int updateAdminPopupActive(
             @Param("popupId") String popupId,

@@ -282,6 +282,59 @@
         WHERE popup_id = #{popupId}
     </update>
 
+    <select id="selectAdminTargetEmployeeNos" resultType="string">
+        SELECT DISTINCT condition.employee_no
+        FROM popup.popup_target_group target
+        JOIN popup.popup_target_condition condition
+          ON condition.target_group_id = target.target_group_id
+        WHERE target.popup_id = #{popupId}
+          AND condition.condition_type = 'EMPLOYEE'
+          AND condition.condition_operator = '='
+        ORDER BY condition.employee_no
+    </select>
+
+    <delete id="deleteAdminEmployeeTargets">
+        DELETE FROM popup.popup_target_group target
+        WHERE target.popup_id = #{popupId}
+          AND EXISTS
+          (
+              SELECT 1 FROM popup.popup_target_condition condition
+              WHERE condition.target_group_id = target.target_group_id
+                AND condition.condition_type = 'EMPLOYEE'
+                AND condition.condition_operator = '='
+          )
+          AND NOT EXISTS
+          (
+              SELECT 1 FROM popup.popup_target_condition condition
+              WHERE condition.target_group_id = target.target_group_id
+                AND (condition.condition_type != 'EMPLOYEE'
+                     OR condition.condition_operator != '=')
+          )
+    </delete>
+
+    <select id="insertAdminEmployeeTargetGroup"
+            resultType="long" affectData="true" flushCache="true">
+        INSERT INTO popup.popup_target_group
+        (popup_id, target_name, target_description, group_order, created_by, updated_by)
+        VALUES
+        (#{popupId}, CONCAT('사번 대상 ', #{groupOrder}),
+         '관리자 팝업 등록 화면에서 지정한 직접 대상',
+         (SELECT COALESCE(MAX(existing.group_order), 0) + 1
+            FROM popup.popup_target_group existing
+           WHERE existing.popup_id = #{popupId}),
+         #{auditUser}, #{auditUser})
+        RETURNING target_group_id
+    </select>
+
+    <insert id="insertAdminEmployeeTargetCondition">
+        INSERT INTO popup.popup_target_condition
+        (target_group_id, condition_type, condition_operator, employee_no,
+         include_child_yn, condition_order, created_by, updated_by)
+        VALUES
+        (#{targetGroupId}, 'EMPLOYEE', '=', #{employeeNo}, 'N', 1,
+         #{auditUser}, #{auditUser})
+    </insert>
+
     <resultMap id="popupEntityResultMap"
                type="server.domain.popup.PopupEntity">
         <constructor>

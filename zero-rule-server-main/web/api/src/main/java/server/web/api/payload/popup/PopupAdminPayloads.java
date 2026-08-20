@@ -43,6 +43,9 @@ public final class PopupAdminPayloads {
     public static class PopupInfoResponse {
         @Schema(description = "팝업 표시 설정과 유형별 콘텐츠")
         private PopupResponseDto popup;
+
+        @Schema(description = "직접 노출 대상 사번 목록")
+        private List<String> targetEmployeeNos;
     }
 
     /** 신규 등록과 기존 팝업 수정이 함께 사용하는 저장 요청이다. */
@@ -56,6 +59,10 @@ public final class PopupAdminPayloads {
         @NotNull
         @Schema(description = "팝업 활성 여부", example = "true")
         private Boolean active;
+
+        @NotNull
+        @Schema(description = "직접 노출 대상 사번 목록", example = "[\"E1002\"]")
+        private List<@NotBlank @Size(max = 30) String> targetEmployeeNos;
     }
 
     /** 목록에서 활성 여부만 변경할 때 사용하는 요청이다. */
