@@ -88,7 +88,7 @@ namespace Popup.Services
                     "allowCloseBeforeComplete": true,
                     "content": {
                       "videoTitle": "Demo Mode 교육 영상",
-                      "videoUrl": "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
+                      "videoUrl": "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
                       "description": "재생, 일시정지, 전체화면 컨트롤을 확인하세요.",
                       "showDescription": true
                     }
