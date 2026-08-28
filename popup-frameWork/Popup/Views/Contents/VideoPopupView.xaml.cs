@@ -335,6 +335,9 @@ namespace Popup.Views.Contents
                 VideoWebView.CoreWebView2.WebMessageReceived +=
                     CoreWebView2_WebMessageReceived;
 
+                VideoWebView.CoreWebView2.ContainsFullScreenElementChanged +=
+                    CoreWebView2_ContainsFullScreenElementChanged;
+
                 /*
                  * 기본 컨텍스트 메뉴와 개발자 도구를 제한한다.
                  * 필요하다면 이후 옵션으로 분리할 수 있다.
@@ -370,8 +373,16 @@ namespace Popup.Views.Contents
                     <head>
                       <meta charset="utf-8">
                       <style>
-                        html, body { width:100%; height:100%; margin:0; background:#000; overflow:hidden; }
-                        video { width:100%; height:100%; object-fit:contain; background:#000; }
+                        html, body {
+                          width:100%; height:100%; margin:0; background:#000; overflow:hidden;
+                        }
+                        body {
+                          display:flex; align-items:center; justify-content:center;
+                        }
+                        video {
+                          display:block; width:100%; height:100%; max-width:100%; max-height:100%;
+                          margin:auto; object-fit:contain; object-position:center center; background:#000;
+                        }
                       </style>
                     </head>
                     <body>
@@ -450,6 +461,23 @@ namespace Popup.Views.Contents
                 System.Diagnostics.Debug.WriteLine(
                     $"[VIDEO] WebView 메시지 처리 실패: {exception}");
             }
+        }
+
+        private void CoreWebView2_ContainsFullScreenElementChanged(
+            object? sender,
+            object e)
+        {
+            _ = Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (VideoWebView.CoreWebView2?.ContainsFullScreenElement == true)
+                {
+                    EnterFullScreen();
+                }
+                else
+                {
+                    ExitFullScreen();
+                }
+            }));
         }
 
         /*
@@ -1753,6 +1781,9 @@ namespace Popup.Views.Contents
 
                     VideoWebView.CoreWebView2.WebMessageReceived -=
                         CoreWebView2_WebMessageReceived;
+
+                    VideoWebView.CoreWebView2.ContainsFullScreenElementChanged -=
+                        CoreWebView2_ContainsFullScreenElementChanged;
 
                     VideoWebView.CoreWebView2.Navigate(
                         "about:blank");
