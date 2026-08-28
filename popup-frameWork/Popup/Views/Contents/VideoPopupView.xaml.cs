@@ -1,6 +1,9 @@
 ﻿using Microsoft.Web.WebView2.Core;
 using System;
 using System.IO;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Web;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,6 +15,11 @@ namespace Popup.Views.Contents
 {
     public partial class VideoPopupView : UserControl
     {
+        private static readonly HttpClient VideoHttpClient = new()
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        };
+
         /*
          * 전달받은 원본 영상 경로다.
          */
@@ -222,7 +230,7 @@ namespace Popup.Views.Contents
             }
             else
             {
-                LoadMediaElementVideo();
+                await LoadMediaElementVideoAsync();
             }
         }
 
@@ -230,7 +238,7 @@ namespace Popup.Views.Contents
          * 로컬 파일 또는 직접 영상 URL을
          * MediaElement로 재생한다.
          */
-        private void LoadMediaElementVideo()
+        private async System.Threading.Tasks.Task LoadMediaElementVideoAsync()
         {
             try
             {
@@ -257,42 +265,41 @@ namespace Popup.Views.Contents
                     System.Diagnostics.Debug.WriteLine(
                         $"[VIDEO] HTTP URL 인식: {absoluteUri}");
 
-                    PopupVideo.Source = absoluteUri;
+                    string cachedVideoPath =
+                        await DownloadVideoToCacheAsync(absoluteUri);
 
-                    Dispatcher.BeginInvoke(new Action(() =>
+                    PopupVideo.Source =
+                        new Uri(cachedVideoPath, UriKind.Absolute);
+                }
+                else
+                {
+                    string resolvedPath =
+                        Path.IsPathRooted(_videoPath)
+                            ? _videoPath
+                            : Path.GetFullPath(
+                                Path.Combine(
+                                    AppContext.BaseDirectory,
+                                    _videoPath));
+
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[VIDEO] 로컬 경로: {resolvedPath}");
+
+                    if (!File.Exists(resolvedPath))
                     {
-                        System.Diagnostics.Debug.WriteLine(
-                            "[VIDEO] Play 호출");
+                        throw new FileNotFoundException(
+                            "영상 파일을 찾을 수 없습니다.",
+                            resolvedPath);
+                    }
 
-                        PopupVideo.Play();
-                    }));
-
-                    return;
+                    PopupVideo.Source =
+                        new Uri(resolvedPath, UriKind.Absolute);
                 }
 
-                string resolvedPath =
-                    Path.IsPathRooted(_videoPath)
-                        ? _videoPath
-                        : Path.GetFullPath(
-                            Path.Combine(
-                                AppContext.BaseDirectory,
-                                _videoPath));
-
-                System.Diagnostics.Debug.WriteLine(
-                    $"[VIDEO] 로컬 경로: {resolvedPath}");
-
-                if (!File.Exists(resolvedPath))
+                _ = Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    throw new FileNotFoundException(
-                        "영상 파일을 찾을 수 없습니다.",
-                        resolvedPath);
-                }
+                    System.Diagnostics.Debug.WriteLine(
+                        "[VIDEO] Play 호출");
 
-                PopupVideo.Source =
-                    new Uri(resolvedPath, UriKind.Absolute);
-
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
                     PopupVideo.Play();
                 }));
             }
@@ -304,6 +311,67 @@ namespace Popup.Views.Contents
                 ShowVideoError(
                     $"영상을 불러올 수 없습니다.\n{exception.Message}");
             }
+        }
+
+        /*
+         * MediaElement는 일부 HTTPS 영상 URL을 브라우저와 다르게 처리하여
+         * 재생에 실패할 수 있다. 원격 MP4를 앱 임시 캐시에 저장한 뒤
+         * 검증된 로컬 파일 경로를 MediaElement에 전달한다.
+         */
+        private static async System.Threading.Tasks.Task<string>
+            DownloadVideoToCacheAsync(Uri videoUri)
+        {
+            string cacheDirectory = Path.Combine(
+                Path.GetTempPath(),
+                "OksyPopupClient",
+                "VideoCache");
+
+            Directory.CreateDirectory(cacheDirectory);
+
+            string cacheKey = Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(videoUri.AbsoluteUri)));
+
+            string extension = Path.GetExtension(videoUri.AbsolutePath);
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                extension = ".mp4";
+            }
+
+            string cachedPath = Path.Combine(
+                cacheDirectory,
+                cacheKey + extension);
+
+            if (File.Exists(cachedPath) && new FileInfo(cachedPath).Length > 0)
+            {
+                return cachedPath;
+            }
+
+            string temporaryPath = cachedPath + ".download";
+
+            using HttpResponseMessage response =
+                await VideoHttpClient.GetAsync(
+                    videoUri,
+                    HttpCompletionOption.ResponseHeadersRead);
+
+            response.EnsureSuccessStatusCode();
+
+            await using Stream source =
+                await response.Content.ReadAsStreamAsync();
+            await using FileStream destination =
+                new FileStream(
+                    temporaryPath,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 81920,
+                    useAsync: true);
+
+            await source.CopyToAsync(destination);
+            await destination.FlushAsync();
+            await destination.DisposeAsync();
+
+            File.Move(temporaryPath, cachedPath, overwrite: true);
+            return cachedPath;
         }
 
         /*
