@@ -36,8 +36,15 @@ namespace Popup
          * Java Spring Boot 서버와 통신하여
          * 팝업 목록을 조회하는 API 서비스다.
          */
-        private readonly PopupApiService
+        private readonly PopupApiService?
             _popupApiService;
+
+        /*
+         * WPF 내부 샘플만 사용하는 화면 시연 모드 여부다.
+         * true이면 Java API 생성, 사용자 ID 확인, 주기 조회를 모두 건너뛴다.
+         */
+        private readonly bool
+            _demoMode;
 
         /*
          * appsettings.json에서 읽은 현재 사용자 ID다.
@@ -149,26 +156,34 @@ namespace Popup
             /*
              * PopupApi 내부에서 BaseUrl 값을 찾는다.
              */
-            if (!popupApiElement.TryGetProperty(
-                    "BaseUrl",
-                    out JsonElement baseUrlElement))
-            {
-                throw new InvalidOperationException(
-                    "appsettings.json에 PopupApi.BaseUrl 설정이 없습니다.");
-            }
+            bool demoMode =
+                popupApiElement.TryGetProperty(
+                    "DemoMode",
+                    out JsonElement demoModeElement)
+                && demoModeElement.ValueKind == JsonValueKind.True;
 
             /*
              * JSON의 BaseUrl 값을
              * C# 문자열로 변환한다.
              */
-            string? baseUrl =
-                baseUrlElement.GetString();
+            string baseUrl =
+                string.Empty;
+
+            if (popupApiElement.TryGetProperty(
+                    "BaseUrl",
+                    out JsonElement baseUrlElement))
+            {
+                baseUrl =
+                    baseUrlElement.GetString()
+                    ?? string.Empty;
+            }
 
             /*
              * 속성은 존재하지만 값이 비어 있는 경우에도
              * 잘못된 설정으로 처리한다.
              */
-            if (string.IsNullOrWhiteSpace(
+            if (!demoMode
+                && string.IsNullOrWhiteSpace(
                     baseUrl))
             {
                 throw new InvalidOperationException(
@@ -221,6 +236,9 @@ namespace Popup
 
             return new PopupClientSettings
             {
+                DemoMode =
+                    demoMode,
+
                 BaseUrl =
                     baseUrl.Trim(),
                 UserId =
@@ -302,9 +320,14 @@ namespace Popup
             PopupClientSettings popupClientSettings =
                 LoadPopupClientSettings();
 
+            _demoMode =
+                popupClientSettings.DemoMode;
+
             _currentUserId =
-                ResolveCurrentUserId(
-                    popupClientSettings.UserId);
+                _demoMode
+                    ? "DEMO_USER"
+                    : ResolveCurrentUserId(
+                        popupClientSettings.UserId);
 
             _autoLoadOnStartup =
                 popupClientSettings.AutoLoadOnStartup;
@@ -322,9 +345,18 @@ namespace Popup
              * 설정 파일에서 읽은 API 주소를 전달하여
              * PopupApiService를 생성한다.
              */
-            _popupApiService =
-                new PopupApiService(
-                    popupClientSettings.BaseUrl);
+            if (!_demoMode)
+            {
+                _popupApiService =
+                    new PopupApiService(
+                        popupClientSettings.BaseUrl);
+            }
+
+            if (_demoMode)
+            {
+                Title =
+                    "Popup 관리 화면 - Demo Mode";
+            }
 
             Loaded +=
                 MainWindow_Loaded;
@@ -340,6 +372,12 @@ namespace Popup
         {
             Loaded -=
                 MainWindow_Loaded;
+
+            if (_demoMode)
+            {
+                ShowDemoPopups();
+                return;
+            }
 
             if (_autoLoadOnStartup)
             {
@@ -357,7 +395,8 @@ namespace Popup
          */
         private void StartPeriodicPolling()
         {
-            if (_pollingIntervalSeconds <= 0)
+            if (_demoMode
+                || _pollingIntervalSeconds <= 0)
             {
                 return;
             }
@@ -399,6 +438,12 @@ namespace Popup
          */
         public async Task RefreshPopupsAsync()
         {
+            if (_demoMode)
+            {
+                ShowDemoPopups();
+                return;
+            }
+
             await LoadAndShowAvailablePopupsAsync(
                 showEmptyMessage: true,
                 showErrorMessage: true);
@@ -411,6 +456,18 @@ namespace Popup
             bool showEmptyMessage,
             bool showErrorMessage)
         {
+            if (_demoMode)
+            {
+                ShowDemoPopups();
+                return;
+            }
+
+            if (_popupApiService == null)
+            {
+                throw new InvalidOperationException(
+                    "API 모드의 PopupApiService가 생성되지 않았습니다.");
+            }
+
             if (_isLoadingPopups)
             {
                 return;
@@ -670,6 +727,36 @@ namespace Popup
             {
                 _isLoadingPopups =
                     false;
+            }
+        }
+
+        /*
+         * WPF 내부의 5종 샘플을 실제 PopupFactory와 PopupManager로 표시한다.
+         * API 콜백을 연결하지 않으므로 조회, 이벤트, 숨김, 응답, 영상 진행률 등
+         * 어떤 Java API도 호출하지 않는다.
+         */
+        private void ShowDemoPopups()
+        {
+            try
+            {
+                List<PopupResponseDto> popupDtos =
+                    DemoPopupDataService.CreatePopups();
+
+                List<PopupOptions> popupOptionsList =
+                    _popupService.CreatePopupOptions(
+                        popupDtos);
+
+                _popupManager.ShowRange(
+                    popupOptionsList);
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(
+                    "Demo Mode 팝업을 만드는 중 오류가 발생했습니다.\n\n" +
+                    exception.Message,
+                    "Demo Mode 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 

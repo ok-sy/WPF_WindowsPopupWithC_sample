@@ -5,6 +5,12 @@ namespace Popup.Models
     /// </summary>
     public class PopupClientSettings
     {
+        /*
+         * true이면 Java API를 전혀 호출하지 않고
+         * WPF 내부의 시연용 샘플 데이터만 사용한다.
+         */
+        public bool DemoMode { get; set; }
+
         public string BaseUrl { get; set; } =
             string.Empty;
 

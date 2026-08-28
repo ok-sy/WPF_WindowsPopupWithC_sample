@@ -26,7 +26,7 @@
             <!--
             기존 텍스트 팝업 열기 버튼
             -->
-            <Button Content="API 통신 팝업"
+            <Button Content="팝업 다시 실행"
             Width="160"
             Height="42"
             Margin="0,0,0,12"
