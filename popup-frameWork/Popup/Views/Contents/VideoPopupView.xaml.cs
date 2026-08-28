@@ -1,9 +1,7 @@
 ﻿using Microsoft.Web.WebView2.Core;
 using System;
 using System.IO;
-using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
+using System.Text.Json;
 using System.Web;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,11 +13,6 @@ namespace Popup.Views.Contents
 {
     public partial class VideoPopupView : UserControl
     {
-        private static readonly HttpClient VideoHttpClient = new()
-        {
-            Timeout = TimeSpan.FromSeconds(30)
-        };
-
         /*
          * 전달받은 원본 영상 경로다.
          */
@@ -29,6 +22,11 @@ namespace Popup.Views.Contents
          * 현재 영상이 YouTube 영상인지 나타낸다.
          */
         private readonly bool _useWebPlayer;
+
+        private readonly bool _isYouTubeVideo;
+
+        private double _webDurationSeconds;
+        private double _webPositionSeconds;
 
         /*
          * MediaElement가 영상을 정상적으로 열었는지 나타낸다.
@@ -192,10 +190,11 @@ namespace Popup.Views.Contents
             /*
              * 생성 시점에 YouTube 주소 여부를 판별한다.
              */
+            _isYouTubeVideo =
+                TryGetYouTubeVideoId(_videoPath, out _);
+
             _useWebPlayer =
-                TryGetYouTubeVideoId(
-                    _videoPath,
-                    out _);
+                _isYouTubeVideo || IsHttpVideoUrl(_videoPath);
 
             TitleTextBlock.Text =
                 videoTitle ?? string.Empty;
@@ -226,7 +225,7 @@ namespace Popup.Views.Contents
 
             if (_useWebPlayer)
             {
-                await LoadYouTubeVideoAsync();
+                await LoadWebVideoAsync();
             }
             else
             {
@@ -238,7 +237,7 @@ namespace Popup.Views.Contents
          * 로컬 파일 또는 직접 영상 URL을
          * MediaElement로 재생한다.
          */
-        private async System.Threading.Tasks.Task LoadMediaElementVideoAsync()
+        private System.Threading.Tasks.Task LoadMediaElementVideoAsync()
         {
             try
             {
@@ -255,31 +254,13 @@ namespace Popup.Views.Contents
                 
                 ShowLoadingMessage("영상을 불러오는 중입니다.");
 
-                if (Uri.TryCreate(
-                        _videoPath,
-                        UriKind.Absolute,
-                        out Uri? absoluteUri)
-                    && (absoluteUri.Scheme == Uri.UriSchemeHttp
-                        || absoluteUri.Scheme == Uri.UriSchemeHttps))
-                {
-                    System.Diagnostics.Debug.WriteLine(
-                        $"[VIDEO] HTTP URL 인식: {absoluteUri}");
-
-                    string cachedVideoPath =
-                        await DownloadVideoToCacheAsync(absoluteUri);
-
-                    PopupVideo.Source =
-                        new Uri(cachedVideoPath, UriKind.Absolute);
-                }
-                else
-                {
-                    string resolvedPath =
-                        Path.IsPathRooted(_videoPath)
-                            ? _videoPath
-                            : Path.GetFullPath(
-                                Path.Combine(
-                                    AppContext.BaseDirectory,
-                                    _videoPath));
+                string resolvedPath =
+                    Path.IsPathRooted(_videoPath)
+                        ? _videoPath
+                        : Path.GetFullPath(
+                            Path.Combine(
+                                AppContext.BaseDirectory,
+                                _videoPath));
 
                     System.Diagnostics.Debug.WriteLine(
                         $"[VIDEO] 로컬 경로: {resolvedPath}");
@@ -291,9 +272,8 @@ namespace Popup.Views.Contents
                             resolvedPath);
                     }
 
-                    PopupVideo.Source =
-                        new Uri(resolvedPath, UriKind.Absolute);
-                }
+                PopupVideo.Source =
+                    new Uri(resolvedPath, UriKind.Absolute);
 
                 _ = Dispatcher.BeginInvoke(new Action(() =>
                 {
@@ -311,84 +291,17 @@ namespace Popup.Views.Contents
                 ShowVideoError(
                     $"영상을 불러올 수 없습니다.\n{exception.Message}");
             }
-        }
 
-        /*
-         * MediaElement는 일부 HTTPS 영상 URL을 브라우저와 다르게 처리하여
-         * 재생에 실패할 수 있다. 원격 MP4를 앱 임시 캐시에 저장한 뒤
-         * 검증된 로컬 파일 경로를 MediaElement에 전달한다.
-         */
-        private static async System.Threading.Tasks.Task<string>
-            DownloadVideoToCacheAsync(Uri videoUri)
-        {
-            string cacheDirectory = Path.Combine(
-                Path.GetTempPath(),
-                "OksyPopupClient",
-                "VideoCache");
-
-            Directory.CreateDirectory(cacheDirectory);
-
-            string cacheKey = Convert.ToHexString(
-                SHA256.HashData(Encoding.UTF8.GetBytes(videoUri.AbsoluteUri)));
-
-            string extension = Path.GetExtension(videoUri.AbsolutePath);
-            if (string.IsNullOrWhiteSpace(extension))
-            {
-                extension = ".mp4";
-            }
-
-            string cachedPath = Path.Combine(
-                cacheDirectory,
-                cacheKey + extension);
-
-            if (File.Exists(cachedPath) && new FileInfo(cachedPath).Length > 0)
-            {
-                return cachedPath;
-            }
-
-            string temporaryPath = cachedPath + ".download";
-
-            using HttpResponseMessage response =
-                await VideoHttpClient.GetAsync(
-                    videoUri,
-                    HttpCompletionOption.ResponseHeadersRead);
-
-            response.EnsureSuccessStatusCode();
-
-            await using Stream source =
-                await response.Content.ReadAsStreamAsync();
-            await using FileStream destination =
-                new FileStream(
-                    temporaryPath,
-                    FileMode.Create,
-                    FileAccess.Write,
-                    FileShare.None,
-                    bufferSize: 81920,
-                    useAsync: true);
-
-            await source.CopyToAsync(destination);
-            await destination.FlushAsync();
-            await destination.DisposeAsync();
-
-            File.Move(temporaryPath, cachedPath, overwrite: true);
-            return cachedPath;
+            return System.Threading.Tasks.Task.CompletedTask;
         }
 
         /*
          * YouTube 주소를 WebView2에 임베드한다.
          */
-        private async System.Threading.Tasks.Task LoadYouTubeVideoAsync()
+        private async System.Threading.Tasks.Task LoadWebVideoAsync()
         {
             try
             {
-                if (!TryGetYouTubeVideoId(
-                        _videoPath,
-                        out string? videoId))
-                {
-                    throw new InvalidOperationException(
-                        "올바른 YouTube 주소가 아닙니다.");
-                }
-
                 PopupVideo.Visibility =
                     Visibility.Collapsed;
 
@@ -404,7 +317,9 @@ namespace Popup.Views.Contents
 
 
                 ShowLoadingMessage(
-                    "YouTube 영상을 불러오는 중입니다.");
+                    _isYouTubeVideo
+                        ? "YouTube 영상을 불러오는 중입니다."
+                        : "영상을 스트리밍하는 중입니다.");
 
                 /*
                  * WebView2 초기화를 명시적으로 수행한다.
@@ -417,6 +332,9 @@ namespace Popup.Views.Contents
                 VideoWebView.CoreWebView2.NewWindowRequested +=
                     CoreWebView2_NewWindowRequested;
 
+                VideoWebView.CoreWebView2.WebMessageReceived +=
+                    CoreWebView2_WebMessageReceived;
+
                 /*
                  * 기본 컨텍스트 메뉴와 개발자 도구를 제한한다.
                  * 필요하다면 이후 옵션으로 분리할 수 있다.
@@ -427,20 +345,110 @@ namespace Popup.Views.Contents
                 VideoWebView.CoreWebView2.Settings.AreDevToolsEnabled =
                     false;
 
-                string embedUrl =
-                    $"https://www.youtube.com/embed/{videoId}" +
-                    "?autoplay=1" +
-                    "&controls=1" +
-                    "&rel=0" +
-                    "&playsinline=1";
+                if (_isYouTubeVideo)
+                {
+                    TryGetYouTubeVideoId(_videoPath, out string? videoId);
 
-                VideoWebView.Source =
-                    new Uri(embedUrl);
+                    string embedUrl =
+                        $"https://www.youtube.com/embed/{videoId}" +
+                        "?autoplay=1" +
+                        "&controls=1" +
+                        "&rel=0" +
+                        "&playsinline=1";
+
+                    VideoWebView.Source = new Uri(embedUrl);
+                    return;
+                }
+
+                string videoUrlJson =
+                    JsonSerializer.Serialize(_videoPath);
+
+                VideoWebView.NavigateToString(
+                    $$"""
+                    <!doctype html>
+                    <html>
+                    <head>
+                      <meta charset="utf-8">
+                      <style>
+                        html, body { width:100%; height:100%; margin:0; background:#000; overflow:hidden; }
+                        video { width:100%; height:100%; object-fit:contain; background:#000; }
+                      </style>
+                    </head>
+                    <body>
+                      <video id="video" src={{videoUrlJson}} controls autoplay playsinline></video>
+                      <script>
+                        const video = document.getElementById('video');
+                        const send = (type) => chrome.webview.postMessage({
+                          type,
+                          duration: Number.isFinite(video.duration) ? video.duration : 0,
+                          position: Number.isFinite(video.currentTime) ? video.currentTime : 0,
+                          paused: video.paused
+                        });
+                        video.addEventListener('loadedmetadata', () => send('opened'));
+                        video.addEventListener('timeupdate', () => send('progress'));
+                        video.addEventListener('play', () => send('play'));
+                        video.addEventListener('pause', () => send('pause'));
+                        video.addEventListener('ended', () => send('ended'));
+                        video.addEventListener('error', () => send('error'));
+                      </script>
+                    </body>
+                    </html>
+                    """);
             }
             catch (Exception exception)
             {
                 ShowVideoError(
-                    $"YouTube 영상을 불러올 수 없습니다.\n{exception.Message}");
+                    $"웹 영상을 불러올 수 없습니다.\n{exception.Message}");
+            }
+        }
+
+        private static bool IsHttpVideoUrl(string path)
+        {
+            return Uri.TryCreate(path, UriKind.Absolute, out Uri? uri)
+                && (uri.Scheme == Uri.UriSchemeHttp
+                    || uri.Scheme == Uri.UriSchemeHttps);
+        }
+
+        private void CoreWebView2_WebMessageReceived(
+            object? sender,
+            CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            try
+            {
+                using JsonDocument message =
+                    JsonDocument.Parse(e.WebMessageAsJson);
+
+                JsonElement root = message.RootElement;
+                string type = root.GetProperty("type").GetString() ?? string.Empty;
+                _webDurationSeconds = root.GetProperty("duration").GetDouble();
+                _webPositionSeconds = root.GetProperty("position").GetDouble();
+
+                if (type == "error")
+                {
+                    ShowVideoError("영상 스트리밍에 실패했습니다.");
+                    return;
+                }
+
+                _isMediaOpened = _webDurationSeconds > 0;
+                _isPlaying = type == "play" ||
+                    (type == "progress" && !root.GetProperty("paused").GetBoolean());
+
+                UpdatePlaybackMeasurements(_webPositionSeconds);
+
+                if (type is "progress" or "pause")
+                {
+                    RequestProgressSave(force: type == "pause");
+                }
+                else if (type == "ended")
+                {
+                    _isPlaying = false;
+                    RequestProgressSave(force: true);
+                }
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[VIDEO] WebView 메시지 처리 실패: {exception}");
             }
         }
 
@@ -645,25 +653,41 @@ namespace Popup.Views.Contents
          */
         private void RequestProgressSave(bool force = false)
         {
-            if (!_isMediaOpened ||
-                !PopupVideo.NaturalDuration.HasTimeSpan)
+            if (!_isMediaOpened)
             {
                 return;
             }
 
-            double durationSeconds =
-                PopupVideo.NaturalDuration.TimeSpan.TotalSeconds;
+            double durationSeconds;
+            double positionSeconds;
+
+            if (_useWebPlayer && !_isYouTubeVideo)
+            {
+                durationSeconds = _webDurationSeconds;
+                positionSeconds = Math.Clamp(
+                    _webPositionSeconds,
+                    0,
+                    durationSeconds);
+            }
+            else
+            {
+                if (!PopupVideo.NaturalDuration.HasTimeSpan)
+                {
+                    return;
+                }
+
+                durationSeconds =
+                    PopupVideo.NaturalDuration.TimeSpan.TotalSeconds;
+                positionSeconds = Math.Clamp(
+                    PopupVideo.Position.TotalSeconds,
+                    0,
+                    durationSeconds);
+            }
 
             if (durationSeconds <= 0)
             {
                 return;
             }
-
-            double positionSeconds =
-                Math.Clamp(
-                    PopupVideo.Position.TotalSeconds,
-                    0,
-                    durationSeconds);
 
             UpdatePlaybackMeasurements(
                 positionSeconds);
@@ -1538,7 +1562,7 @@ namespace Popup.Views.Contents
             else
             {
                 ShowVideoError(
-                    $"YouTube 페이지를 불러오지 못했습니다.\n" +
+                    $"웹 영상 페이지를 불러오지 못했습니다.\n" +
                     $"오류 코드: {e.WebErrorStatus}");
             }
         }
@@ -1726,6 +1750,9 @@ namespace Popup.Views.Contents
                 {
                     VideoWebView.CoreWebView2.NewWindowRequested -=
                         CoreWebView2_NewWindowRequested;
+
+                    VideoWebView.CoreWebView2.WebMessageReceived -=
+                        CoreWebView2_WebMessageReceived;
 
                     VideoWebView.CoreWebView2.Navigate(
                         "about:blank");
