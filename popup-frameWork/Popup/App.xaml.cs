@@ -32,6 +32,8 @@ namespace Popup
 
         private MainWindow? _mainWindow;
 
+        private DemoWindow? _demoWindow;
+
         private Forms.NotifyIcon? _trayIcon;
 
         private Forms.ToolStripMenuItem?
@@ -77,9 +79,6 @@ namespace Popup
             _mainWindow =
                 new MainWindow();
 
-            MainWindow =
-                _mainWindow;
-
             _mainWindow.Closing +=
                 MainWindow_Closing;
 
@@ -91,14 +90,14 @@ namespace Popup
              */
             if (_mainWindow.IsDemoMode)
             {
-                _mainWindow.ShowInTaskbar =
-                    true;
+                _demoWindow = new DemoWindow();
+                MainWindow = _demoWindow;
+                _demoWindow.Show();
             }
-
-            _mainWindow.Show();
-
-            if (!_mainWindow.IsDemoMode)
+            else
             {
+                MainWindow = _mainWindow;
+                _mainWindow.Show();
                 _mainWindow.Hide();
             }
         }
@@ -205,6 +204,13 @@ namespace Popup
             object? sender,
             EventArgs e)
         {
+            if (_demoWindow != null)
+            {
+                _demoWindow.Show();
+                _demoWindow.Activate();
+                return;
+            }
+
             if (_mainWindow == null)
             {
                 return;
@@ -232,6 +238,12 @@ namespace Popup
             object? sender,
             EventArgs e)
         {
+            if (_demoWindow != null)
+            {
+                _demoWindow.ShowDemoPopups();
+                return;
+            }
+
             if (_mainWindow != null)
             {
                 await _mainWindow
@@ -293,6 +305,7 @@ namespace Popup
             }
 
             _mainWindow?.Close();
+            _demoWindow?.Close();
             Shutdown();
         }
 
