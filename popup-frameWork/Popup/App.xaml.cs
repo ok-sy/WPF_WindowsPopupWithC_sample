@@ -40,8 +40,8 @@ namespace Popup
         private bool _isExiting;
 
         /*
-         * 관리용 MainWindow는 한 번 표시해 Loaded 이벤트와
-         * 팝업 자동 조회를 실행한 뒤 바로 숨긴다.
+         * API 모드는 관리용 MainWindow를 한 번 표시한 뒤 트레이로 숨긴다.
+         * Demo Mode는 사용자가 팝업 종류를 고를 수 있도록 선택 화면을 유지한다.
          */
         protected override void OnStartup(
             StartupEventArgs e)
@@ -89,8 +89,18 @@ namespace Popup
              * Show를 호출해야 MainWindow.Loaded가 발생하여
              * Framework 8의 자동 API 조회가 실행된다.
              */
+            if (_mainWindow.IsDemoMode)
+            {
+                _mainWindow.ShowInTaskbar =
+                    true;
+            }
+
             _mainWindow.Show();
-            _mainWindow.Hide();
+
+            if (!_mainWindow.IsDemoMode)
+            {
+                _mainWindow.Hide();
+            }
         }
 
         /*

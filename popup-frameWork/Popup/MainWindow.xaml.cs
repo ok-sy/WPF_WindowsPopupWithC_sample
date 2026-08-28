@@ -77,6 +77,13 @@ namespace Popup
             _isLoadingPopups;
 
         /*
+         * App.xaml.cs가 시작 시 관리 화면을 숨길지 판단할 때 사용한다.
+         * Demo Mode에서는 선택 화면을 계속 표시한다.
+         */
+        public bool IsDemoMode =>
+            _demoMode;
+
+        /*
          * appsettings.json에서 Java 팝업 API 주소와
          * 현재 사용자 ID를 함께 읽는다.
          *
@@ -375,7 +382,6 @@ namespace Popup
 
             if (_demoMode)
             {
-                ShowDemoPopups();
                 return;
             }
 
@@ -561,141 +567,7 @@ namespace Popup
                      * PopupWindow에서 "다시 보지 않기"를 선택하면
                      * 실행할 서버 저장 콜백을 설정한다.
                      *
-                     * PopupWindow는 API 주소나 사용자 ID를 직접 알지 않고,
-                     * 이 콜백만 호출한다.
-                     */
-                    popupOptions.HidePopupAsync =
-                        async (
-                            popupId,
-                            hideDays) =>
-                        {
-                            await _popupApiService
-                                .HidePopupAsync(
-                                    popupId,
-                                    currentUserId,
-                                    hideDays);
-                        };
-
-                    /*
-                     * 팝업 내용이 실제 화면에 표시되면
-                     * 서버에 DISPLAYED 이벤트를 저장한다.
-                     */
-                    popupOptions.PopupDisplayedAsync =
-                        async popupId =>
-                        {
-                            await _popupApiService
-                                .RecordPopupEventAsync(
-                                    popupId,
-                                    currentUserId,
-                                    "DISPLAYED");
-                        };
-
-                    /*
-                     * 팝업 창이 실제로 닫히면
-                     * 서버에 CLOSED 이벤트를 저장한다.
-                     */
-                    popupOptions.PopupClosedAsync =
-                        async popupId =>
-                        {
-                            await _popupApiService
-                                .RecordPopupEventAsync(
-                                    popupId,
-                                    currentUserId,
-                                    "CLOSED");
-                        };
-
-                    /*
-                     * 설문/퀴즈 팝업의 제출 이벤트를
-                     * 서버 응답 저장 API와 연결한다.
-                     */
-                    popupOptions.SubmitSurveyAsync =
-                        async (popupId, surveyAnswers) =>
-                        {
-                            List<PopupSubmitAnswerRequestDto> requestAnswers =
-                                surveyAnswers
-                                    .Select(answer =>
-                                        new PopupSubmitAnswerRequestDto
-                                        {
-                                            QuestionId =
-                                                answer.QuestionId,
-
-                                            TextAnswer =
-                                                string.IsNullOrWhiteSpace(
-                                                    answer.TextAnswer)
-                                                    ? null
-                                                    : answer.TextAnswer,
-
-                                            OptionIds =
-                                                new List<long>(
-                                                    answer.SelectedOptionIds)
-                                        })
-                                    .ToList();
-
-                            await _popupApiService
-                                .SubmitResponseAsync(
-                                    popupId,
-                                    currentUserId,
-                                    requestAnswers);
-                        };
-
-                    /*
-                     * VideoPopupView가 측정한 재생 위치와 실제 시청시간을
-                     * 서버의 영상 진행률 API에 저장한다.
-                     */
-                    popupOptions.SaveVideoProgressAsync =
-                        async (popupId, progress) =>
-                        {
-                            VideoProgressResponseDto response =
-                                await _popupApiService
-                                .SaveVideoProgressAsync(
-                                    popupId,
-                                    new VideoProgressRequestDto
-                                    {
-                                        UserId =
-                                            currentUserId,
-                                        DurationSeconds =
-                                            progress.DurationSeconds,
-                                        PositionSeconds =
-                                            progress.PositionSeconds,
-                                        MaximumPositionSeconds =
-                                            progress.MaximumPositionSeconds,
-                                        WatchedSeconds =
-                                            progress.WatchedSeconds
-                                    });
-
-                            return response.Completed;
-                        };
-                }
-
-                /*
-                 * 조회한 팝업을 PopupManager에 전달한다.
-                 *
-                 * 서버의 displayMode 값에 따라:
-                 *
-                 * SEQUENTIAL
-                 * → 한 개씩 순차적으로 표시
-                 * SIMULTANEOUS
-                 * → 여러 팝업을 한 번에 표시
-                 */
-                foreach (PopupResponseDto popupDto
-                         in popupDtos)
-                {
-                    _shownPopupIds.Add(
-                        popupDto.PopupId);
-                }
-
-                _popupManager.ShowRange(
-                    popupOptionsList);
-            }
-            catch (HttpRequestException exception)
-            {
-                if (showErrorMessage)
-                {
-                    MessageBox.Show(
-                        "Java 팝업 서버에 연결할 수 없습니다.\n\n" +
-                        "Spring Boot 서버가 실행 중인지 확인해주세요.\n\n" +
-                        exception.Message,
-                        "서버 연결 오류",
+                     * Pos_{��$z{-���jם오류",
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
