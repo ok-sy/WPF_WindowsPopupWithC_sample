@@ -1,5 +1,6 @@
 using Popup.Dtos;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Popup.Services
 {
@@ -15,7 +16,8 @@ namespace Popup.Services
                 PropertyNameCaseInsensitive = true
             };
 
-        public static List<PopupResponseDto> CreatePopups()
+        public static List<PopupResponseDto> CreatePopups(
+            string? requestedPopupType = null)
         {
             const string demoJson =
                 """
@@ -61,8 +63,8 @@ namespace Popup.Services
                     "showDoNotShowAgain": false,
                     "content": {
                       "imageTitle": "이미지 콘텐츠",
-                      "imageUrl": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80",
-                      "description": "외부 이미지 URL을 표시하는 팝업입니다.",
+                      "imageUrl": "LOCAL_DEMO_IMAGE",
+                      "description": "폐쇄망 Media 폴더의 로컬 이미지를 표시하는 팝업입니다.",
                       "showDescription": true,
                       "imageSizeMode": "ADAPTIVE",
                       "imageWidth": 620,
@@ -88,7 +90,7 @@ namespace Popup.Services
                     "allowCloseBeforeComplete": true,
                     "content": {
                       "videoTitle": "Demo Mode 교육 영상",
-                      "videoUrl": "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+                      "videoUrl": "LOCAL_DEMO_VIDEO",
                       "description": "재생, 일시정지, 전체화면 컨트롤을 확인하세요.",
                       "showDescription": true
                     }
@@ -190,8 +192,77 @@ namespace Popup.Services
                 ]
                 """;
 
+            JsonArray demoPopups =
+                JsonNode.Parse(
+                    demoJson)?.AsArray()
+                ?? throw new InvalidOperationException(
+                    "Demo Mode 샘플 JSON을 읽지 못했습니다.");
+
+            /*
+             * 개별 버튼으로 실행했다면 선택한 종류만 먼저 남긴다.
+             * 따라서 TEXT나 SURVEY를 확인할 때 이미지·동영상 파일이 없어도 된다.
+             */
+            if (!string.IsNullOrWhiteSpace(
+                    requestedPopupType))
+            {
+                for (int index = demoPopups.Count - 1;
+                     index >= 0;
+                     index--)
+                {
+                    string popupType =
+                        demoPopups[index]?["popupType"]?.GetValue<string>()
+                        ?? string.Empty;
+
+                    if (!popupType.Equals(
+                            requestedPopupType,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        demoPopups.RemoveAt(
+                            index);
+                    }
+                }
+            }
+
+            /*
+             * JSON에 특정 PC의 절대경로를 하드코딩하지 않고,
+             * 실행 중인 EXE 옆 Media 폴더의 실제 절대경로를 넣는다.
+             */
+            foreach (JsonNode? popupNode
+                     in demoPopups)
+            {
+                JsonObject? popupObject =
+                    popupNode?.AsObject();
+
+                string popupType =
+                    popupObject?["popupType"]?.GetValue<string>()
+                    ?? string.Empty;
+
+                JsonObject? contentObject =
+                    popupObject?["content"]?.AsObject();
+
+                if (contentObject == null)
+                {
+                    continue;
+                }
+
+                if (popupType.Equals(
+                        "IMAGE",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    contentObject["imageUrl"] =
+                        DemoMediaPathService.GetImagePath();
+                }
+                else if (popupType.Equals(
+                             "VIDEO",
+                             StringComparison.OrdinalIgnoreCase))
+                {
+                    contentObject["videoUrl"] =
+                        DemoMediaPathService.GetVideoPath();
+                }
+            }
+
             return JsonSerializer.Deserialize<List<PopupResponseDto>>(
-                       demoJson,
+                       demoPopups.ToJsonString(),
                        JsonOptions)
                    ?? throw new InvalidOperationException(
                        "Demo Mode 샘플 데이터를 읽지 못했습니다.");

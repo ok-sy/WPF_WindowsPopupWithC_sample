@@ -35,13 +35,9 @@ namespace Popup
         {
             try
             {
-                IEnumerable<PopupResponseDto> popupDtos = DemoPopupDataService.CreatePopups();
-
-                if (!string.IsNullOrWhiteSpace(popupType))
-                {
-                    popupDtos = popupDtos.Where(popup =>
-                        string.Equals(popup.PopupType, popupType, StringComparison.OrdinalIgnoreCase));
-                }
+                IEnumerable<PopupResponseDto> popupDtos =
+                    DemoPopupDataService.CreatePopups(
+                        popupType);
 
                 List<PopupOptions> popupOptions = _popupService.CreatePopupOptions(popupDtos);
                 _popupManager.ShowRange(popupOptions);
