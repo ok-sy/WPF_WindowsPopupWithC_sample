@@ -11,8 +11,8 @@ $packageCache = Join-Path $repositoryRoot ".offline-cache\packages"
 $publishPath = Join-Path $repositoryRoot "popup-frameWork\publish\win-x64"
 
 $sdkVersion = (& dotnet --version).Trim()
-if ($sdkVersion -ne "10.0.100") {
-    throw ".NET SDK 10.0.100이 필요합니다. 현재 버전: $sdkVersion"
+if ($sdkVersion -ne "10.0.400") {
+    throw ".NET SDK 10.0.400이 필요합니다. 현재 버전: $sdkVersion"
 }
 
 Write-Host "[1/2] 저장소 내부 NuGet 패키지로 복원"
