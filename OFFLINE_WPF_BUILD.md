@@ -2,7 +2,7 @@
 
 ## 고정 환경
 
-- .NET SDK: `10.0.100`
+- .NET SDK: `10.0.400`
 - Target Framework: `net10.0-windows`
 - Runtime: `win-x64`
 - 배포 방식: Self-contained
@@ -11,7 +11,7 @@
 ## 저장소 구성
 
 ```text
-global.json                         SDK 10.0.100 고정
+global.json                         SDK 10.0.400 고정
 NuGet.config                        저장소 내부 NuGet 피드만 사용
 offline-sdk/                        .NET SDK Windows 설치 파일 위치
 offline-packages/nuget/             .nupkg 파일 위치
@@ -39,10 +39,10 @@ git add offline-packages/nuget
 
 ## 2. SDK 설치 파일
 
-Microsoft의 `.NET SDK 10.0.100 Windows x64 Installer`를 받아 다음 위치에 넣는다.
+Microsoft의 `.NET SDK 10.0.400 Windows x64 Installer`를 받아 다음 위치에 넣는다.
 
 ```text
-offline-sdk\dotnet-sdk-10.0.100-win-x64.exe
+offline-sdk\dotnet-sdk-10.0.400-win-x64.exe
 ```
 
 SDK 설치 파일은 GitHub 일반 파일 제한을 넘을 수 있으므로 `.gitattributes`에서
@@ -50,7 +50,7 @@ Git LFS 대상으로 지정했다. 외부망 PC에서 다음 명령으로 추가
 
 ```powershell
 git lfs install
-git add offline-sdk/dotnet-sdk-10.0.100-win-x64.exe
+git add offline-sdk/dotnet-sdk-10.0.400-win-x64.exe
 ```
 
 폐쇄망 반입 전에 `git lfs pull`을 실행하여 EXE가 포인터가 아니라 실제 파일인지
