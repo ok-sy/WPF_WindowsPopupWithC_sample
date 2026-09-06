@@ -16,8 +16,8 @@ if (-not (Test-Path $solutionPath)) {
 }
 
 $sdkVersion = (& dotnet --version).Trim()
-if ($sdkVersion -ne "10.0.100") {
-    throw ".NET SDK 10.0.100이 필요합니다. 현재 버전: $sdkVersion"
+if ($sdkVersion -ne "10.0.400") {
+    throw ".NET SDK 10.0.400이 필요합니다. 현재 버전: $sdkVersion"
 }
 
 New-Item -ItemType Directory -Force -Path $downloadCache | Out-Null
