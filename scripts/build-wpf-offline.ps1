@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-# 이 스크립트는 폐쇄망 Windows 개발 PC에서 실행한다.
-# NuGet.config가 외부 NuGet 서버를 모두 제거하므로 인터넷 통신 없이 복원·게시한다.
+# Run this script on the isolated Windows development PC.
+# NuGet.config removes remote feeds, so restore and publish stay offline.
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $solutionPath = Join-Path $repositoryRoot "popup-frameWork\Popup.slnx"
@@ -12,17 +12,17 @@ $publishPath = Join-Path $repositoryRoot "popup-frameWork\publish\win-x64"
 
 $sdkVersion = (& dotnet --version).Trim()
 if ($sdkVersion -ne "10.0.400") {
-    throw ".NET SDK 10.0.400이 필요합니다. 현재 버전: $sdkVersion"
+    throw ".NET SDK 10.0.400 is required. Current version: $sdkVersion"
 }
 
-Write-Host "[1/2] 저장소 내부 NuGet 패키지로 복원"
+Write-Host "[1/2] Restoring from repository-local NuGet packages"
 dotnet restore $solutionPath `
     --runtime win-x64 `
     --packages $packageCache `
     --configfile $offlineConfig `
     --force
 
-Write-Host "[2/2] win-x64 Self-contained 게시"
+Write-Host "[2/2] Publishing win-x64 self-contained output"
 dotnet publish $projectPath `
     --configuration Release `
     --runtime win-x64 `
@@ -30,4 +30,4 @@ dotnet publish $projectPath `
     --no-restore `
     --output $publishPath
 
-Write-Host "게시 완료: $publishPath"
+Write-Host "Publish completed: $publishPath"
