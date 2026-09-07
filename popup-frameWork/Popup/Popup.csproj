@@ -15,10 +15,9 @@
 		<!--
   API 설정 파일을 실행 및 배포 폴더에 복사한다.
   -->
-		<Content Include="appsettings.json">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
-		</Content>
+		<EmbeddedResource Include="appsettings.json">
+			<LogicalName>Popup.appsettings.json</LogicalName>
+		</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>

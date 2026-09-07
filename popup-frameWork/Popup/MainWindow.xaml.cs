@@ -106,27 +106,27 @@ namespace Popup
                     AppContext.BaseDirectory,
                     "appsettings.json");
 
-            /*
-             * 설정 파일이 없으면
-             * 어떤 API 서버를 호출해야 하는지 알 수 없으므로
-             * 자세한 경로를 포함해 예외를 발생시킨다.
-             */
-            if (!File.Exists(
-                    configurationFilePath))
-            {
-                throw new FileNotFoundException(
-                    "팝업 API 설정 파일을 찾을 수 없습니다.\n" +
-                    configurationFilePath,
-                    configurationFilePath);
-            }
+            string configurationJson;
 
-            /*
-             * appsettings.json의 전체 내용을
-             * 문자열로 읽는다.
-             */
-            string configurationJson =
-                File.ReadAllText(
-                    configurationFilePath);
+            if (File.Exists(configurationFilePath))
+            {
+                configurationJson =
+                    File.ReadAllText(configurationFilePath);
+            }
+            else
+            {
+                using Stream configurationStream =
+                    typeof(MainWindow).Assembly.GetManifestResourceStream(
+                        "Popup.appsettings.json")
+                    ?? throw new InvalidOperationException(
+                        "내장 appsettings.json을 찾을 수 없습니다.");
+
+                using StreamReader configurationReader =
+                    new StreamReader(configurationStream);
+
+                configurationJson =
+                    configurationReader.ReadToEnd();
+            }
 
             /*
              * JSON 문자열을 탐색 가능한
