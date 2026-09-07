@@ -740,6 +740,9 @@ public class PopupService {
         if (!DISPLAY_MODES.contains(normalizeUpper(popup.displayMode()))) {
             throw new IllegalArgumentException("지원하지 않는 표시 모드입니다.");
         }
+        if (popup.displayOrder() != null && popup.displayOrder() < 1) {
+            throw new IllegalArgumentException("표시 우선순위는 1 이상이어야 합니다.");
+        }
         if (!SIZE_MODES.contains(normalizeUpper(popup.sizeMode()))) {
             throw new IllegalArgumentException("지원하지 않는 크기 모드입니다.");
         }
@@ -804,6 +807,7 @@ public class PopupService {
                 popup.displayStartAt(),
                 popup.displayEndAt(),
                 normalizeUpper(popup.displayMode()),
+                popup.displayOrder() == null ? 100 : popup.displayOrder(),
                 normalizeUpper(popup.periodMode()),
                 popup.repeatInterval(),
                 normalizeUpper(popup.repeatDayOfWeek()),
@@ -923,7 +927,7 @@ public class PopupService {
         return new PopupResponseDto(
                 popup.popupId(), popup.popupType(), popup.title(),
                 popup.displayStartAt(), popup.displayEndAt(),
-                popup.displayMode(), popup.sizeMode(),
+                popup.displayMode(), popup.displayOrder(), popup.sizeMode(),
                 toDouble(popup.popupWidth(), 900),
                 toDouble(popup.popupHeight(), 620),
                 toDouble(popup.widthRatio(), 0.7),
