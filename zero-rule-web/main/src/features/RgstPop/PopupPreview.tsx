@@ -86,47 +86,65 @@ function PopupBody({ popup }: PopupPreviewProps) {
 
   if (popup.popupType === 'IMAGE') {
     const imageUrl = text(content.imageUrl, '');
-    const showDescription = content.showDescription !== false;
-    const imageWidth = Number(content.imageWidth) || undefined;
-    const imageHeight = Number(content.imageHeight) || undefined;
+    const imageFill = String(content.imageSizeMode ?? '').toUpperCase() === 'FILL';
+    const showDescription = !imageFill && content.showDescription !== false;
+    const imageWidth = imageFill ? undefined : Number(content.imageWidth) || undefined;
+    const imageHeight = imageFill ? undefined : Number(content.imageHeight) || undefined;
+    const linkUrl = text(content.linkUrl, '');
+
+    const image = imageUrl ? (
+      <Box
+        component="img"
+        src={imageUrl}
+        alt="팝업 이미지 미리보기"
+        sx={{
+          width: '100%',
+          height: imageFill ? '100%' : undefined,
+          maxWidth: imageWidth,
+          maxHeight: imageHeight,
+          flex: 1,
+          minHeight: imageFill ? 0 : 150,
+          borderRadius: imageFill ? 0 : 1,
+          border: imageFill ? 'none' : '1px solid',
+          borderColor: 'divider',
+          objectFit: imageFill ? 'cover' : 'contain',
+          bgcolor: '#f4f6fa',
+          cursor: linkUrl ? 'pointer' : 'default',
+          display: 'block',
+        }}
+      />
+    ) : (
+      <Box
+        sx={{
+          width: '100%',
+          flex: 1,
+          minHeight: 150,
+          borderRadius: 1,
+          border: '1px dashed',
+          borderColor: 'divider',
+          bgcolor: '#f4f6fa',
+          display: 'grid',
+          placeItems: 'center',
+        }}
+      >
+        이미지 URL을 입력하면 여기에 표시됩니다.
+      </Box>
+    );
+
     return (
-      <Stack spacing={1.5} alignItems="center" sx={{ height: '100%' }}>
+      <Stack spacing={imageFill ? 0 : 1.5} alignItems="center" sx={{ height: '100%', width: '100%' }}>
         {showDescription && <Typography color="text.secondary">{description}</Typography>}
-        {imageUrl ? (
+        {linkUrl && imageUrl ? (
           <Box
-            component="img"
-            src={imageUrl}
-            alt="팝업 이미지 미리보기"
-            sx={{
-              width: '100%',
-              maxWidth: imageWidth,
-              maxHeight: imageHeight,
-              flex: 1,
-              minHeight: 150,
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'divider',
-              objectFit: 'contain',
-              bgcolor: '#f4f6fa',
-            }}
-          />
-        ) : (
-          <Box
-            sx={{
-              width: '100%',
-              flex: 1,
-              minHeight: 150,
-              borderRadius: 1,
-              border: '1px dashed',
-              borderColor: 'divider',
-              bgcolor: '#f4f6fa',
-              display: 'grid',
-              placeItems: 'center',
-            }}
+            component="a"
+            href={linkUrl}
+            target="_blank"
+            rel="noreferrer"
+            sx={{ width: '100%', flex: 1, minHeight: 0, display: 'flex', textDecoration: 'none' }}
           >
-            이미지 URL을 입력하면 여기에 표시됩니다.
+            {image}
           </Box>
-        )}
+        ) : image}
       </Stack>
     );
   }
@@ -290,8 +308,11 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
     : fitContainer
       ? { width: '100%', height: '100%' }
       : previewSize(popup);
+  const imageFill = popup.popupType === 'IMAGE'
+    && String(popup.content.imageSizeMode ?? '').toUpperCase() === 'FILL';
   const contentTitle = text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
-  const showContentTitle = popup.popupType !== 'TEXT' || popup.content.showContentHeader !== false;
+  const showContentTitle = !imageFill
+    && (popup.popupType !== 'TEXT' || popup.content.showContentHeader !== false);
 
   return (
     <Box
@@ -333,7 +354,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
           </Stack>
         )}
         {popup.showHeader && <Divider />}
-        <Box sx={{ flex: 1, minHeight: 0, overflow: fitContainer ? 'hidden' : 'auto', p: 3 }}>
+        <Box sx={{ flex: 1, minHeight: 0, overflow: fitContainer ? 'hidden' : 'auto', p: imageFill ? 0 : 3 }}>
           {showContentTitle && (
             <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>
               {contentTitle}
