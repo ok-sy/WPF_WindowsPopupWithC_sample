@@ -21,6 +21,19 @@ import java.util.List;
 @Mapper
 public interface PopupMapper {
 
+    Long insertQuestionTemplate(@Param("name") String name, @Param("type") String type,
+            @Param("auditUser") String auditUser);
+
+    Long insertAdminQuestion(@Param("templateId") Long templateId,
+            @Param("question") server.domain.popup.PopupQuestionDto question,
+            @Param("quiz") boolean quiz, @Param("sortOrder") int sortOrder,
+            @Param("auditUser") String auditUser);
+
+    int insertAdminOption(@Param("questionId") Long questionId,
+            @Param("option") server.domain.popup.PopupOptionDto option,
+            @Param("quiz") boolean quiz, @Param("sortOrder") int sortOrder,
+            @Param("auditUser") String auditUser);
+
     /** 대상자·기간 필터를 적용하지 않은 관리자용 전체 목록이다. */
     List<AdminPopupListItemDto> selectAdminPopups();
 

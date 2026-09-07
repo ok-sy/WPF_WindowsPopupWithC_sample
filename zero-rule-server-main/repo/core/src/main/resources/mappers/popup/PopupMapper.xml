@@ -5,6 +5,39 @@
 
 <mapper namespace="server.repo.core.mapper.popup.PopupMapper">
 
+    <select id="insertQuestionTemplate" resultType="java.lang.Long" affectData="true" flushCache="true">
+        INSERT INTO popup.question_template
+            (template_group_id, template_name, template_type, template_version,
+             current_yn, active_yn, created_by, updated_by)
+        VALUES (left(replace(gen_random_uuid()::text, '-', ''), 30), left(#{name}, 100),
+                #{type}, 1, 'Y', 'Y', #{auditUser}, #{auditUser})
+        RETURNING question_template_id
+    </select>
+
+    <select id="insertAdminQuestion" resultType="java.lang.Long" affectData="true" flushCache="true">
+        INSERT INTO popup.popup_question
+            (question_template_id, question_type, question_title, question_description,
+             required_yn, scored_yn, question_score, sort_order, correct_answer,
+             answer_match_mode, created_by, updated_by)
+        VALUES (#{templateId}, #{question.questionType}, #{question.title}, #{question.description},
+                CASE WHEN #{question.isRequired} THEN 'Y' ELSE 'N' END,
+                CASE WHEN #{quiz} THEN 'Y' ELSE 'N' END,
+                CASE WHEN #{quiz} THEN #{question.questionScore}::numeric ELSE NULL END,
+                #{sortOrder},
+                CASE WHEN #{quiz} AND #{question.questionType} = 'TEXT' THEN #{question.correctAnswer} ELSE NULL END,
+                CASE WHEN #{quiz} AND #{question.questionType} = 'TEXT' THEN #{question.answerMatchMode} ELSE NULL END,
+                #{auditUser}, #{auditUser})
+        RETURNING question_id
+    </select>
+
+    <insert id="insertAdminOption">
+        INSERT INTO popup.popup_option
+            (question_id, option_value, option_text, correct_yn, sort_order, created_by, updated_by)
+        VALUES (#{questionId}, #{sortOrder}::text, #{option.text},
+                CASE WHEN #{quiz} AND coalesce(#{option.isCorrect}::boolean, false) THEN 'Y' ELSE 'N' END,
+                #{sortOrder}, #{auditUser}, #{auditUser})
+    </insert>
+
     <resultMap id="adminPopupListItemResultMap"
                type="server.domain.popup.AdminPopupListItemDto">
         <constructor>
@@ -409,6 +442,8 @@
             <arg column="SCORED_YN" javaType="java.lang.String"/>
             <arg column="QUESTION_SCORE" javaType="java.math.BigDecimal"/>
             <arg column="SORT_ORDER" javaType="java.lang.Integer"/>
+            <arg column="CORRECT_ANSWER" javaType="java.lang.String"/>
+            <arg column="ANSWER_MATCH_MODE" javaType="java.lang.String"/>
         </constructor>
     </resultMap>
 
@@ -635,6 +670,8 @@
             required_yn,
             scored_yn,
             question_score,
+            correct_answer,
+            answer_match_mode,
             sort_order,
             created_by,
             created_at,

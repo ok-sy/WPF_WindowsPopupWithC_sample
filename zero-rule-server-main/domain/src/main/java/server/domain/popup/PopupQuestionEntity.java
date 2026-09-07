@@ -12,6 +12,8 @@ public record PopupQuestionEntity(
         String requiredYn,
         String scoredYn,
         BigDecimal questionScore,
-        Integer sortOrder
+        Integer sortOrder,
+        String correctAnswer,
+        String answerMatchMode
 ) {
 }

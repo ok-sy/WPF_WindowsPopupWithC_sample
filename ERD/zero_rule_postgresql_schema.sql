@@ -272,7 +272,7 @@ CREATE TABLE IF NOT EXISTS zero_rule.clover_user (
     dwnl_posb_yn CHAR(1),
     atnt_yn CHAR(1),
     team_id BIGINT,
-    user_gd INTEGER,
+    user_gd VARCHAR(20),
     user_state VARCHAR(20),
     lgon_fail_cnt SMALLINT DEFAULT 0,
     pswd_init_yn CHAR(1),

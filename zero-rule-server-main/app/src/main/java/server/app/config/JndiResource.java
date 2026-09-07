@@ -36,10 +36,12 @@ public class JndiResource {
 
         // datasource 정보
         resource.setProperty("driverClassName", "org.postgresql.Driver");
-        resource.setProperty("url", "jdbc:postgresql://192.168.114.71:5432/zero-rule");
-        resource.setProperty("username", "zero_rule");
-        resource.setProperty("password", "Zerorule4321!");
-
+        resource.setProperty("url", "jdbc:postgresql://localhost:5432/popup_db?currentSchema=zero_rule");
+        resource.setProperty("username", "postgres");
+        resource.setProperty("password", "admin");
+//        resource.setProperty("url", "jdbc:postgresql://192.168.114.71:5432/zero-rule");
+//        resource.setProperty("username", "zero_rule");
+//        resource.setProperty("password", "Zerorule4321!");
         return resource;
     }
 }

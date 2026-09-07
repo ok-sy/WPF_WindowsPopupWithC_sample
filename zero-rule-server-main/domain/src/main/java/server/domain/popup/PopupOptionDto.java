@@ -5,6 +5,8 @@ public record PopupOptionDto(
         Long optionId,
         String value,
         String text,
-        int sortOrder
+        int sortOrder,
+        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        Boolean isCorrect
 ) {
 }
