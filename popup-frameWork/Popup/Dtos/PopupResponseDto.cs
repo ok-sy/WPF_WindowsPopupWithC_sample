@@ -58,10 +58,19 @@ namespace Popup.Dtos
        * → 앞 팝업이 닫힌 뒤 표시
        *
        * SIMULTANEOUS
-       * → 다른 팝업과 동시에 표시
+       * → 같은 표시 우선순위의 팝업들과 동시에 표시
        */
         public string DisplayMode { get; set; } =
             "SEQUENTIAL";
+
+        /*
+         * 팝업 표시 우선순위
+         *
+         * 숫자가 작을수록 먼저 표시한다.
+         * 같은 숫자는 하나의 표시 그룹으로 처리한다.
+         */
+        public int DisplayOrder { get; set; } =
+            100;
 
 
         /*
