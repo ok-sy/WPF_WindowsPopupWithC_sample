@@ -298,10 +298,13 @@ public class PopupService {
         Map<Long, List<PopupQuestionDto>> questionsByTemplate = loadQuestions(templateIds);
 
         return popups.stream()
-                .map(popup -> toResponseDto(
-                        popup,
-                        questionsByTemplate.getOrDefault(
-                                popup.questionTemplateId(), List.of())))
+                .map(popup -> {
+                    Long templateId = popup.questionTemplateId();
+                    List<PopupQuestionDto> questions = templateId == null
+                            ? List.of()
+                            : questionsByTemplate.getOrDefault(templateId, List.of());
+                    return toResponseDto(popup, questions);
+                })
                 .toList();
     }
 
