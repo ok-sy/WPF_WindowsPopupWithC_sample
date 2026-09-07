@@ -10,22 +10,13 @@ namespace Popup.Factories
 {
     public static class PopupFactory
     {
-        /*
-         * content 내부 JSON을 종류별 DTO로 변환할 때
-         * camelCase와 PascalCase를 모두 허용한다.
-         */
         private static readonly JsonSerializerOptions
             JsonOptions =
                 new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 };
-      
 
-        /*
-         * 공통 DTO를 받아
-         * 팝업 종류에 맞는 View와 PopupOptions를 생성한다.
-         */
         public static PopupOptions Create(
             PopupResponseDto popupDto)
         {
@@ -35,10 +26,6 @@ namespace Popup.Factories
                     nameof(popupDto));
             }
 
-            /*
-             * popupType에 따라
-             * 실제 본문 View를 생성한다.
-             */
             FrameworkElement content =
             popupDto.PopupType
                 .Trim()
@@ -72,10 +59,6 @@ namespace Popup.Factories
                         $"{popupDto.PopupType}")
             };
 
-            /*
-             * 서버 DTO의 공통 설정을
-             * PopupOptions로 변환한다.
-             */
             return new PopupOptions
             {
                 PopupId = popupDto.PopupId,
@@ -87,8 +70,16 @@ namespace Popup.Factories
                     content,
 
                 DisplayMode =
-                ConvertPopupDisplayMode(
-                    popupDto.DisplayMode),
+                    ConvertPopupDisplayMode(
+                        popupDto.DisplayMode),
+
+                /*
+                 * 서버의 displayOrder를 그대로 전달한다.
+                 * 숫자가 작을수록 먼저 표시되고,
+                 * 같은 숫자는 PopupManager에서 하나의 그룹으로 처리한다.
+                 */
+                DisplayOrder =
+                    popupDto.DisplayOrder,
 
                 ShowHeader =
                     popupDto.ShowHeader,
@@ -139,21 +130,16 @@ namespace Popup.Factories
             };
         }
 
-        /*
-         * TEXT content JSON을
-         * TextPopupContentDto로 변환하고
-         * TextPopupView를 생성한다.
-         */
         private static TextPopupView CreateTextPopupView(
             JsonElement contentJson)
         {
-        TextPopupContentDto contentDto =
-         contentJson.Deserialize<TextPopupContentDto>(
-             JsonOptions)
-         ?? throw new InvalidOperationException(
-             "TEXT 팝업 content 변환에 실패했습니다.");
+            TextPopupContentDto contentDto =
+                contentJson.Deserialize<TextPopupContentDto>(
+                    JsonOptions)
+                ?? throw new InvalidOperationException(
+                    "TEXT 팝업 content 변환에 실패했습니다.");
 
-        return new TextPopupView(
+            return new TextPopupView(
                 contentDto.ContentTitle,
                 contentDto.Description,
                 contentDto.LeftSectionTitle,
@@ -181,25 +167,15 @@ namespace Popup.Factories
                 contentDto.MarkdownContent);
         }
 
-        /*
-         * IMAGE content JSON을
-         * ImagePopupContentDto로 변환하고
-         * ImagePopupView를 생성한다.
-         */
         private static FrameworkElement CreateImagePopupView(
             JsonElement contentJson)
         {
-        ImagePopupContentDto contentDto =
-            contentJson.Deserialize<ImagePopupContentDto>(
-                JsonOptions)
-            ?? throw new InvalidOperationException(
-                "IMAGE 팝업 content 변환에 실패했습니다.");
+            ImagePopupContentDto contentDto =
+                contentJson.Deserialize<ImagePopupContentDto>(
+                    JsonOptions)
+                ?? throw new InvalidOperationException(
+                    "IMAGE 팝업 content 변환에 실패했습니다.");
 
-            /*
-             * FILL은 기존 IMAGE 기능을 대체하지 않는 별도 모드다.
-             * 이 모드에서만 제목/설명/이미지 자체 크기 옵션을 사용하지 않고
-             * 이미지와 선택적인 클릭 링크만 사용한다.
-             */
             if (string.Equals(
                 contentDto.ImageSizeMode,
                 "FILL",
@@ -210,18 +186,10 @@ namespace Popup.Factories
                     linkUrl: contentDto.LinkUrl);
             }
 
-        /*
-         * DTO에서는 이미지 크기 모드를 문자열로 받으므로
-         * 내부 enum으로 변환한다.
-         */
-        ImagePopupSizeMode imageSizeMode =
+            ImagePopupSizeMode imageSizeMode =
                 ConvertImagePopupSizeMode(
                     contentDto.ImageSizeMode);
 
-            /*
-             * JSON에서 0이 전달되면
-             * 크기를 직접 지정하지 않은 것으로 처리한다.
-             */
             double? imageWidth =
                 contentDto.ImageWidth > 0
                     ? contentDto.ImageWidth
@@ -255,11 +223,6 @@ namespace Popup.Factories
                     imageHeight);
         }
 
-        /*
-         * VIDEO content JSON을
-         * VideoPopupContentDto로 변환하고
-         * VideoPopupView를 생성한다.
-         */
         private static VideoPopupView CreateVideoPopupView(
             JsonElement contentJson)
         {
@@ -269,12 +232,6 @@ namespace Popup.Factories
                 ?? throw new InvalidOperationException(
                     "VIDEO 팝업 content 변환에 실패했습니다.");
 
-            /*
-             * 현재 VideoPopupView 생성자가 지원하는 값부터 연결한다.
-             *
-             * 나머지 옵션은 이후 VideoPopupView에
-             * 속성이나 생성자 인자를 추가한 뒤 연결한다.
-             */
             return new VideoPopupView(
                 videoTitle:
                     contentDto.VideoTitle,
@@ -289,11 +246,6 @@ namespace Popup.Factories
                     contentDto.ShowDescription);
         }
 
-         /*
-         * SURVEY 또는 QUIZ content JSON을
-         * SurveyPopupContentDto로 변환하고
-         * SurveyPopupView를 생성한다.
-         */
         private static SurveyPopupView CreateSurveyPopupView(
             JsonElement contentJson,
             bool isQuizMode)
@@ -374,10 +326,6 @@ namespace Popup.Factories
                     contentDto.PassingScore);
         }
 
-        /*
-         * 서버에서 받은 질문 유형 문자열을
-         * SurveyQuestionType enum으로 변환한다.
-         */
         private static SurveyQuestionType ConvertSurveyQuestionType(
             string questionType)
         {
@@ -404,10 +352,6 @@ namespace Popup.Factories
             };
         }
 
-        /*
-         * 서버에서 받은 이미지 크기 모드 문자열을
-         * ImagePopupSizeMode enum으로 변환한다.
-         */
         private static ImagePopupSizeMode ConvertImagePopupSizeMode(
             string imageSizeMode)
         {
@@ -415,25 +359,12 @@ namespace Popup.Factories
                 .Trim()
                 .ToUpperInvariant() switch
             {
-                /*
-                 * 이미지 영역이 현재 팝업 크기에 맞춰
-                 * 유동적으로 배치되는 방식
-                 */
                 "ADAPTIVE" =>
                     ImagePopupSizeMode.Adaptive,
 
-                /*
-                 * 이미지 원본 크기 또는 요청 크기에 맞춰
-                 * 팝업 권장 크기를 계산하는 방식
-                 */
                 "FIT_TO_IMAGE" =>
                     ImagePopupSizeMode.FitToImage,
 
-                /*
-                 * DTO 기본값이 FIXED로 되어 있었다면
-                 * 현재 내부 enum에는 Fixed가 없을 가능성이 있으므로
-                 * Adaptive로 연결한다.
-                 */
                 "FIXED" =>
                     ImagePopupSizeMode.Adaptive,
 
@@ -444,10 +375,6 @@ namespace Popup.Factories
             };
         }
 
-        /*
-         * 서버에서 받은 팝업 표시 방식 문자열을
-         * 프로그램 내부 enum으로 변환한다.
-         */
         private static PopupDisplayMode ConvertPopupDisplayMode(
             string displayMode)
         {
@@ -468,10 +395,6 @@ namespace Popup.Factories
             };
         }
 
-        /*
-         * 서버에서 받은 문자열 크기 모드를
-         * 프로그램 내부 enum으로 변환한다.
-         */
         private static PopupSizeMode ConvertPopupSizeMode(
             string sizeMode)
         {
@@ -498,5 +421,4 @@ namespace Popup.Factories
             };
         }
     }
-
 }
