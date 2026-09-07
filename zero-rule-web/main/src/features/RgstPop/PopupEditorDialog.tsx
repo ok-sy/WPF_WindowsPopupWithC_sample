@@ -64,6 +64,7 @@ function createDefaultPopup(): AdminPopupDetail {
     displayStartAt: startAt.toISOString(),
     displayEndAt: endAt.toISOString(),
     displayMode: 'SEQUENTIAL',
+    displayOrder: 100,
     sizeMode: 'FIXED',
     width: 560,
     height: 420,
@@ -184,7 +185,7 @@ export default function PopupEditorDialog({
       .info({ popupId })
       .then(({ body }) => {
         if (!canceled) {
-          setPopup(body.popup);
+          setPopup({ ...body.popup, displayOrder: body.popup.displayOrder ?? 100 });
           setTargetGroups(body.targetGroups ?? []);
         }
       })
@@ -288,6 +289,10 @@ export default function PopupEditorDialog({
     }
     if (!popup.popupId.trim() || !popup.title.trim()) {
       toast.warn('팝업 ID와 제목을 입력해 주세요.');
+      return;
+    }
+    if (!Number.isInteger(popup.displayOrder) || popup.displayOrder < 1) {
+      toast.warn('표시 우선순위는 1 이상의 정수로 입력해 주세요.');
       return;
     }
 
@@ -447,6 +452,16 @@ export default function PopupEditorDialog({
               <MenuItem value="SEQUENTIAL">순차 표시</MenuItem>
               <MenuItem value="SIMULTANEOUS">동시 표시</MenuItem>
             </TextField>
+            <TextField
+              required
+              type="number"
+              label="표시 우선순위"
+              value={popup.displayOrder}
+              inputProps={{ min: 1, step: 1 }}
+              helperText="숫자가 작을수록 먼저 표시됩니다. 같은 번호의 동시 표시는 함께 열립니다."
+              onChange={(event) => updatePopup('displayOrder', Number(event.target.value))}
+            />
+            <Box />
             <TextField
               type="datetime-local"
               label="노출 시작"
