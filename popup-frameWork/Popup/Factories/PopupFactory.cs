@@ -186,7 +186,7 @@ namespace Popup.Factories
          * ImagePopupContentDto로 변환하고
          * ImagePopupView를 생성한다.
          */
-        private static ImagePopupView CreateImagePopupView(
+        private static FrameworkElement CreateImagePopupView(
             JsonElement contentJson)
         {
         ImagePopupContentDto contentDto =
@@ -194,6 +194,21 @@ namespace Popup.Factories
                 JsonOptions)
             ?? throw new InvalidOperationException(
                 "IMAGE 팝업 content 변환에 실패했습니다.");
+
+            /*
+             * FILL은 기존 IMAGE 기능을 대체하지 않는 별도 모드다.
+             * 이 모드에서만 제목/설명/이미지 자체 크기 옵션을 사용하지 않고
+             * 이미지와 선택적인 클릭 링크만 사용한다.
+             */
+            if (string.Equals(
+                contentDto.ImageSizeMode,
+                "FILL",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return new ImageFillPopupView(
+                    imagePath: contentDto.ImageUrl,
+                    linkUrl: contentDto.LinkUrl);
+            }
 
         /*
          * DTO에서는 이미지 크기 모드를 문자열로 받으므로

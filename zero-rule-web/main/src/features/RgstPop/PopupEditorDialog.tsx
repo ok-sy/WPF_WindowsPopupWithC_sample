@@ -358,6 +358,8 @@ export default function PopupEditorDialog({
   const titleKey = contentTitleKey(popup.popupType);
   const isMedia = popup.popupType === 'IMAGE' || popup.popupType === 'VIDEO';
   const isSurvey = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
+  const imageFillMode = popup.popupType === 'IMAGE'
+    && contentValue(popup, 'imageSizeMode').toUpperCase() === 'FILL';
   const showTextRightSection =
     popup.content.showRightSection == null
       ? Boolean(
@@ -736,20 +738,29 @@ export default function PopupEditorDialog({
           <Typography variant="subtitle1" fontWeight={700}>
             콘텐츠
           </Typography>
-          <TextField
-            label="콘텐츠 제목"
-            disabled={popup.popupType === 'TEXT' && !showTextContentHeader}
-            value={contentValue(popup, titleKey)}
-            onChange={(event) => updateContent(titleKey, event.target.value)}
-          />
-          <TextField
-            label="설명"
-            disabled={popup.popupType === 'TEXT' && !showTextContentHeader}
-            value={contentValue(popup, 'description')}
-            multiline
-            minRows={2}
-            onChange={(event) => updateContent('description', event.target.value)}
-          />
+          {!imageFillMode && (
+            <>
+              <TextField
+                label="콘텐츠 제목"
+                disabled={popup.popupType === 'TEXT' && !showTextContentHeader}
+                value={contentValue(popup, titleKey)}
+                onChange={(event) => updateContent(titleKey, event.target.value)}
+              />
+              <TextField
+                label="설명"
+                disabled={popup.popupType === 'TEXT' && !showTextContentHeader}
+                value={contentValue(popup, 'description')}
+                multiline
+                minRows={2}
+                onChange={(event) => updateContent('description', event.target.value)}
+              />
+            </>
+          )}
+          {imageFillMode && (
+            <Typography variant="caption" color="text.secondary">
+              꽉 채우기 모드는 이미지와 클릭 링크만 사용합니다. 기존 제목·설명 값은 삭제하지 않고 다른 이미지 모드로 돌아가면 다시 사용됩니다.
+            </Typography>
+          )}
           {popup.popupType === 'TEXT' && (
             <Stack spacing={2}>
               <Stack direction="row" flexWrap="wrap" gap={1}>
@@ -910,7 +921,7 @@ export default function PopupEditorDialog({
           )}
           {popup.popupType === 'IMAGE' && (
             <Stack spacing={2}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: imageFillMode ? '1fr' : 'repeat(3, 1fr)', gap: 2 }}>
                 <TextField
                   select
                   label="이미지 크기 모드"
@@ -920,34 +931,41 @@ export default function PopupEditorDialog({
                   <MenuItem value="FIXED">고정 영역</MenuItem>
                   <MenuItem value="FIT_TO_IMAGE">원본에 맞춤</MenuItem>
                   <MenuItem value="ADAPTIVE">화면에 맞춤</MenuItem>
+                  <MenuItem value="FILL">꽉 채우기 (이미지만)</MenuItem>
                 </TextField>
-                <TextField
-                  type="number"
-                  label="이미지 너비"
-                  value={contentValue(popup, 'imageWidth')}
-                  onChange={(event) => updateContent('imageWidth', Number(event.target.value))}
-                />
-                <TextField
-                  type="number"
-                  label="이미지 높이"
-                  value={contentValue(popup, 'imageHeight')}
-                  onChange={(event) => updateContent('imageHeight', Number(event.target.value))}
-                />
+                {!imageFillMode && (
+                  <TextField
+                    type="number"
+                    label="이미지 너비"
+                    value={contentValue(popup, 'imageWidth')}
+                    onChange={(event) => updateContent('imageWidth', Number(event.target.value))}
+                  />
+                )}
+                {!imageFillMode && (
+                  <TextField
+                    type="number"
+                    label="이미지 높이"
+                    value={contentValue(popup, 'imageHeight')}
+                    onChange={(event) => updateContent('imageHeight', Number(event.target.value))}
+                  />
+                )}
               </Box>
               <TextField
                 label="클릭 연결 URL"
                 value={contentValue(popup, 'linkUrl')}
                 onChange={(event) => updateContent('linkUrl', event.target.value)}
               />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={popup.content.showDescription !== false}
-                    onChange={(_, value) => updateContent('showDescription', value)}
-                  />
-                }
-                label="이미지 설명 표시"
-              />
+              {!imageFillMode && (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={popup.content.showDescription !== false}
+                      onChange={(_, value) => updateContent('showDescription', value)}
+                    />
+                  }
+                  label="이미지 설명 표시"
+                />
+              )}
             </Stack>
           )}
           {isSurvey && (
