@@ -21,6 +21,19 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!--
+		폐쇄망 Demo Mode에서 사용하는 이미지와 동영상을
+		빌드 및 publish 결과의 Media 폴더로 자동 복사한다.
+		실제 미디어 파일은 사용자가 Popup/Media 폴더에 추가한다.
+		-->
+		<Content Include="Media\**\*.*"
+				 Exclude="Media\.gitkeep">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Microsoft.Web.WebView2"
 						  Version="1.0.4078.44" />
 	</ItemGroup>
