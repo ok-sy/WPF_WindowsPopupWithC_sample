@@ -40,10 +40,7 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
     options: [1, 2].map((n) => ({ optionId: -n, value: String(n), text: '', sortOrder: n, isCorrect: false })),
   }]);
   return <Stack spacing={2}>
-    <Stack direction="row" justifyContent="space-between" alignItems="center">
-      <Typography fontWeight={700}>{quiz ? '퀴즈' : '설문'} 문항 ({questions.length})</Typography>
-      <Button startIcon={<AddIcon />} onClick={add}>문항 추가</Button>
-    </Stack>
+    <Typography fontWeight={700}>{quiz ? '퀴즈' : '설문'} 문항 ({questions.length})</Typography>
     {quiz && <Stack direction="row" spacing={2} alignItems="center">
       <Typography sx={{ flex: 1 }} fontWeight={700}>총점 {total}점</Typography>
       <TextField label="통과 점수" type="number" value={passingScore ?? ''} inputProps={{ min: 0, max: total, step: 0.01 }}
@@ -88,5 +85,6 @@ export default function PopupQuestionEditor({ questions, quiz, passingScore, onC
         </Stack>}
       </Stack>
     </Box>)}
+    <Button startIcon={<AddIcon />} onClick={add} sx={{ alignSelf: 'flex-start' }}>문항 추가</Button>
   </Stack>;
 }

@@ -630,13 +630,29 @@ export default function PopupEditorDialog({
                   type="number"
                   label="너비"
                   value={popup.width}
-                  onChange={(event) => updatePopup('width', Number(event.target.value))}
+                  helperText={`최대 ${popup.maximumWidth}px · 초과 입력 시 최대값으로 자동 조정`}
+                  inputProps={{ min: popup.minimumWidth, max: popup.maximumWidth }}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    updatePopup(
+                      'width',
+                      Math.max(popup.minimumWidth, Math.min(popup.maximumWidth, value)),
+                    );
+                  }}
                 />
                 <TextField
                   type="number"
                   label="높이"
                   value={popup.height}
-                  onChange={(event) => updatePopup('height', Number(event.target.value))}
+                  helperText={`최대 ${popup.maximumHeight}px · 초과 입력 시 최대값으로 자동 조정`}
+                  inputProps={{ min: popup.minimumHeight, max: popup.maximumHeight }}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    updatePopup(
+                      'height',
+                      Math.max(popup.minimumHeight, Math.min(popup.maximumHeight, value)),
+                    );
+                  }}
                 />
               </>
             )}
@@ -659,6 +675,11 @@ export default function PopupEditorDialog({
               </>
             )}
           </Box>
+          {popup.sizeMode !== 'FULLSCREEN' && (
+            <Typography variant="caption" color="text.secondary">
+              미리보기 최대 크기: {popup.maximumWidth}px × {popup.maximumHeight}px
+            </Typography>
+          )}
 
           <Stack direction="row" flexWrap="wrap" gap={1}>
             <FormControlLabel
