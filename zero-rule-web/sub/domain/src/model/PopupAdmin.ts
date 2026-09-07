@@ -35,6 +35,7 @@ export interface AdminPopupListItem {
   displayStartAt: PopupDateValue;
   displayEndAt: PopupDateValue;
   displayMode: PopupDisplayMode;
+  displayOrder: number;
   sizeMode: PopupSizeMode;
   activeYn: 'Y' | 'N';
   periodMode: string;
@@ -53,6 +54,7 @@ export interface AdminPopupDetail {
   displayStartAt: PopupDateValue;
   displayEndAt: PopupDateValue;
   displayMode: PopupDisplayMode;
+  displayOrder: number;
   sizeMode: PopupSizeMode;
   width: number;
   height: number;
