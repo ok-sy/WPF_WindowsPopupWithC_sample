@@ -33,6 +33,8 @@ import {
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import PopupPreview from './PopupPreview';
+import PopupQuestionEditor, { validatePopupQuestions } from './PopupQuestionEditor';
+import PopupTemplateDialog from './PopupTemplateDialog';
 
 interface PopupEditorDialogProps {
   open: boolean;
@@ -161,12 +163,14 @@ export default function PopupEditorDialog({
   const [active, setActive] = useState(true);
   const [targetGroups, setTargetGroups] = useState<PopupTargetGroup[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const editing = popupId != null;
 
   useEffect(() => {
     if (!open) return;
     setActive(initialActive);
+    setTemplateOpen(false);
 
     if (popupId == null) {
       setPopup(createDefaultPopup());
@@ -278,6 +282,10 @@ export default function PopupEditorDialog({
   };
 
   const savePopup = async () => {
+    if (popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ') {
+      const error = validatePopupQuestions(popup.questions, popup.popupType === 'QUIZ', popup.passingScore);
+      if (error) { toast.warn(error); return; }
+    }
     if (!popup.popupId.trim() || !popup.title.trim()) {
       toast.warn('팝업 ID와 제목을 입력해 주세요.');
       return;
@@ -379,7 +387,17 @@ export default function PopupEditorDialog({
 
   return (
     <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="xl">
-      <DialogTitle>{editing ? '팝업 수정' : '팝업 신규 등록'}</DialogTitle>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {editing ? '팝업 수정' : '팝업 신규 등록'}
+        <Button disabled={loading} variant="outlined" onClick={() => setTemplateOpen(true)}>템플릿 불러오기</Button>
+      </DialogTitle>
+      <PopupTemplateDialog open={open && templateOpen} onClose={() => setTemplateOpen(false)}
+        onSelect={({ popup: template, targetGroups: groups }) => {
+          setPopup((current) => ({ ...template, popupId: current.popupId, questionTemplateId: null }));
+          setTargetGroups(groups ?? []);
+          setTemplateOpen(false);
+          toast.info('템플릿을 불러왔습니다. 저장하면 반영됩니다.');
+        }} />
       {loading && <LinearProgress />}
       <DialogContent dividers sx={{ p: 0, overflow: 'hidden' }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(520px, 1fr) minmax(520px, 1fr)', height: 'calc(100vh - 150px)' }}>
@@ -912,30 +930,10 @@ export default function PopupEditorDialog({
             </Stack>
           )}
           {isSurvey && (
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-              <TextField
-                type="number"
-                label="문항 템플릿 ID"
-                value={popup.questionTemplateId ?? ''}
-                onChange={(event) =>
-                  updatePopup(
-                    'questionTemplateId',
-                    event.target.value ? Number(event.target.value) : null,
-                  )
-                }
-              />
-              <TextField
-                type="number"
-                label="통과 점수"
-                value={popup.passingScore ?? ''}
-                onChange={(event) =>
-                  updatePopup(
-                    'passingScore',
-                    event.target.value ? Number(event.target.value) : null,
-                  )
-                }
-              />
-            </Box>
+            <PopupQuestionEditor questions={popup.questions} quiz={popup.popupType === 'QUIZ'}
+              passingScore={popup.passingScore}
+              onPassingScoreChange={(score) => updatePopup('passingScore', score)}
+              onChange={(questions) => updatePopup('questions', questions)} />
           )}
           {popup.popupType === 'VIDEO' && (
             <Stack spacing={2}>

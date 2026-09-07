@@ -269,6 +269,8 @@ CREATE TABLE popup_question
     required_yn          CHAR(1)       NOT NULL DEFAULT 'N',
     scored_yn            CHAR(1)       NOT NULL DEFAULT 'N',
     question_score       NUMERIC(10,2),
+    correct_answer       TEXT,
+    answer_match_mode    VARCHAR(10) CHECK (answer_match_mode IN ('EXACT', 'CONTAINS')),
     sort_order           INTEGER       NOT NULL,
     created_by           VARCHAR(30)   NOT NULL,
     created_at           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,

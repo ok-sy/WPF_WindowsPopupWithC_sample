@@ -175,11 +175,15 @@ function PopupBody({ popup }: PopupPreviewProps) {
     return (
       <Stack spacing={1.5}>
         <Typography color="text.secondary">{description}</Typography>
+        {popup.popupType === 'QUIZ' && <Typography variant="body2" fontWeight={700}>
+          총점 {popup.questions.reduce((sum, q) => sum + Math.round((q.questionScore ?? 0) * 100), 0) / 100}점 · 통과 점수 {popup.passingScore ?? 0}점
+        </Typography>}
         {(popup.questions.length > 0 ? popup.questions : [null]).map((question, index) => (
           <Paper variant="outlined" sx={{ p: 2 }} key={question?.questionId ?? 'sample'}>
             <Typography fontWeight={700}>
               {index + 1}. {question?.title ?? '샘플 문항입니다.'}
               {question?.isRequired && <Typography component="span" color="error"> *</Typography>}
+              {popup.popupType === 'QUIZ' && question && <Typography component="span" color="text.secondary"> ({question.questionScore ?? 0}점)</Typography>}
             </Typography>
             {question?.description && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -194,7 +198,7 @@ function PopupBody({ popup }: PopupPreviewProps) {
                   (option) => (
                     <FormControlLabel
                       key={option.optionId}
-                      control={<Radio size="small" />}
+                      control={question?.questionType === 'MULTIPLE_CHOICE' ? <Checkbox size="small" /> : <Radio size="small" />}
                       label={option.text}
                     />
                   ),
