@@ -47,6 +47,7 @@
             <arg column="DISPLAY_START_AT" javaType="java.time.OffsetDateTime"/>
             <arg column="DISPLAY_END_AT" javaType="java.time.OffsetDateTime"/>
             <arg column="DISPLAY_MODE" javaType="java.lang.String"/>
+            <arg column="DISPLAY_ORDER" javaType="_int"/>
             <arg column="SIZE_MODE" javaType="java.lang.String"/>
             <arg column="ACTIVE_YN" javaType="java.lang.String"/>
             <arg column="PERIOD_MODE" javaType="java.lang.String"/>
@@ -68,6 +69,7 @@
             popup.display_start_at AT TIME ZONE 'Asia/Seoul' AS display_start_at,
             popup.display_end_at AT TIME ZONE 'Asia/Seoul' AS display_end_at,
             popup.display_mode,
+            popup.display_order,
             popup.size_mode,
             popup.active_yn,
             popup.period_mode,
@@ -77,7 +79,7 @@
             popup.updated_by,
             popup.updated_at AT TIME ZONE 'Asia/Seoul' AS updated_at
         FROM popup.popup_notice popup
-        ORDER BY popup.created_at DESC, popup.popup_id
+        ORDER BY popup.display_order, popup.created_at DESC, popup.popup_id
     </select>
 
     <!--
@@ -143,7 +145,7 @@
                 END
                 || COALESCE(content.content_options, '{}'::JSONB)
             )::TEXT AS content_json,
-            1 AS display_order,
+            popup.display_order,
             popup.active_yn AS use_yn,
             popup.question_template_id,
             popup.period_mode,
@@ -173,6 +175,7 @@
             display_start_at,
             display_end_at,
             display_mode,
+            display_order,
             period_mode,
             repeat_interval,
             repeat_day_of_week,
@@ -209,6 +212,7 @@
             #{displayStartAt},
             #{displayEndAt},
             #{displayMode},
+            #{displayOrder},
             #{periodMode},
             #{repeatInterval},
             #{repeatDayOfWeek},
@@ -242,6 +246,7 @@
             display_start_at = EXCLUDED.display_start_at,
             display_end_at = EXCLUDED.display_end_at,
             display_mode = EXCLUDED.display_mode,
+            display_order = EXCLUDED.display_order,
             period_mode = EXCLUDED.period_mode,
             repeat_interval = EXCLUDED.repeat_interval,
             repeat_day_of_week = EXCLUDED.repeat_day_of_week,
@@ -636,7 +641,7 @@
                 END
                 || COALESCE(content.content_options, '{}'::JSONB)
             )::TEXT AS content_json,
-            ROW_NUMBER() OVER (ORDER BY popup.popup_id)::INTEGER AS display_order,
+            popup.display_order,
             popup.active_yn AS use_yn,
             popup.question_template_id,
             popup.period_mode,
@@ -656,7 +661,7 @@
           ON popup.popup_id = eligible.popup_id
         LEFT JOIN popup.popup_content content
           ON content.popup_id = popup.popup_id
-        ORDER BY popup.popup_id
+        ORDER BY popup.display_order, popup.created_at, popup.popup_id
     </select>
 
     <select id="selectQuestionsByTemplateIds"
