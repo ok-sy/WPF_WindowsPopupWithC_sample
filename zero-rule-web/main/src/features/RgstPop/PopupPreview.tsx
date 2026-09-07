@@ -27,7 +27,6 @@ function text(value: unknown, fallback: string): string {
 }
 
 function titleKey(type: AdminPopupDetail['popupType']): string {
-  if (type === 'IMAGE') return 'imageTitle';
   if (type === 'VIDEO') return 'videoTitle';
   if (type === 'SURVEY' || type === 'QUIZ') return 'surveyTitle';
   return 'contentTitle';
@@ -86,48 +85,47 @@ function PopupBody({ popup }: PopupPreviewProps) {
 
   if (popup.popupType === 'IMAGE') {
     const imageUrl = text(content.imageUrl, '');
-    const showDescription = content.showDescription !== false;
-    const imageWidth = Number(content.imageWidth) || undefined;
-    const imageHeight = Number(content.imageHeight) || undefined;
+    const linkUrl = text(content.linkUrl, '');
+    const image = imageUrl ? (
+      <Box
+        component="img"
+        src={imageUrl}
+        alt="팝업 이미지 미리보기"
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          objectFit: 'cover',
+        }}
+      />
+    ) : (
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          minHeight: 150,
+          bgcolor: '#f4f6fa',
+          display: 'grid',
+          placeItems: 'center',
+          color: 'text.secondary',
+        }}
+      >
+        이미지 URL을 입력하면 여기에 표시됩니다.
+      </Box>
+    );
+
+    if (!linkUrl) return image;
+
     return (
-      <Stack spacing={1.5} alignItems="center" sx={{ height: '100%' }}>
-        {showDescription && <Typography color="text.secondary">{description}</Typography>}
-        {imageUrl ? (
-          <Box
-            component="img"
-            src={imageUrl}
-            alt="팝업 이미지 미리보기"
-            sx={{
-              width: '100%',
-              maxWidth: imageWidth,
-              maxHeight: imageHeight,
-              flex: 1,
-              minHeight: 150,
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'divider',
-              objectFit: 'contain',
-              bgcolor: '#f4f6fa',
-            }}
-          />
-        ) : (
-          <Box
-            sx={{
-              width: '100%',
-              flex: 1,
-              minHeight: 150,
-              borderRadius: 1,
-              border: '1px dashed',
-              borderColor: 'divider',
-              bgcolor: '#f4f6fa',
-              display: 'grid',
-              placeItems: 'center',
-            }}
-          >
-            이미지 URL을 입력하면 여기에 표시됩니다.
-          </Box>
-        )}
-      </Stack>
+      <Box
+        component="a"
+        href={linkUrl}
+        target="_blank"
+        rel="noreferrer"
+        sx={{ display: 'block', width: '100%', height: '100%', cursor: 'pointer' }}
+      >
+        {image}
+      </Box>
     );
   }
 
@@ -138,17 +136,7 @@ function PopupBody({ popup }: PopupPreviewProps) {
     return (
       <Stack spacing={1.5} sx={{ height: '100%' }}>
         {showDescription && <Typography color="text.secondary">{description}</Typography>}
-        <Box
-          sx={{
-            flex: 1,
-            minHeight: 170,
-            borderRadius: 1,
-            bgcolor: '#101521',
-            color: 'white',
-            display: 'grid',
-            placeItems: 'center',
-          }}
-        >
+        <Box sx={{ flex: 1, minHeight: 170, borderRadius: 1, bgcolor: '#101521', color: 'white', display: 'grid', placeItems: 'center' }}>
           <Stack alignItems="center" spacing={1}>
             <PlayCircleOutlineIcon sx={{ fontSize: 58 }} />
             <Typography variant="caption">영상 재생 영역</Typography>
@@ -185,31 +173,23 @@ function PopupBody({ popup }: PopupPreviewProps) {
               {question?.isRequired && <Typography component="span" color="error"> *</Typography>}
               {popup.popupType === 'QUIZ' && question && <Typography component="span" color="text.secondary"> ({question.questionScore ?? 0}점)</Typography>}
             </Typography>
-            {question?.description && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {question.description}
-              </Typography>
-            )}
+            {question?.description && <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{question.description}</Typography>}
             <Stack sx={{ mt: 1 }}>
               {question?.questionType === 'TEXT' ? (
                 <Box sx={{ minHeight: 62, border: '1px solid', borderColor: 'divider', borderRadius: 1 }} />
               ) : (
-                (question?.options.length ? question.options : [{ optionId: 0, text: '보기 1' }]).map(
-                  (option) => (
-                    <FormControlLabel
-                      key={option.optionId}
-                      control={question?.questionType === 'MULTIPLE_CHOICE' ? <Checkbox size="small" /> : <Radio size="small" />}
-                      label={option.text}
-                    />
-                  ),
-                )
+                (question?.options.length ? question.options : [{ optionId: 0, text: '보기 1' }]).map((option) => (
+                  <FormControlLabel
+                    key={option.optionId}
+                    control={question?.questionType === 'MULTIPLE_CHOICE' ? <Checkbox size="small" /> : <Radio size="small" />}
+                    label={option.text}
+                  />
+                ))
               )}
             </Stack>
           </Paper>
         ))}
-        <Button variant="contained" sx={{ alignSelf: 'flex-end' }}>
-          제출
-        </Button>
+        <Button variant="contained" sx={{ alignSelf: 'flex-end' }}>제출</Button>
       </Stack>
     );
   }
@@ -217,21 +197,16 @@ function PopupBody({ popup }: PopupPreviewProps) {
   const markdownMode = content.markdownMode === true;
   const showContentHeader = content.showContentHeader !== false;
   const showPlainText = content.showPlainText !== false;
-  const showLeftSection =
-    content.showLeftSection == null
-      ? Boolean(content.leftSectionTitle || content.leftSectionBody)
-      : content.showLeftSection === true;
-  const showRightSection =
-    content.showRightSection == null
-      ? Boolean(content.rightSectionTitle || content.rightSectionBody || content.additionalDescription)
-      : content.showRightSection === true;
-  const showHighlight =
-    content.showHighlight == null ? Boolean(content.highlightText) : content.showHighlight === true;
-
-  const showBottomDescription =
-    content.showBottomDescription == null
-      ? Boolean(content.bottomDescription)
-      : content.showBottomDescription === true;
+  const showLeftSection = content.showLeftSection == null
+    ? Boolean(content.leftSectionTitle || content.leftSectionBody)
+    : content.showLeftSection === true;
+  const showRightSection = content.showRightSection == null
+    ? Boolean(content.rightSectionTitle || content.rightSectionBody || content.additionalDescription)
+    : content.showRightSection === true;
+  const showHighlight = content.showHighlight == null ? Boolean(content.highlightText) : content.showHighlight === true;
+  const showBottomDescription = content.showBottomDescription == null
+    ? Boolean(content.bottomDescription)
+    : content.showBottomDescription === true;
 
   if (markdownMode) {
     return (
@@ -245,41 +220,23 @@ function PopupBody({ popup }: PopupPreviewProps) {
   return (
     <Stack spacing={2}>
       {showContentHeader && <Typography color="text.secondary">{description}</Typography>}
-      {showPlainText && (
-        <Typography sx={{ whiteSpace: 'pre-wrap' }}>
-          {String(content.plainText ?? '')}
-        </Typography>
-      )}
+      {showPlainText && <Typography sx={{ whiteSpace: 'pre-wrap' }}>{String(content.plainText ?? '')}</Typography>}
       {(showLeftSection || showRightSection) && (
-      <Box sx={{ display: 'grid', gridTemplateColumns: showLeftSection && showRightSection ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: 2 }}>
-        {showLeftSection && <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
-          <Typography fontWeight={700} sx={{ mb: 1 }}>
-            {text(content.leftSectionTitle, '왼쪽 카드 제목')}
-          </Typography>
-          <Typography>{text(content.leftSectionBody, '왼쪽 카드 본문')}</Typography>
-        </Paper>}
-        {showRightSection && <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
-          <Typography fontWeight={700} sx={{ mb: 1 }}>
-            {text(content.rightSectionTitle, '오른쪽 카드 제목')}
-          </Typography>
-          <Typography>{text(content.rightSectionBody, '오른쪽 카드 본문')}</Typography>
-          <Divider sx={{ my: 2 }} />
-          <Typography color="text.secondary">
-            {text(content.additionalDescription, '추가 설명')}
-          </Typography>
-        </Paper>}
-      </Box>
-      )}
-      {showHighlight && (
-        <Box sx={{ p: 1.5, border: '1px solid #93c5fd', borderRadius: 1, bgcolor: '#eff6ff', color: '#1d4ed8' }}>
-          {text(content.highlightText, '강조 문구')}
+        <Box sx={{ display: 'grid', gridTemplateColumns: showLeftSection && showRightSection ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: 2 }}>
+          {showLeftSection && <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
+            <Typography fontWeight={700} sx={{ mb: 1 }}>{text(content.leftSectionTitle, '왼쪽 카드 제목')}</Typography>
+            <Typography>{text(content.leftSectionBody, '왼쪽 카드 본문')}</Typography>
+          </Paper>}
+          {showRightSection && <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
+            <Typography fontWeight={700} sx={{ mb: 1 }}>{text(content.rightSectionTitle, '오른쪽 카드 제목')}</Typography>
+            <Typography>{text(content.rightSectionBody, '오른쪽 카드 본문')}</Typography>
+            <Divider sx={{ my: 2 }} />
+            <Typography color="text.secondary">{text(content.additionalDescription, '추가 설명')}</Typography>
+          </Paper>}
         </Box>
       )}
-      {showBottomDescription && (
-        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8f9fc', whiteSpace: 'pre-wrap' }}>
-          {String(content.bottomDescription)}
-        </Paper>
-      )}
+      {showHighlight && <Box sx={{ p: 1.5, border: '1px solid #93c5fd', borderRadius: 1, bgcolor: '#eff6ff', color: '#1d4ed8' }}>{text(content.highlightText, '강조 문구')}</Box>}
+      {showBottomDescription && <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8f9fc', whiteSpace: 'pre-wrap' }}>{String(content.bottomDescription)}</Paper>}
     </Stack>
   );
 }
@@ -290,71 +247,30 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
     : fitContainer
       ? { width: '100%', height: '100%' }
       : previewSize(popup);
+  const isImage = popup.popupType === 'IMAGE';
   const contentTitle = text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
-  const showContentTitle = popup.popupType !== 'TEXT' || popup.content.showContentHeader !== false;
+  const showContentTitle = !isImage && (popup.popupType !== 'TEXT' || popup.content.showContentHeader !== false);
 
   return (
-    <Box
-      sx={{
-        minHeight: standalone ? '100vh' : fitContainer ? 0 : 570,
-        height: fitContainer ? '100%' : undefined,
-        p: standalone || fitContainer ? 0 : 2,
-        overflow: 'hidden',
-        borderRadius: 1,
-        bgcolor: '#e9edf4',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-      }}
-    >
-      <Paper
-        elevation={8}
-        sx={{
-          ...size,
-          maxWidth: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-          overflow: 'hidden',
-          borderRadius: standalone ? 0 : 2,
-          bgcolor: 'white',
-        }}
-      >
+    <Box sx={{ minHeight: standalone ? '100vh' : fitContainer ? 0 : 570, height: fitContainer ? '100%' : undefined, p: standalone || fitContainer ? 0 : 2, overflow: 'hidden', borderRadius: 1, bgcolor: '#e9edf4', display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+      <Paper elevation={8} sx={{ ...size, maxWidth: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', borderRadius: standalone ? 0 : 2, bgcolor: 'white' }}>
         {popup.showHeader && (
           <Stack direction="row" alignItems="center" sx={{ minHeight: 52, px: 2 }}>
-            <Typography fontWeight={700} sx={{ flex: 1 }} noWrap>
-              {text(popup.title, '팝업 제목')}
-            </Typography>
-            {popup.showCloseButton && (
-              <IconButton size="small" aria-label="닫기 미리보기" onClick={onClose}>
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            )}
+            <Typography fontWeight={700} sx={{ flex: 1 }} noWrap>{text(popup.title, '팝업 제목')}</Typography>
+            {popup.showCloseButton && <IconButton size="small" aria-label="닫기 미리보기" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>}
           </Stack>
         )}
         {popup.showHeader && <Divider />}
-        <Box sx={{ flex: 1, minHeight: 0, overflow: fitContainer ? 'hidden' : 'auto', p: 3 }}>
-          {showContentTitle && (
-            <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>
-              {contentTitle}
-            </Typography>
-          )}
+        <Box sx={{ flex: 1, minHeight: 0, overflow: fitContainer || isImage ? 'hidden' : 'auto', p: isImage ? 0 : 3 }}>
+          {showContentTitle && <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>{contentTitle}</Typography>}
           <PopupBody popup={popup} />
         </Box>
         {popup.showFooter && (
           <>
             <Divider />
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.5 }}>
-              {popup.showDoNotShowAgain ? (
-                <FormControlLabel control={<Checkbox size="small" />} label="다시 보지 않기" />
-              ) : (
-                <span />
-              )}
-              {popup.showCloseButton && (
-                <Button variant="contained" color="inherit" sx={{ minWidth: 92 }} onClick={onClose}>
-                  닫기
-                </Button>
-              )}
+              {popup.showDoNotShowAgain ? <FormControlLabel control={<Checkbox size="small" />} label="다시 보지 않기" /> : <span />}
+              {popup.showCloseButton && <Button variant="contained" color="inherit" sx={{ minWidth: 92 }} onClick={onClose}>닫기</Button>}
             </Stack>
           </>
         )}
