@@ -12,6 +12,7 @@ public record PopupResponseDto(
         OffsetDateTime displayStartAt,
         OffsetDateTime displayEndAt,
         String displayMode,
+        Integer displayOrder,
         String sizeMode,
         double width,
         double height,

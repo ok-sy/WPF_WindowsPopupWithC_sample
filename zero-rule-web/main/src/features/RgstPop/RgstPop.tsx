@@ -36,6 +36,11 @@ const popupTypeLabels: Record<string, string> = {
   QUIZ: '퀴즈',
 };
 
+const displayModeLabels: Record<string, string> = {
+  SEQUENTIAL: '순차',
+  SIMULTANEOUS: '동시',
+};
+
 function formatPopupDate(value: PopupDateValue): string {
   const numericValue = typeof value === 'number' ? value : Number.NaN;
   const date = Number.isFinite(numericValue)
@@ -101,9 +106,11 @@ export default function RgstPop() {
       const activeMatched = activeFilter === 'ALL' || popup.activeYn === activeFilter;
       return keywordMatched && typeMatched && activeMatched;
     });
-    const sorted = [...filtered].sort(
-      (left, right) => dateValue(right.createdAt) - dateValue(left.createdAt),
-    );
+    const sorted = [...filtered].sort((left, right) => {
+      const orderDifference = (left.displayOrder ?? 100) - (right.displayOrder ?? 100);
+      if (orderDifference !== 0) return orderDifference;
+      return dateValue(right.createdAt) - dateValue(left.createdAt);
+    });
     return recentOnly ? sorted.slice(0, 10) : sorted;
   }, [activeFilter, keyword, popupType, popups, recentOnly]);
 
@@ -210,6 +217,8 @@ export default function RgstPop() {
             <Table stickyHeader size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell>우선순위</TableCell>
+                  <TableCell>표시 방식</TableCell>
                   <TableCell>팝업 ID</TableCell>
                   <TableCell>유형</TableCell>
                   <TableCell>제목</TableCell>
@@ -231,6 +240,8 @@ export default function RgstPop() {
                     onDoubleClick={() => openSelectedEditor(popup.popupId)}
                     sx={{ cursor: 'pointer' }}
                   >
+                    <TableCell>{popup.displayOrder ?? 100}</TableCell>
+                    <TableCell>{displayModeLabels[popup.displayMode] ?? popup.displayMode}</TableCell>
                     <TableCell>{popup.popupId}</TableCell>
                     <TableCell>
                       <Chip size="small" label={popupTypeLabels[popup.popupType] ?? popup.popupType} />
@@ -263,7 +274,7 @@ export default function RgstPop() {
                 ))}
                 {!loading && filteredPopups.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 5 }}>
+                    <TableCell colSpan={11} align="center" sx={{ py: 5 }}>
                       조회된 팝업이 없습니다.
                     </TableCell>
                   </TableRow>
