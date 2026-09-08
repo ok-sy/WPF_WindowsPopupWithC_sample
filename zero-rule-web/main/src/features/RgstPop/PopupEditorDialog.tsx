@@ -152,6 +152,40 @@ function contentValue(popup: AdminPopupDetail, key: string): string {
   return value == null ? '' : String(value);
 }
 
+function PopupDimensionField({
+  label,
+  value,
+  minimum,
+  maximum,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  minimum: number;
+  maximum: number;
+  onChange: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  return (
+    <TextField
+      type="number"
+      label={label}
+      value={draft ?? value}
+      helperText={`최소 ${minimum}px · 최대 ${maximum}px · 입력 완료 시 범위 자동 조정`}
+      inputProps={{ min: minimum, max: maximum }}
+      onChange={(event) => {
+        const input = event.target.value;
+        setDraft(input);
+        if (input !== '' && Number.isFinite(Number(input))) {
+          onChange(Math.max(minimum, Math.min(maximum, Number(input))));
+        }
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  );
+}
+
 export default function PopupEditorDialog({
   open,
   popupId,
@@ -643,33 +677,19 @@ export default function PopupEditorDialog({
             </TextField>
             {popup.sizeMode === 'FIXED' && (
               <>
-                <TextField
-                  type="number"
+                <PopupDimensionField
                   label="너비"
                   value={popup.width}
-                  helperText={`최대 ${popup.maximumWidth}px · 초과 입력 시 최대값으로 자동 조정`}
-                  inputProps={{ min: popup.minimumWidth, max: popup.maximumWidth }}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    updatePopup(
-                      'width',
-                      Math.max(popup.minimumWidth, Math.min(popup.maximumWidth, value)),
-                    );
-                  }}
+                  minimum={popup.minimumWidth}
+                  maximum={popup.maximumWidth}
+                  onChange={(value) => updatePopup('width', value)}
                 />
-                <TextField
-                  type="number"
+                <PopupDimensionField
                   label="높이"
                   value={popup.height}
-                  helperText={`최대 ${popup.maximumHeight}px · 초과 입력 시 최대값으로 자동 조정`}
-                  inputProps={{ min: popup.minimumHeight, max: popup.maximumHeight }}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    updatePopup(
-                      'height',
-                      Math.max(popup.minimumHeight, Math.min(popup.maximumHeight, value)),
-                    );
-                  }}
+                  minimum={popup.minimumHeight}
+                  maximum={popup.maximumHeight}
+                  onChange={(value) => updatePopup('height', value)}
                 />
               </>
             )}

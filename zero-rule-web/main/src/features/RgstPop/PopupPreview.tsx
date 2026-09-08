@@ -342,7 +342,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
         }}
       >
         {popup.showHeader && (
-          <Stack direction="row" alignItems="center" sx={{ minHeight: 52, px: 2 }}>
+          <Stack direction="row" alignItems="center" sx={{ minHeight: 52, px: 2, flexShrink: 0 }}>
             <Typography fontWeight={700} sx={{ flex: 1 }} noWrap>
               {text(popup.title, '팝업 제목')}
             </Typography>
@@ -354,7 +354,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
           </Stack>
         )}
         {popup.showHeader && <Divider />}
-        <Box sx={{ flex: 1, minHeight: 0, overflow: fitContainer ? 'hidden' : 'auto', p: imageFill ? 0 : 3 }}>
+        <Box sx={{ flex: 1, minHeight: 0, overflow: imageFill ? 'hidden' : 'auto', p: imageFill ? 0 : 3 }}>
           {showContentTitle && (
             <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>
               {contentTitle}
@@ -365,7 +365,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
         {popup.showFooter && (
           <>
             <Divider />
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.5 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.5, flexShrink: 0 }}>
               {popup.showDoNotShowAgain ? (
                 <FormControlLabel control={<Checkbox size="small" />} label="다시 보지 않기" />
               ) : (
