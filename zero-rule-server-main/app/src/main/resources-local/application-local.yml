@@ -19,3 +19,9 @@ spring:
   devtools:
     livereload:
       enabled: false
+
+# 로컬 영상 제공을 활성화한다. 서버 시작 전에 root 폴더를 생성하고 공개 가능한 영상만 둔다.
+popup:
+  video:
+    enabled: true
+    root: D:/popup-videos
