@@ -2740,6 +2740,8 @@ INSERT INTO zero_rule.clover_api_page (api_url, page_id, api_url_nm, priv_id) VA
 INSERT INTO zero_rule.clover_api_page (api_url, page_id, api_url_nm, priv_id) VALUES ('/apis/popup/info', 621, '상세', 'C');
 INSERT INTO zero_rule.clover_api_page (api_url, page_id, api_url_nm, priv_id) VALUES ('/apis/popup/list', 621, '저장', 'C');
 INSERT INTO zero_rule.clover_api_page (api_url, page_id, api_url_nm, priv_id) VALUES ('/apis/popup/active', 621, '활성화', 'C');
+INSERT INTO zero_rule.clover_api_page (api_url, page_id, api_url_nm, priv_id) VALUES ('/apis/popup/question-templates', 621, '문항 템플릿 목록', 'C');
+INSERT INTO zero_rule.clover_api_page (api_url, page_id, api_url_nm, priv_id) VALUES ('/apis/popup/question-template', 621, '문항 템플릿 상세', 'C');
 
 
 --

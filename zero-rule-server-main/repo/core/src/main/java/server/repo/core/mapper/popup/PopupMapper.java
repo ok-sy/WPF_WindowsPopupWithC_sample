@@ -20,6 +20,15 @@ import java.util.List;
 /** popup 스키마의 팝업 표시 데이터를 조회한다. */
 @Mapper
 public interface PopupMapper {
+    List<server.domain.popup.AdminQuestionTemplate> selectAdminQuestionTemplates();
+    Long insertAdminQuestionTemplate(@Param("groupId") String groupId,
+            @Param("name") String name, @Param("type") String type, @Param("auditUser") String auditUser);
+    Long insertAdminQuestion(@Param("templateId") Long templateId,
+            @Param("question") server.domain.popup.PopupQuestionDto question, @Param("auditUser") String auditUser);
+    int insertAdminOption(@Param("questionId") Long questionId,
+            @Param("option") server.domain.popup.PopupOptionDto option,
+            @Param("correctYn") String correctYn, @Param("auditUser") String auditUser);
+
 
     /** 대상자·기간 필터를 적용하지 않은 관리자용 전체 목록이다. */
     List<AdminPopupListItemDto> selectAdminPopups();

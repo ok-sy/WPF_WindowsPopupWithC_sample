@@ -76,11 +76,7 @@ export interface AdminPopupDetail {
   content: Record<string, unknown>;
 }
 
-export type PopupTargetConditionType =
-  | 'DEPARTMENT'
-  | 'POSITION'
-  | 'EMPLOYEE'
-  | 'HIRE_DATE';
+export type PopupTargetConditionType = 'DEPARTMENT' | 'POSITION' | 'EMPLOYEE' | 'HIRE_DATE';
 
 export interface PopupTargetCondition {
   conditionType: PopupTargetConditionType;
@@ -95,7 +91,18 @@ export interface PopupTargetGroup {
   conditions: PopupTargetCondition[];
 }
 
+export interface AdminPopupQuestion {
+  question: PopupQuestion;
+  correctValues: string[];
+}
+export interface AdminQuestionTemplate {
+  templateId: number;
+  templateName: string;
+  templateType: string;
+}
+
 export interface AdminPopupInfo {
+  adminQuestions: AdminPopupQuestion[];
   popup: AdminPopupDetail;
   targetGroups: PopupTargetGroup[];
 }

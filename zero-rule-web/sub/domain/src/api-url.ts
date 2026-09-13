@@ -32,6 +32,8 @@ export const POPUP_ADMIN_API_URL = {
   info: '/apis/popup/info',
   save: '/apis/popup/save',
   updateActive: '/apis/popup/active',
+  questionTemplates: '/apis/popup/question-templates',
+  questionTemplate: '/apis/popup/question-template',
 };
 /**
  * CLCodeApiURL

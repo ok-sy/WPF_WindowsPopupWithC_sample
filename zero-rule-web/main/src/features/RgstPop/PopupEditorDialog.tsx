@@ -1,6 +1,7 @@
 import handleError from '@/lib/handle-error';
 import { useApi } from '@/provider';
 import type {
+  AdminPopupQuestion,
   AdminPopupDetail,
   PopupDateValue,
   PopupDisplayMode,
@@ -33,6 +34,7 @@ import {
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import PopupPreview from './PopupPreview';
+import PopupQuestionEditor from './PopupQuestionEditor';
 
 interface PopupEditorDialogProps {
   open: boolean;
@@ -158,6 +160,7 @@ export default function PopupEditorDialog({
 }: PopupEditorDialogProps) {
   const api = useApi();
   const [popup, setPopup] = useState<AdminPopupDetail>(createDefaultPopup);
+  const [adminQuestions, setAdminQuestions] = useState<AdminPopupQuestion[]>([]);
   const [active, setActive] = useState(true);
   const [targetGroups, setTargetGroups] = useState<PopupTargetGroup[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -167,6 +170,8 @@ export default function PopupEditorDialog({
   useEffect(() => {
     if (!open) return;
     setActive(initialActive);
+    setAdminQuestions([]);
+    setLoading(false);
 
     if (popupId == null) {
       setPopup(createDefaultPopup());
@@ -181,6 +186,7 @@ export default function PopupEditorDialog({
       .then(({ body }) => {
         if (!canceled) {
           setPopup(body.popup);
+          setAdminQuestions(body.adminQuestions ?? []);
           setTargetGroups(body.targetGroups ?? []);
         }
       })
@@ -308,6 +314,7 @@ export default function PopupEditorDialog({
         popup: requestPopup,
         active,
         targetGroups,
+        adminQuestions: isSurvey ? adminQuestions : undefined,
       });
       toast.success('팝업을 저장했습니다.');
       onSaved(body.popup.popupId);
@@ -406,6 +413,7 @@ export default function PopupEditorDialog({
             />
             <TextField
               select
+              disabled={loading}
               label="팝업 유형"
               value={popup.popupType}
               onChange={(event) => updatePopup('popupType', event.target.value as PopupType)}
@@ -915,17 +923,6 @@ export default function PopupEditorDialog({
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
               <TextField
                 type="number"
-                label="문항 템플릿 ID"
-                value={popup.questionTemplateId ?? ''}
-                onChange={(event) =>
-                  updatePopup(
-                    'questionTemplateId',
-                    event.target.value ? Number(event.target.value) : null,
-                  )
-                }
-              />
-              <TextField
-                type="number"
                 label="통과 점수"
                 value={popup.passingScore ?? ''}
                 onChange={(event) =>
@@ -937,6 +934,11 @@ export default function PopupEditorDialog({
               />
             </Box>
           )}
+          {isSurvey && <PopupQuestionEditor entries={adminQuestions} popupType={popup.popupType} disabled={loading} onBusy={setLoading}
+            onChange={(entries, templateId) => {
+              setAdminQuestions(entries);
+              setPopup((previous) => ({ ...previous, questionTemplateId: templateId === undefined ? previous.questionTemplateId : templateId, questions: entries.map((e) => e.question) }));
+            }} />}
           {popup.popupType === 'VIDEO' && (
             <Stack spacing={2}>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>

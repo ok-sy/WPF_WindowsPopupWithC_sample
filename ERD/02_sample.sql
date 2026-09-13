@@ -1,22 +1,19 @@
 /*
  * Popup System - PostgreSQL sample data v0.8
- * Prerequisite: popup_system_postgresql_v0.8.sql
- * Target database: popup_db
+ * Prerequisite: 01_schema.sql (empty popup tables)
+ * Target schema: popup
  */
+
+BEGIN;
+SET LOCAL search_path TO popup, pg_catalog;
 
 DO $$
 BEGIN
-    IF current_database() <> 'popup_db' THEN
-        RAISE EXCEPTION 'Wrong database: connect to popup_db before running this script.';
-    END IF;
-
     IF EXISTS (SELECT 1 FROM popup_notice WHERE popup_id LIKE 'SAMPLE-%') THEN
         RAISE EXCEPTION 'Sample popup data already exists. This script was not executed.';
     END IF;
 END
 $$;
-
-BEGIN;
 
 INSERT INTO app_department
 (
@@ -230,7 +227,6 @@ SELECT setval(
     (SELECT MAX(option_id) FROM popup_option), true
 );
 
-COMMIT;
 
 SELECT 'app_department' AS table_name, COUNT(*) AS row_count FROM app_department
 UNION ALL
@@ -252,3 +248,5 @@ SELECT 'popup_question', COUNT(*) FROM popup_question
 UNION ALL
 SELECT 'popup_option', COUNT(*) FROM popup_option
 ORDER BY table_name;
+
+COMMIT;

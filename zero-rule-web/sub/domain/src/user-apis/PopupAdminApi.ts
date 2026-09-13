@@ -7,6 +7,8 @@ import {
   splitParams,
 } from '..';
 import type {
+  AdminPopupQuestion,
+  AdminQuestionTemplate,
   AdminPopupDetail,
   AdminPopupInfo,
   AdminPopupListItem,
@@ -41,18 +43,26 @@ export class PopupAdminApi {
       popup: AdminPopupDetail;
       active: boolean;
       targetGroups: PopupTargetGroup[];
+      adminQuestions?: AdminPopupQuestion[];
     } & BaseRequest,
   ): Promise<ApiResponseWithData<{ popup: AdminPopupDetail }>> => {
     return this.withData.postJson(POPUP_ADMIN_API_URL.save, ...splitParams(params));
   };
 
   /** 팝업의 다른 내용은 유지하고 활성 여부만 변경한다. */
+  questionTemplates = (
+    params: BaseRequest = {},
+  ): Promise<ApiResponseWithData<{ templates: AdminQuestionTemplate[] }>> =>
+    this.withData.postJson(POPUP_ADMIN_API_URL.questionTemplates, ...splitParams(params));
+
+  questionTemplate = (
+    params: { templateId: number } & BaseRequest,
+  ): Promise<ApiResponseWithData<{ adminQuestions: AdminPopupQuestion[] }>> =>
+    this.withData.postJson(POPUP_ADMIN_API_URL.questionTemplate, ...splitParams(params));
+
   updateActive = (
     params: { popupId: string; active: boolean } & BaseRequest,
   ): Promise<ApiResponseWithData<{ popup: AdminPopupDetail }>> => {
-    return this.withData.postJson(
-      POPUP_ADMIN_API_URL.updateActive,
-      ...splitParams(params),
-    );
+    return this.withData.postJson(POPUP_ADMIN_API_URL.updateActive, ...splitParams(params));
   };
 }

@@ -42,6 +42,7 @@ public final class PopupAdminPayloads {
     @Builder
     @Data
     public static class PopupInfoResponse {
+        private List<server.domain.popup.AdminPopupQuestion> adminQuestions;
         @Schema(description = "팝업 표시 설정과 유형별 콘텐츠")
         private PopupResponseDto popup;
 
@@ -53,6 +54,7 @@ public final class PopupAdminPayloads {
     @Schema(description = "관리자 팝업 등록·수정 요청")
     @Data
     public static class PopupSaveRequest {
+        private List<server.domain.popup.AdminPopupQuestion> adminQuestions;
         @NotNull
         @Schema(description = "WPF 표시 규격과 같은 팝업 상세 데이터")
         private PopupResponseDto popup;

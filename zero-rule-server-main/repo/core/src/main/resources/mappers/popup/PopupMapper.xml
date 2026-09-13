@@ -982,4 +982,32 @@
         ORDER BY status.popup_id
     </select>
 
+
+    <select id="selectAdminQuestionTemplates" resultType="server.domain.popup.AdminQuestionTemplate">
+        SELECT question_template_id AS template_id, template_name, template_type
+        FROM popup.question_template WHERE active_yn = 'Y' AND current_yn = 'Y'
+        ORDER BY template_name, question_template_id
+    </select>
+    <select id="insertAdminQuestionTemplate" resultType="long" affectData="true" flushCache="true">
+        INSERT INTO popup.question_template
+        (template_group_id, template_name, template_type, template_version, created_by, updated_by)
+        VALUES (#{groupId}, #{name}, #{type}, 1, #{auditUser}, #{auditUser})
+        RETURNING question_template_id
+    </select>
+    <select id="insertAdminQuestion" resultType="long" affectData="true" flushCache="true">
+        INSERT INTO popup.popup_question
+        (question_template_id, question_type, question_title, question_description,
+         required_yn, scored_yn, question_score, sort_order, created_by, updated_by)
+        VALUES (#{templateId}, #{question.questionType}, #{question.title}, #{question.description},
+         CASE WHEN #{question.isRequired} THEN 'Y' ELSE 'N' END,
+         CASE WHEN #{question.isScored} THEN 'Y' ELSE 'N' END,
+         #{question.questionScore}, #{question.sortOrder}, #{auditUser}, #{auditUser})
+        RETURNING question_id
+    </select>
+    <insert id="insertAdminOption">
+        INSERT INTO popup.popup_option
+        (question_id, option_value, option_text, correct_yn, sort_order, created_by, updated_by)
+        VALUES (#{questionId}, #{option.value}, #{option.text}, #{correctYn},
+                #{option.sortOrder}, #{auditUser}, #{auditUser})
+    </insert>
 </mapper>

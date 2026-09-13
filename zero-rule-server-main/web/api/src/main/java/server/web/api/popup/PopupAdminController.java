@@ -45,10 +45,13 @@ public class PopupAdminController extends ApiBaseController {
     @PostMapping("/info")
     public CLNewApiResponse<PopupAdminPayloads.PopupInfoResponse> getPopup(
             @Valid @RequestBody PopupAdminPayloads.PopupInfoRequest request) {
+        var popup = popupService.getAdminPopup(request.getPopupId());
         return resultMsg(
                 "BE00000001",
                 PopupAdminPayloads.PopupInfoResponse.builder()
-                        .popup(popupService.getAdminPopup(request.getPopupId()))
+                        .popup(popup)
+                        .adminQuestions(popupService.getAdminQuestions(
+                                popup.questionTemplateId()))
                         .targetGroups(popupService.getAdminTargetGroups(request.getPopupId()))
                         .build());
     }
@@ -65,6 +68,7 @@ public class PopupAdminController extends ApiBaseController {
                                 request.getPopup(),
                                 request.getActive(),
                                 request.getTargetGroups(),
+                                request.getAdminQuestions(),
                                 currentLgonId()))
                         .build());
     }
@@ -82,5 +86,17 @@ public class PopupAdminController extends ApiBaseController {
                                 request.getActive(),
                                 currentLgonId()))
                         .build());
+    }
+
+    @PostMapping("/question-templates")
+    public CLNewApiResponse<java.util.Map<String, Object>> getQuestionTemplates() {
+        return resultMsg("BE00000001", java.util.Map.of("templates", popupService.getAdminQuestionTemplates()));
+    }
+    public record TemplateRequest(@jakarta.validation.constraints.NotNull Long templateId) {}
+    @PostMapping("/question-template")
+    public CLNewApiResponse<java.util.Map<String, Object>> getQuestionTemplate(
+            @Valid @RequestBody TemplateRequest request) {
+        return resultMsg("BE00000001", java.util.Map.of("adminQuestions",
+                popupService.getAdminQuestions(request.templateId())));
     }
 }

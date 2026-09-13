@@ -1,16 +1,11 @@
 /*
  * Popup System - DB 3 validation queries v0.8
  * Prerequisite: schema and sample data scripts
- * Target database: popup_db
+ * Target schema: popup
  */
 
-DO $$
-BEGIN
-    IF current_database() <> 'popup_db' THEN
-        RAISE EXCEPTION 'Wrong database: connect to popup_db before running this script.';
-    END IF;
-END
-$$;
+BEGIN READ ONLY;
+SET LOCAL search_path TO popup, pg_catalog;
 
 /*
  * 1. Eligibility matrix for every sample user and popup.
@@ -353,3 +348,5 @@ LEFT JOIN popup_content content
 LEFT JOIN question_template template
   ON template.question_template_id = popup.question_template_id
 ORDER BY popup.popup_id;
+
+COMMIT;
