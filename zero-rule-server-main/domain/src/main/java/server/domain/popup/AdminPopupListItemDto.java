@@ -15,6 +15,7 @@ public record AdminPopupListItemDto(
         OffsetDateTime displayStartAt,
         OffsetDateTime displayEndAt,
         String displayMode,
+        int displayOrder,
         String sizeMode,
         String activeYn,
         String periodMode,

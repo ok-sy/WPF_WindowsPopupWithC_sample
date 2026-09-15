@@ -13,7 +13,11 @@ public record PopupQuestionDto(
         boolean isScored,
         BigDecimal questionScore,
         int sortOrder,
-        List<PopupOptionDto> options
+        List<PopupOptionDto> options,
+        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        String correctAnswer,
+        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        String answerMatchMode
 ) {
     public PopupQuestionDto {
         options = options == null ? List.of() : List.copyOf(options);

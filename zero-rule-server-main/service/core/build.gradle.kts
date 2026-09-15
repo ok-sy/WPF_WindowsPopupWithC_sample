@@ -4,6 +4,7 @@ plugins {
 
 
 dependencies {
+    testRuntimeOnly("org.postgresql:postgresql")
     implementation(projects.base)
     implementation(projects.util)
     implementation(projects.domain)

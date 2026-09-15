@@ -68,7 +68,6 @@ public class PopupAdminController extends ApiBaseController {
                                 request.getPopup(),
                                 request.getActive(),
                                 request.getTargetGroups(),
-                                request.getAdminQuestions(),
                                 currentLgonId()))
                         .build());
     }

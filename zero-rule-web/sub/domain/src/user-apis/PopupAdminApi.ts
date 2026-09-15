@@ -43,7 +43,6 @@ export class PopupAdminApi {
       popup: AdminPopupDetail;
       active: boolean;
       targetGroups: PopupTargetGroup[];
-      adminQuestions?: AdminPopupQuestion[];
     } & BaseRequest,
   ): Promise<ApiResponseWithData<{ popup: AdminPopupDetail }>> => {
     return this.withData.postJson(POPUP_ADMIN_API_URL.save, ...splitParams(params));

@@ -15,6 +15,7 @@ public record AdminPopupSaveCommand(
         OffsetDateTime displayStartAt,
         OffsetDateTime displayEndAt,
         String displayMode,
+        int displayOrder,
         String periodMode,
         Integer repeatInterval,
         String repeatDayOfWeek,

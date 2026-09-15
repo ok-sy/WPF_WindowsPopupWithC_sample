@@ -86,47 +86,65 @@ function PopupBody({ popup }: PopupPreviewProps) {
 
   if (popup.popupType === 'IMAGE') {
     const imageUrl = text(content.imageUrl, '');
-    const showDescription = content.showDescription !== false;
-    const imageWidth = Number(content.imageWidth) || undefined;
-    const imageHeight = Number(content.imageHeight) || undefined;
+    const imageFill = String(content.imageSizeMode ?? '').toUpperCase() === 'FILL';
+    const showDescription = !imageFill && content.showDescription !== false;
+    const imageWidth = imageFill ? undefined : Number(content.imageWidth) || undefined;
+    const imageHeight = imageFill ? undefined : Number(content.imageHeight) || undefined;
+    const linkUrl = text(content.linkUrl, '');
+
+    const image = imageUrl ? (
+      <Box
+        component="img"
+        src={imageUrl}
+        alt="팝업 이미지 미리보기"
+        sx={{
+          width: '100%',
+          height: imageFill ? '100%' : undefined,
+          maxWidth: imageWidth,
+          maxHeight: imageHeight,
+          flex: 1,
+          minHeight: imageFill ? 0 : 150,
+          borderRadius: imageFill ? 0 : 1,
+          border: imageFill ? 'none' : '1px solid',
+          borderColor: 'divider',
+          objectFit: imageFill ? 'cover' : 'contain',
+          bgcolor: '#f4f6fa',
+          cursor: linkUrl ? 'pointer' : 'default',
+          display: 'block',
+        }}
+      />
+    ) : (
+      <Box
+        sx={{
+          width: '100%',
+          flex: 1,
+          minHeight: 150,
+          borderRadius: 1,
+          border: '1px dashed',
+          borderColor: 'divider',
+          bgcolor: '#f4f6fa',
+          display: 'grid',
+          placeItems: 'center',
+        }}
+      >
+        이미지 URL을 입력하면 여기에 표시됩니다.
+      </Box>
+    );
+
     return (
-      <Stack spacing={1.5} alignItems="center" sx={{ height: '100%' }}>
+      <Stack spacing={imageFill ? 0 : 1.5} alignItems="center" sx={{ height: '100%', width: '100%' }}>
         {showDescription && <Typography color="text.secondary">{description}</Typography>}
-        {imageUrl ? (
+        {linkUrl && imageUrl ? (
           <Box
-            component="img"
-            src={imageUrl}
-            alt="팝업 이미지 미리보기"
-            sx={{
-              width: '100%',
-              maxWidth: imageWidth,
-              maxHeight: imageHeight,
-              flex: 1,
-              minHeight: 150,
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'divider',
-              objectFit: 'contain',
-              bgcolor: '#f4f6fa',
-            }}
-          />
-        ) : (
-          <Box
-            sx={{
-              width: '100%',
-              flex: 1,
-              minHeight: 150,
-              borderRadius: 1,
-              border: '1px dashed',
-              borderColor: 'divider',
-              bgcolor: '#f4f6fa',
-              display: 'grid',
-              placeItems: 'center',
-            }}
+            component="a"
+            href={linkUrl}
+            target="_blank"
+            rel="noreferrer"
+            sx={{ width: '100%', flex: 1, minHeight: 0, display: 'flex', textDecoration: 'none' }}
           >
-            이미지 URL을 입력하면 여기에 표시됩니다.
+            {image}
           </Box>
-        )}
+        ) : image}
       </Stack>
     );
   }
@@ -175,11 +193,15 @@ function PopupBody({ popup }: PopupPreviewProps) {
     return (
       <Stack spacing={1.5}>
         <Typography color="text.secondary">{description}</Typography>
+        {popup.popupType === 'QUIZ' && <Typography variant="body2" fontWeight={700}>
+          총점 {popup.questions.reduce((sum, q) => sum + Math.round((q.questionScore ?? 0) * 100), 0) / 100}점 · 통과 점수 {popup.passingScore ?? 0}점
+        </Typography>}
         {(popup.questions.length > 0 ? popup.questions : [null]).map((question, index) => (
           <Paper variant="outlined" sx={{ p: 2 }} key={question?.questionId ?? 'sample'}>
             <Typography fontWeight={700}>
               {index + 1}. {question?.title ?? '샘플 문항입니다.'}
               {question?.isRequired && <Typography component="span" color="error"> *</Typography>}
+              {popup.popupType === 'QUIZ' && question && <Typography component="span" color="text.secondary"> ({question.questionScore ?? 0}점)</Typography>}
             </Typography>
             {question?.description && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -194,7 +216,7 @@ function PopupBody({ popup }: PopupPreviewProps) {
                   (option) => (
                     <FormControlLabel
                       key={option.optionId}
-                      control={<Radio size="small" />}
+                      control={question?.questionType === 'MULTIPLE_CHOICE' ? <Checkbox size="small" /> : <Radio size="small" />}
                       label={option.text}
                     />
                   ),
@@ -286,8 +308,11 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
     : fitContainer
       ? { width: '100%', height: '100%' }
       : previewSize(popup);
+  const imageFill = popup.popupType === 'IMAGE'
+    && String(popup.content.imageSizeMode ?? '').toUpperCase() === 'FILL';
   const contentTitle = text(contentValue(popup, titleKey(popup.popupType)), '콘텐츠 제목');
-  const showContentTitle = popup.popupType !== 'TEXT' || popup.content.showContentHeader !== false;
+  const showContentTitle = !imageFill
+    && (popup.popupType !== 'TEXT' || popup.content.showContentHeader !== false);
 
   return (
     <Box
@@ -317,7 +342,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
         }}
       >
         {popup.showHeader && (
-          <Stack direction="row" alignItems="center" sx={{ minHeight: 52, px: 2 }}>
+          <Stack direction="row" alignItems="center" sx={{ minHeight: 52, px: 2, flexShrink: 0 }}>
             <Typography fontWeight={700} sx={{ flex: 1 }} noWrap>
               {text(popup.title, '팝업 제목')}
             </Typography>
@@ -329,7 +354,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
           </Stack>
         )}
         {popup.showHeader && <Divider />}
-        <Box sx={{ flex: 1, minHeight: 0, overflow: fitContainer ? 'hidden' : 'auto', p: 3 }}>
+        <Box sx={{ flex: 1, minHeight: 0, overflow: imageFill ? 'hidden' : 'auto', p: imageFill ? 0 : 3 }}>
           {showContentTitle && (
             <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>
               {contentTitle}
@@ -340,7 +365,7 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
         {popup.showFooter && (
           <>
             <Divider />
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.5 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.5, flexShrink: 0 }}>
               {popup.showDoNotShowAgain ? (
                 <FormControlLabel control={<Checkbox size="small" />} label="다시 보지 않기" />
               ) : (

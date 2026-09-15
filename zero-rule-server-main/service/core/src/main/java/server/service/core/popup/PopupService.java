@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import server.domain.popup.PopupEntity;
-import server.domain.popup.AdminPopupQuestion;
-import server.domain.popup.AdminQuestionTemplate;
 import server.domain.popup.AdminPopupListItemDto;
 import server.domain.popup.AdminPopupSaveCommand;
 import server.domain.popup.AdminPopupTargetCondition;
@@ -87,7 +85,7 @@ public class PopupService {
 
         List<PopupQuestionDto> questions = popup.questionTemplateId() == null
                 ? List.of()
-                : loadQuestions(List.of(popup.questionTemplateId()))
+                : loadQuestions(List.of(popup.questionTemplateId()), true)
                         .getOrDefault(popup.questionTemplateId(), List.of());
 
         return toResponseDto(popup, questions);
@@ -120,7 +118,6 @@ public class PopupService {
             PopupResponseDto popup,
             Boolean active,
             List<AdminPopupTargetGroup> targetGroups,
-            List<AdminPopupQuestion> adminQuestions,
             String auditUser) {
         validateAdminPopup(popup, active, auditUser);
         List<AdminPopupTargetGroup> normalizedGroups = normalizeTargetGroups(targetGroups);
@@ -130,7 +127,7 @@ public class PopupService {
         }
 
         AdminPopupSaveCommand command = toAdminSaveCommand(
-                popup, active, auditUser.trim(), saveAdminQuestions(popup, adminQuestions, auditUser.trim()));
+                popup, active, auditUser.trim(), saveAdminQuestions(popup, auditUser.trim()));
         int noticeRows = popupMapper.upsertAdminPopupNotice(command);
         int contentRows = popupMapper.upsertAdminPopupContent(command);
         if (noticeRows <= 0 || contentRows <= 0) {
@@ -157,6 +154,35 @@ public class PopupService {
         }
 
         return getAdminPopup(command.popupId());
+    }
+
+    private Long saveAdminQuestions(PopupResponseDto popup, String auditUser) {
+        String type = normalizeUpper(popup.popupType());
+        if (!Set.of("SURVEY", "QUIZ").contains(type)) return null;
+        boolean quiz = "QUIZ".equals(type);
+        PopupQuestionRules.validate(popup.questions(), quiz, popup.passingScore());
+        PopupEntity existing = popupMapper.selectAdminPopupById(popup.popupId().trim());
+        if (existing != null && type.equals(existing.popupType())
+                && existing.questionTemplateId() != null
+                && popup.questions().equals(loadQuestions(List.of(existing.questionTemplateId()), true)
+                        .getOrDefault(existing.questionTemplateId(), List.of()))) {
+            return existing.questionTemplateId();
+        }
+        // New snapshots preserve submitted answers and templates shared by other popups.
+        Long templateId = popupMapper.insertQuestionTemplate(popup.title().trim(), type, auditUser);
+        if (templateId == null) throw new IllegalStateException("문항 템플릿 저장에 실패했습니다.");
+        for (int i = 0; i < popup.questions().size(); i++) {
+            PopupQuestionDto question = popup.questions().get(i);
+            Long questionId = popupMapper.insertAdminQuestion(templateId, question, quiz, i + 1, auditUser);
+            if (questionId == null) throw new IllegalStateException("문항 저장에 실패했습니다.");
+            if (!"TEXT".equals(question.questionType())) {
+                for (int j = 0; j < question.options().size(); j++) {
+                    if (popupMapper.insertAdminOption(questionId, question.options().get(j), quiz,
+                            j + 1, auditUser) != 1) throw new IllegalStateException("선택지 저장에 실패했습니다.");
+                }
+            }
+        }
+        return templateId;
     }
 
     private List<AdminPopupTargetGroup> normalizeTargetGroups(
@@ -272,10 +298,13 @@ public class PopupService {
         Map<Long, List<PopupQuestionDto>> questionsByTemplate = loadQuestions(templateIds);
 
         return popups.stream()
-                .map(popup -> toResponseDto(
-                        popup,
-                        questionsByTemplate.getOrDefault(
-                                popup.questionTemplateId(), List.of())))
+                .map(popup -> {
+                    Long templateId = popup.questionTemplateId();
+                    List<PopupQuestionDto> questions = templateId == null
+                            ? List.of()
+                            : questionsByTemplate.getOrDefault(templateId, List.of());
+                    return toResponseDto(popup, questions);
+                })
                 .toList();
     }
 
@@ -475,7 +504,13 @@ public class PopupService {
                         "서술형 문항에는 선택지를 제출할 수 없습니다. questionId="
                                 + question.questionId());
             }
-            return new GradedAnswer(question, answer, List.of(), null, null);
+            if (!isYes(question.scoredYn())) {
+                return new GradedAnswer(question, answer, List.of(), null, null);
+            }
+            boolean correct = PopupQuestionRules.matchesText(
+                    answer.textAnswer(), question.correctAnswer(), question.answerMatchMode());
+            return new GradedAnswer(question, answer, List.of(),
+                    correct ? question.questionScore() : BigDecimal.ZERO, correct ? "Y" : "N");
         }
 
         if (normalizeText(answer.textAnswer()) != null) {
@@ -651,90 +686,26 @@ public class PopupService {
         return popupMapper.selectPopupStatuses(userId.trim());
     }
 
-
     @Transactional(readOnly = true)
-    public List<AdminQuestionTemplate> getAdminQuestionTemplates() {
+    public List<server.domain.popup.AdminQuestionTemplate> getAdminQuestionTemplates() {
         return popupMapper.selectAdminQuestionTemplates();
     }
 
     @Transactional(readOnly = true)
-    public List<AdminPopupQuestion> getAdminQuestions(Long templateId) {
+    public List<server.domain.popup.AdminPopupQuestion> getAdminQuestions(Long templateId) {
         if (templateId == null) return List.of();
-        List<PopupQuestionDto> questions = loadQuestions(List.of(templateId)).getOrDefault(templateId, List.of());
-        if (questions.isEmpty()) return List.of();
-        Map<Long, List<PopupOptionEntity>> options = popupMapper.selectOptionsByQuestionIds(
-                questions.stream().map(PopupQuestionDto::questionId).toList()).stream()
-                .collect(Collectors.groupingBy(PopupOptionEntity::questionId));
-        return questions.stream().map(q -> new AdminPopupQuestion(q,
-                options.getOrDefault(q.questionId(), List.of()).stream()
-                        .filter(o -> isYes(o.correctYn())).map(PopupOptionEntity::optionValue).toList())).toList();
-    }
-
-    private Long saveAdminQuestions(PopupResponseDto popup, List<AdminPopupQuestion> entries, String auditUser) {
-        if (!Set.of("SURVEY", "QUIZ").contains(normalizeUpper(popup.popupType()))) return null;
-        if (entries == null) return popup.questionTemplateId();
-        List<AdminPopupQuestion> normalized = normalizeAdminQuestions(entries);
-        if (normalized.isEmpty()) return null;
-        if (popup.questionTemplateId() != null && normalized.equals(
-                normalizeAdminQuestions(getAdminQuestions(popup.questionTemplateId())))) {
-            return popup.questionTemplateId();
-        }
-        // Copy on edit preserves shared templates and historical response question IDs.
-        Long templateId = popupMapper.insertAdminQuestionTemplate(
-                "WEB" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 27),
-                popup.title().trim().substring(0, Math.min(100, popup.title().trim().length())),
-                normalizeUpper(popup.popupType()), auditUser);
-        for (AdminPopupQuestion entry : normalized) {
-            Long questionId = popupMapper.insertAdminQuestion(templateId, entry.question(), auditUser);
-            for (PopupOptionDto option : entry.question().options()) {
-                popupMapper.insertAdminOption(questionId, option,
-                        entry.correctValues().contains(option.value()) ? "Y" : "N", auditUser);
-            }
-        }
-        return templateId;
-    }
-
-    private List<AdminPopupQuestion> normalizeAdminQuestions(List<AdminPopupQuestion> entries) {
-        List<AdminPopupQuestion> result = new java.util.ArrayList<>();
-        for (AdminPopupQuestion entry : entries) {
-            if (entry == null || entry.question() == null) throw new IllegalArgumentException("문항 정보는 필수입니다.");
-            PopupQuestionDto q = entry.question();
-            String type = normalizeUpper(q.questionType());
-            if (!Set.of("TEXT", "SINGLE_CHOICE", "MULTIPLE_CHOICE").contains(type)
-                    || q.title() == null || q.title().isBlank() || q.title().length() > 1000
-                    || (q.description() != null && q.description().length() > 2000)) {
-                throw new IllegalArgumentException("문항 유형, 제목 또는 설명이 올바르지 않습니다.");
-            }
-            if (q.isScored() && ("TEXT".equals(type) || q.questionScore() == null
-                    || q.questionScore().signum() < 0 || q.questionScore().compareTo(new BigDecimal("99999999.99")) > 0)) {
-                throw new IllegalArgumentException("채점 문항은 객관식이며 유효한 배점이 필요합니다.");
-            }
-            List<PopupOptionDto> options = new java.util.ArrayList<>();
-            Set<String> values = new HashSet<>();
-            if (!"TEXT".equals(type)) {
-                for (PopupOptionDto o : q.options()) {
-                    if (o == null || o.value() == null || o.value().isBlank() || o.value().length() > 200
-                            || !values.add(o.value()) || o.text() == null || o.text().isBlank() || o.text().length() > 1000) {
-                        throw new IllegalArgumentException("선택지 값은 중복 없이 입력하고 선택지 내용을 입력해 주세요.");
-                    }
-                    options.add(new PopupOptionDto(0L, o.value(), o.text().trim(), options.size() + 1));
-                }
-                if (options.size() < 2) throw new IllegalArgumentException("객관식 문항은 선택지가 두 개 이상 필요합니다.");
-            }
-            List<String> correct = q.isScored() ? entry.correctValues().stream().distinct().sorted().toList() : List.of();
-            if (q.isScored() && (correct.isEmpty() || !values.containsAll(correct)
-                    || ("SINGLE_CHOICE".equals(type) && correct.size() != 1))) {
-                throw new IllegalArgumentException("정답은 등록된 선택지에서 올바르게 지정해 주세요.");
-            }
-            result.add(new AdminPopupQuestion(new PopupQuestionDto(0L, q.title().trim(),
-                    normalizeText(q.description()), type, q.isRequired(), q.isScored(),
-                    q.isScored() ? q.questionScore().setScale(2, RoundingMode.HALF_UP) : null,
-                    result.size() + 1, options), correct));
-        }
-        return result;
+        return loadQuestions(List.of(templateId), true).getOrDefault(templateId, List.of()).stream()
+                .map(question -> new server.domain.popup.AdminPopupQuestion(question,
+                        question.options().stream().filter(option -> Boolean.TRUE.equals(option.isCorrect()))
+                                .map(PopupOptionDto::value).toList()))
+                .toList();
     }
 
     private Map<Long, List<PopupQuestionDto>> loadQuestions(List<Long> templateIds) {
+        return loadQuestions(templateIds, false);
+    }
+
+    private Map<Long, List<PopupQuestionDto>> loadQuestions(List<Long> templateIds, boolean admin) {
         if (templateIds.isEmpty()) {
             return Map.of();
         }
@@ -759,7 +730,7 @@ public class PopupService {
                         question -> toQuestionDto(
                                 question,
                                 optionsByQuestion.getOrDefault(
-                                        question.questionId(), List.of())),
+                                        question.questionId(), List.of()), admin),
                         Collectors.toList())));
     }
 
@@ -783,6 +754,9 @@ public class PopupService {
         }
         if (!DISPLAY_MODES.contains(normalizeUpper(popup.displayMode()))) {
             throw new IllegalArgumentException("지원하지 않는 표시 모드입니다.");
+        }
+        if (popup.displayOrder() != null && popup.displayOrder() < 1) {
+            throw new IllegalArgumentException("표시 우선순위는 1 이상이어야 합니다.");
         }
         if (!SIZE_MODES.contains(normalizeUpper(popup.sizeMode()))) {
             throw new IllegalArgumentException("지원하지 않는 크기 모드입니다.");
@@ -834,18 +808,21 @@ public class PopupService {
     private AdminPopupSaveCommand toAdminSaveCommand(
             PopupResponseDto popup,
             boolean active,
-            String auditUser, Long templateId) {
-        Map<String, Object> content = popup.content();
+            String auditUser,
+            Long questionTemplateId) {
+        Map<String, Object> content = new LinkedHashMap<>(popup.content());
+        content.remove("questions");
         String popupType = normalizeUpper(popup.popupType());
 
         return new AdminPopupSaveCommand(
                 popup.popupId().trim(),
-                templateId,
+                questionTemplateId,
                 popupType,
                 popup.title().trim(),
                 popup.displayStartAt(),
                 popup.displayEndAt(),
                 normalizeUpper(popup.displayMode()),
+                popup.displayOrder() == null ? 100 : popup.displayOrder(),
                 normalizeUpper(popup.periodMode()),
                 popup.repeatInterval(),
                 normalizeUpper(popup.repeatDayOfWeek()),
@@ -866,7 +843,7 @@ public class PopupService {
                 toYn(popup.showDoNotShowAgain()),
                 popup.hideDays(),
                 toBigDecimal(popup.completionRatio()),
-                toBigDecimal(popup.passingScore()),
+                "QUIZ".equals(popupType) ? toBigDecimal(popup.passingScore()) : null,
                 toYn(popup.allowCloseBeforeComplete()),
                 contentText(content, contentTitleKey(popupType)),
                 contentText(content, "description"),
@@ -927,13 +904,15 @@ public class PopupService {
 
     private PopupQuestionDto toQuestionDto(
             PopupQuestionEntity question,
-            List<PopupOptionEntity> options) {
+            List<PopupOptionEntity> options,
+            boolean admin) {
         List<PopupOptionDto> optionDtos = options.stream()
                 .map(option -> new PopupOptionDto(
                         option.optionId(),
                         option.optionValue(),
                         option.optionText(),
-                        option.sortOrder()))
+                        option.sortOrder(),
+                        admin ? isYes(option.correctYn()) : null))
                 .toList();
 
         return new PopupQuestionDto(
@@ -945,7 +924,9 @@ public class PopupService {
                 isYes(question.scoredYn()),
                 question.questionScore(),
                 question.sortOrder(),
-                optionDtos);
+                optionDtos,
+                admin ? question.correctAnswer() : null,
+                admin ? question.answerMatchMode() : null);
     }
 
     private PopupResponseDto toResponseDto(
@@ -961,7 +942,7 @@ public class PopupService {
         return new PopupResponseDto(
                 popup.popupId(), popup.popupType(), popup.title(),
                 popup.displayStartAt(), popup.displayEndAt(),
-                popup.displayMode(), popup.sizeMode(),
+                popup.displayMode(), popup.displayOrder(), popup.sizeMode(),
                 toDouble(popup.popupWidth(), 900),
                 toDouble(popup.popupHeight(), 620),
                 toDouble(popup.widthRatio(), 0.7),

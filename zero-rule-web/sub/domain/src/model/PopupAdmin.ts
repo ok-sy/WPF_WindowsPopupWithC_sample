@@ -10,6 +10,7 @@ export interface PopupOption {
   value: string;
   text: string;
   sortOrder: number;
+  isCorrect?: boolean | null;
 }
 
 export interface PopupQuestion {
@@ -22,6 +23,8 @@ export interface PopupQuestion {
   questionScore?: number | null;
   sortOrder: number;
   options: PopupOption[];
+  correctAnswer?: string | null;
+  answerMatchMode?: 'EXACT' | 'CONTAINS' | null;
 }
 
 /** 관리자 목록 그리드 한 행에서 사용하는 요약 정보다. */
@@ -32,6 +35,7 @@ export interface AdminPopupListItem {
   displayStartAt: PopupDateValue;
   displayEndAt: PopupDateValue;
   displayMode: PopupDisplayMode;
+  displayOrder: number;
   sizeMode: PopupSizeMode;
   activeYn: 'Y' | 'N';
   periodMode: string;
@@ -50,6 +54,7 @@ export interface AdminPopupDetail {
   displayStartAt: PopupDateValue;
   displayEndAt: PopupDateValue;
   displayMode: PopupDisplayMode;
+  displayOrder: number;
   sizeMode: PopupSizeMode;
   width: number;
   height: number;
