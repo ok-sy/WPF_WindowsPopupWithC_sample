@@ -10,134 +10,89 @@ namespace Popup.Factories
 {
     public static class PopupFactory
     {
-        private static readonly JsonSerializerOptions
-            JsonOptions =
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                };
-
-        public static PopupOptions Create(
-            PopupResponseDto popupDto)
+        private static readonly JsonSerializerOptions JsonOptions = new()
         {
-            if (popupDto == null)
+            PropertyNameCaseInsensitive = true
+        };
+
+        public static PopupOptions Create(PopupResponseDto popupDto)
+        {
+            if (popupDto == null) throw new ArgumentNullException(nameof(popupDto));
+
+            FrameworkElement content = popupDto.PopupType.Trim().ToUpperInvariant() switch
             {
-                throw new ArgumentNullException(
-                    nameof(popupDto));
-            }
-
-            FrameworkElement content =
-            popupDto.PopupType
-                .Trim()
-                .ToUpperInvariant() switch
-            {
-                "TEXT" =>
-                    CreateTextPopupView(
-                        popupDto.Content),
-
-                "IMAGE" =>
-                    CreateImagePopupView(
-                        popupDto.Content),
-
-                "VIDEO" =>
-                    CreateVideoPopupView(
-                        popupDto.Content),
-
-                "SURVEY" =>
-                    CreateSurveyPopupView(
-                        popupDto.Content,
-                        isQuizMode: false),
-
-                "QUIZ" =>
-                    CreateSurveyPopupView(
-                        popupDto.Content,
-                        isQuizMode: true),
-
-                _ =>
-                    throw new NotSupportedException(
-                        $"지원하지 않는 팝업 종류입니다: " +
-                        $"{popupDto.PopupType}")
+                "TEXT" => CreateTextPopupView(popupDto.Content),
+                "IMAGE" => CreateImagePopupView(popupDto.Content),
+                "VIDEO" => CreateVideoPopupView(popupDto.Content),
+                "SURVEY" => CreateSurveyPopupView(popupDto.Content, false),
+                "QUIZ" => CreateSurveyPopupView(popupDto.Content, true),
+                _ => throw new NotSupportedException($"지원하지 않는 팝업 종류입니다: {popupDto.PopupType}")
             };
 
             return new PopupOptions
             {
                 PopupId = popupDto.PopupId,
-
-                Title =
-                    popupDto.Title,
-
-                Content =
-                    content,
-
-                DisplayMode =
-                    ConvertPopupDisplayMode(
-                        popupDto.DisplayMode),
+                Title = popupDto.Title,
+                Content = content,
+                DisplayMode = ConvertPopupDisplayMode(popupDto.DisplayMode),
+                DisplayOrder = popupDto.DisplayOrder,
+                ShowHeader = popupDto.ShowHeader,
+                ShowCloseButton = popupDto.ShowCloseButton,
+                ShowFooter = popupDto.ShowFooter,
+                ShowDoNotShowAgain = popupDto.ShowDoNotShowAgain,
 
                 /*
-                 * 서버의 displayOrder를 그대로 전달한다.
-                 * 숫자가 작을수록 먼저 표시되고,
-                 * 같은 숫자는 PopupManager에서 하나의 그룹으로 처리한다.
+                 * Overlay 옵션은 popup_content.content_options_json 안에 저장한다.
+                 * 서버가 content JSON을 그대로 WPF에 전달하므로 별도 DB 컬럼이나
+                 * Java DTO 계약을 늘리지 않고도 관리자 설정을 전달할 수 있다.
+                 * 기존 데이터에 값이 없으면 이전 동작과 동일하게 true / 0.45를 사용한다.
                  */
-                DisplayOrder =
-                    popupDto.DisplayOrder,
+                UseBackgroundOverlay = GetContentBoolean(
+                    popupDto.Content, "useBackgroundOverlay", true),
+                BackgroundOverlayOpacity = GetContentDouble(
+                    popupDto.Content, "backgroundOverlayOpacity", 0.45),
 
-                ShowHeader =
-                    popupDto.ShowHeader,
-
-                ShowCloseButton =
-                    popupDto.ShowCloseButton,
-
-                ShowFooter =
-                    popupDto.ShowFooter,
-
-                ShowDoNotShowAgain =
-                    popupDto.ShowDoNotShowAgain,
-
-                CompletionRatio =
-                    popupDto.CompletionRatio
-                    ?? 1.0,
-
-                AllowCloseBeforeComplete =
-                    popupDto.AllowCloseBeforeComplete,
-
-                SizeMode =
-                    ConvertPopupSizeMode(
-                        popupDto.SizeMode),
-
-                Width =
-                    popupDto.Width,
-
-                Height =
-                    popupDto.Height,
-
-                WidthRatio =
-                    popupDto.WidthRatio,
-
-                HeightRatio =
-                    popupDto.HeightRatio,
-
-                MinimumWidth =
-                    popupDto.MinimumWidth,
-
-                MinimumHeight =
-                    popupDto.MinimumHeight,
-
-                MaximumWidth =
-                    popupDto.MaximumWidth,
-
-                MaximumHeight =
-                    popupDto.MaximumHeight
+                CompletionRatio = popupDto.CompletionRatio ?? 1.0,
+                AllowCloseBeforeComplete = popupDto.AllowCloseBeforeComplete,
+                SizeMode = ConvertPopupSizeMode(popupDto.SizeMode),
+                Width = popupDto.Width,
+                Height = popupDto.Height,
+                WidthRatio = popupDto.WidthRatio,
+                HeightRatio = popupDto.HeightRatio,
+                MinimumWidth = popupDto.MinimumWidth,
+                MinimumHeight = popupDto.MinimumHeight,
+                MaximumWidth = popupDto.MaximumWidth,
+                MaximumHeight = popupDto.MaximumHeight
             };
         }
 
-        private static TextPopupView CreateTextPopupView(
-            JsonElement contentJson)
+        private static bool GetContentBoolean(JsonElement content, string propertyName, bool defaultValue)
         {
-            TextPopupContentDto contentDto =
-                contentJson.Deserialize<TextPopupContentDto>(
-                    JsonOptions)
-                ?? throw new InvalidOperationException(
-                    "TEXT 팝업 content 변환에 실패했습니다.");
+            if (content.ValueKind == JsonValueKind.Object
+                && content.TryGetProperty(propertyName, out JsonElement value)
+                && (value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False))
+            {
+                return value.GetBoolean();
+            }
+            return defaultValue;
+        }
+
+        private static double GetContentDouble(JsonElement content, string propertyName, double defaultValue)
+        {
+            if (content.ValueKind == JsonValueKind.Object
+                && content.TryGetProperty(propertyName, out JsonElement value)
+                && value.ValueKind == JsonValueKind.Number
+                && value.TryGetDouble(out double result))
+            {
+                return Math.Clamp(result, 0.0, 1.0);
+            }
+            return defaultValue;
+        }
+
+        private static TextPopupView CreateTextPopupView(JsonElement contentJson)
+        {
+            TextPopupContentDto contentDto = contentJson.Deserialize<TextPopupContentDto>(JsonOptions)
+                ?? throw new InvalidOperationException("TEXT 팝업 content 변환에 실패했습니다.");
 
             return new TextPopupView(
                 contentDto.ContentTitle,
@@ -148,277 +103,128 @@ namespace Popup.Factories
                 contentDto.RightSectionTitle,
                 contentDto.RightSectionBody,
                 contentDto.AdditionalDescription,
-                contentDto.ShowHighlight
-                    ?? !string.IsNullOrWhiteSpace(contentDto.HighlightText),
-                contentDto.ShowRightSection
-                    ?? (!string.IsNullOrWhiteSpace(contentDto.RightSectionTitle)
-                        || !string.IsNullOrWhiteSpace(contentDto.RightSectionBody)
-                        || !string.IsNullOrWhiteSpace(contentDto.AdditionalDescription)),
+                contentDto.ShowHighlight ?? !string.IsNullOrWhiteSpace(contentDto.HighlightText),
+                contentDto.ShowRightSection ?? (!string.IsNullOrWhiteSpace(contentDto.RightSectionTitle)
+                    || !string.IsNullOrWhiteSpace(contentDto.RightSectionBody)
+                    || !string.IsNullOrWhiteSpace(contentDto.AdditionalDescription)),
                 contentDto.BottomDescription,
                 contentDto.ShowContentHeader,
                 contentDto.ShowPlainText,
                 contentDto.PlainText,
-                contentDto.ShowLeftSection
-                    ?? (!string.IsNullOrWhiteSpace(contentDto.LeftSectionTitle)
-                        || !string.IsNullOrWhiteSpace(contentDto.LeftSectionBody)),
-                contentDto.ShowBottomDescription
-                    ?? !string.IsNullOrWhiteSpace(contentDto.BottomDescription),
+                contentDto.ShowLeftSection ?? (!string.IsNullOrWhiteSpace(contentDto.LeftSectionTitle)
+                    || !string.IsNullOrWhiteSpace(contentDto.LeftSectionBody)),
+                contentDto.ShowBottomDescription ?? !string.IsNullOrWhiteSpace(contentDto.BottomDescription),
                 contentDto.MarkdownMode,
                 contentDto.MarkdownContent);
         }
 
-        private static FrameworkElement CreateImagePopupView(
-            JsonElement contentJson)
+        private static FrameworkElement CreateImagePopupView(JsonElement contentJson)
         {
-            ImagePopupContentDto contentDto =
-                contentJson.Deserialize<ImagePopupContentDto>(
-                    JsonOptions)
-                ?? throw new InvalidOperationException(
-                    "IMAGE 팝업 content 변환에 실패했습니다.");
+            ImagePopupContentDto contentDto = contentJson.Deserialize<ImagePopupContentDto>(JsonOptions)
+                ?? throw new InvalidOperationException("IMAGE 팝업 content 변환에 실패했습니다.");
 
-            if (string.Equals(
-                contentDto.ImageSizeMode,
-                "FILL",
-                StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(contentDto.ImageSizeMode, "FILL", StringComparison.OrdinalIgnoreCase))
             {
-                return new ImageFillPopupView(
-                    imagePath: contentDto.ImageUrl,
-                    linkUrl: contentDto.LinkUrl);
+                return new ImageFillPopupView(contentDto.ImageUrl, contentDto.LinkUrl);
             }
 
-            ImagePopupSizeMode imageSizeMode =
-                ConvertImagePopupSizeMode(
-                    contentDto.ImageSizeMode);
-
-            double? imageWidth =
-                contentDto.ImageWidth > 0
-                    ? contentDto.ImageWidth
-                    : null;
-
-            double? imageHeight =
-                contentDto.ImageHeight > 0
-                    ? contentDto.ImageHeight
-                    : null;
-
             return new ImagePopupView(
-                imageTitle:
-                    contentDto.ImageTitle,
-
-                imagePath:
-                    contentDto.ImageUrl,
-
-                imageDescription:
-                    contentDto.Description,
-
-                showDescription:
-                    contentDto.ShowDescription,
-
-                sizeMode:
-                    imageSizeMode,
-
-                imageWidth:
-                    imageWidth,
-
-                imageHeight:
-                    imageHeight);
+                contentDto.ImageTitle,
+                contentDto.ImageUrl,
+                contentDto.Description,
+                contentDto.ShowDescription,
+                ConvertImagePopupSizeMode(contentDto.ImageSizeMode),
+                contentDto.ImageWidth > 0 ? contentDto.ImageWidth : null,
+                contentDto.ImageHeight > 0 ? contentDto.ImageHeight : null);
         }
 
-        private static VideoPopupView CreateVideoPopupView(
-            JsonElement contentJson)
+        private static VideoPopupView CreateVideoPopupView(JsonElement contentJson)
         {
-            VideoPopupContentDto contentDto =
-                contentJson.Deserialize<VideoPopupContentDto>(
-                    JsonOptions)
-                ?? throw new InvalidOperationException(
-                    "VIDEO 팝업 content 변환에 실패했습니다.");
+            VideoPopupContentDto contentDto = contentJson.Deserialize<VideoPopupContentDto>(JsonOptions)
+                ?? throw new InvalidOperationException("VIDEO 팝업 content 변환에 실패했습니다.");
 
             return new VideoPopupView(
-                videoTitle:
-                    contentDto.VideoTitle,
-
-                videoPath:
-                    contentDto.VideoUrl,
-
-                videoDescription:
-                    contentDto.Description,
-
-                showDescription:
-                    contentDto.ShowDescription);
+                contentDto.VideoTitle,
+                contentDto.VideoUrl,
+                contentDto.Description,
+                contentDto.ShowDescription);
         }
 
-        private static SurveyPopupView CreateSurveyPopupView(
-            JsonElement contentJson,
-            bool isQuizMode)
+        private static SurveyPopupView CreateSurveyPopupView(JsonElement contentJson, bool isQuizMode)
         {
-            SurveyPopupContentDto contentDto =
-                contentJson.Deserialize<SurveyPopupContentDto>(
-                    JsonOptions)
-                ?? throw new InvalidOperationException(
-                    "SURVEY 또는 QUIZ content 변환에 실패했습니다.");
+            SurveyPopupContentDto contentDto = contentJson.Deserialize<SurveyPopupContentDto>(JsonOptions)
+                ?? throw new InvalidOperationException("SURVEY 또는 QUIZ content 변환에 실패했습니다.");
 
-            List<SurveyQuestion> questions =
-                new List<SurveyQuestion>();
-
-            foreach (SurveyQuestionDto questionDto
-                     in contentDto.Questions)
+            List<SurveyQuestion> questions = new();
+            foreach (SurveyQuestionDto questionDto in contentDto.Questions)
             {
-                SurveyQuestion question =
-                    new SurveyQuestion
-                    {
-                        QuestionId =
-                            questionDto.QuestionId,
-
-                        Title =
-                            questionDto.Title,
-
-                        Description =
-                            questionDto.Description,
-
-                        QuestionType =
-                            ConvertSurveyQuestionType(
-                                questionDto.QuestionType),
-
-                        IsRequired =
-                            questionDto.IsRequired,
-
-                        IsScored =
-                            questionDto.IsScored,
-
-                        CorrectAnswers =
-                            new List<string>(
-                                questionDto.CorrectAnswers)
-                    };
-
-                foreach (SurveyOptionDto optionDto
-                         in questionDto.Options)
+                SurveyQuestion question = new()
                 {
-                    question.Options.Add(
-                        new SurveyOption
-                        {
-                            OptionId =
-                                optionDto.OptionId,
+                    QuestionId = questionDto.QuestionId,
+                    Title = questionDto.Title,
+                    Description = questionDto.Description,
+                    QuestionType = ConvertSurveyQuestionType(questionDto.QuestionType),
+                    IsRequired = questionDto.IsRequired,
+                    IsScored = questionDto.IsScored,
+                    CorrectAnswers = new List<string>(questionDto.CorrectAnswers)
+                };
 
-                            Value =
-                                optionDto.Value,
-
-                            Text =
-                                optionDto.Text
-                        });
+                foreach (SurveyOptionDto optionDto in questionDto.Options)
+                {
+                    question.Options.Add(new SurveyOption
+                    {
+                        OptionId = optionDto.OptionId,
+                        Value = optionDto.Value,
+                        Text = optionDto.Text
+                    });
                 }
-
                 questions.Add(question);
             }
 
             return new SurveyPopupView(
-                title:
-                    contentDto.SurveyTitle,
-
-                description:
-                    contentDto.Description,
-
-                questions:
-                    questions,
-
-                isQuizMode:
-                    isQuizMode,
-
-                passingScore:
-                    contentDto.PassingScore);
+                contentDto.SurveyTitle,
+                contentDto.Description,
+                questions,
+                isQuizMode,
+                contentDto.PassingScore);
         }
 
-        private static SurveyQuestionType ConvertSurveyQuestionType(
-            string questionType)
-        {
-            return questionType
-                .Trim()
-                .ToUpperInvariant() switch
+        private static SurveyQuestionType ConvertSurveyQuestionType(string questionType) =>
+            questionType.Trim().ToUpperInvariant() switch
             {
-                "RATING5" =>
-                    SurveyQuestionType.Rating5,
-
-                "SINGLE_CHOICE" =>
-                    SurveyQuestionType.SingleChoice,
-
-                "MULTIPLE_CHOICE" =>
-                    SurveyQuestionType.MultipleChoice,
-
-                "TEXT" =>
-                    SurveyQuestionType.Text,
-
-                _ =>
-                    throw new ArgumentException(
-                        $"지원하지 않는 설문 질문 유형입니다: " +
-                        $"{questionType}")
+                "RATING5" => SurveyQuestionType.Rating5,
+                "SINGLE_CHOICE" => SurveyQuestionType.SingleChoice,
+                "MULTIPLE_CHOICE" => SurveyQuestionType.MultipleChoice,
+                "TEXT" => SurveyQuestionType.Text,
+                _ => throw new ArgumentException($"지원하지 않는 설문 질문 유형입니다: {questionType}")
             };
-        }
 
-        private static ImagePopupSizeMode ConvertImagePopupSizeMode(
-            string imageSizeMode)
-        {
-            return imageSizeMode
-                .Trim()
-                .ToUpperInvariant() switch
+        private static ImagePopupSizeMode ConvertImagePopupSizeMode(string imageSizeMode) =>
+            imageSizeMode.Trim().ToUpperInvariant() switch
             {
-                "ADAPTIVE" =>
-                    ImagePopupSizeMode.Adaptive,
-
-                "FIT_TO_IMAGE" =>
-                    ImagePopupSizeMode.FitToImage,
-
-                "FIXED" =>
-                    ImagePopupSizeMode.Adaptive,
-
-                _ =>
-                    throw new ArgumentException(
-                        $"지원하지 않는 이미지 크기 방식입니다: " +
-                        $"{imageSizeMode}")
+                "ADAPTIVE" => ImagePopupSizeMode.Adaptive,
+                "FIT_TO_IMAGE" => ImagePopupSizeMode.FitToImage,
+                "FIXED" => ImagePopupSizeMode.Adaptive,
+                _ => throw new ArgumentException($"지원하지 않는 이미지 크기 방식입니다: {imageSizeMode}")
             };
-        }
 
-        private static PopupDisplayMode ConvertPopupDisplayMode(
-            string displayMode)
-        {
-            return displayMode
-                .Trim()
-                .ToUpperInvariant() switch
+        private static PopupDisplayMode ConvertPopupDisplayMode(string displayMode) =>
+            displayMode.Trim().ToUpperInvariant() switch
             {
-                "SEQUENTIAL" =>
-                    PopupDisplayMode.Sequential,
-
-                "SIMULTANEOUS" =>
-                    PopupDisplayMode.Simultaneous,
-
-                _ =>
-                    throw new ArgumentException(
-                        $"지원하지 않는 팝업 표시 방식입니다: " +
-                        $"{displayMode}")
+                "SEQUENTIAL" => PopupDisplayMode.Sequential,
+                "SIMULTANEOUS" => PopupDisplayMode.Simultaneous,
+                _ => throw new ArgumentException($"지원하지 않는 팝업 표시 방식입니다: {displayMode}")
             };
-        }
 
-        private static PopupSizeMode ConvertPopupSizeMode(
-            string sizeMode)
-        {
-            return sizeMode
-                .Trim()
-                .ToUpperInvariant() switch
+        private static PopupSizeMode ConvertPopupSizeMode(string sizeMode) =>
+            sizeMode.Trim().ToUpperInvariant() switch
             {
-                "FIXED" =>
-                    PopupSizeMode.Fixed,
-
-                "VIEWPORT_RATIO" =>
-                    PopupSizeMode.ViewportRatio,
-
-                "FULLSCREEN" =>
-                    PopupSizeMode.Fullscreen,
-
-                "AUTO" =>
-                    PopupSizeMode.Auto,
-
-                _ =>
-                    throw new ArgumentException(
-                        $"지원하지 않는 팝업 크기 방식입니다: " +
-                        $"{sizeMode}")
+                "FIXED" => PopupSizeMode.Fixed,
+                "VIEWPORT_RATIO" => PopupSizeMode.ViewportRatio,
+                "RATIO" => PopupSizeMode.ViewportRatio,
+                "FULLSCREEN" => PopupSizeMode.Fullscreen,
+                "AUTO" => PopupSizeMode.Auto,
+                _ => throw new ArgumentException($"지원하지 않는 팝업 크기 방식입니다: {sizeMode}")
             };
-        }
     }
 }
