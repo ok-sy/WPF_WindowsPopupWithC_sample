@@ -26,41 +26,44 @@ namespace Popup.Managers
      */
     public class PopupManager
     {
-        /*
-         * DisplayOrder별 팝업 그룹을 저장하는 대기열이다.
-         */
         private readonly Queue<List<PopupOptions>>
             _popupGroupQueue = new();
 
-        /*
-         * 순차 표시 그룹 안에서 아직 표시하지 않은 팝업 대기열이다.
-         */
         private readonly Queue<PopupOptions>
             _sequentialGroupQueue = new();
 
-        /*
-         * 현재 동시 표시 그룹에서 열려 있는 창들이다.
-         * 모두 닫혀야 다음 DisplayOrder 그룹으로 이동한다.
-         */
         private readonly HashSet<PopupWindow>
             _activeGroupWindows = new();
 
         private readonly Window _owner;
 
         /*
-         * 현재 하나의 DisplayOrder 그룹을 처리 중인지 나타낸다.
+         * 모든 모니터의 배경 클릭을 차단하는 Overlay 관리자다.
+         * PopupWindow별로 Overlay를 만들지 않고 PopupManager가 한 세트만 관리한다.
          */
+        private readonly BackgroundOverlayManager
+            _backgroundOverlayManager = new();
+
+        private readonly bool _useBackgroundOverlay;
+
         private bool _isGroupActive;
 
+        /*
+         * backgroundOverlayOpacity
+         * 0.0 = 투명, 1.0 = 완전 불투명이다.
+         * 기존 호출부와 호환되도록 기본값을 제공한다.
+         */
         public PopupManager(
-            Window owner)
+            Window owner,
+            bool useBackgroundOverlay = true,
+            double backgroundOverlayOpacity = 0.45)
         {
             _owner = owner;
+            _useBackgroundOverlay = useBackgroundOverlay;
+            _backgroundOverlayManager.Opacity =
+                Math.Clamp(backgroundOverlayOpacity, 0.0, 1.0);
         }
 
-        /*
-         * 팝업 한 개도 그룹 처리 규칙을 동일하게 사용한다.
-         */
         public void Enqueue(
             PopupOptions popupOptions)
         {
@@ -73,10 +76,6 @@ namespace Popup.Managers
             ShowRange(new[] { popupOptions });
         }
 
-        /*
-         * 여러 팝업을 DisplayOrder 오름차순으로 정렬한 뒤
-         * 같은 순위를 하나의 그룹으로 묶는다.
-         */
         public void ShowRange(
             IEnumerable<PopupOptions> popupOptionsList)
         {
@@ -94,9 +93,23 @@ namespace Popup.Managers
                     .Select(group => group.ToList())
                     .ToList();
 
+            if (groups.Count == 0)
+            {
+                return;
+            }
+
             foreach (List<PopupOptions> group in groups)
             {
                 _popupGroupQueue.Enqueue(group);
+            }
+
+            /*
+             * 첫 팝업 그룹이 들어오는 시점에 Overlay를 먼저 띄운다.
+             * 이미 표시 중이면 BackgroundOverlayManager가 중복 생성하지 않는다.
+             */
+            if (_useBackgroundOverlay)
+            {
+                _backgroundOverlayManager.Show();
             }
 
             ShowNextGroup();
@@ -108,9 +121,6 @@ namespace Popup.Managers
             ShowRange(popupOptionsList);
         }
 
-        /*
-         * 다음 DisplayOrder 그룹을 시작한다.
-         */
         private void ShowNextGroup()
         {
             if (_isGroupActive ||
@@ -130,13 +140,6 @@ namespace Popup.Managers
 
             _isGroupActive = true;
 
-            /*
-             * 같은 우선순위의 모든 팝업이 SIMULTANEOUS일 때만
-             * 해당 그룹 전체를 동시에 표시한다.
-             *
-             * 같은 우선순위에 SEQUENTIAL과 SIMULTANEOUS가 섞여 있으면
-             * 동작이 모호해지므로 안전하게 순차 처리한다.
-             */
             bool showSimultaneously =
                 group.All(option =>
                     option.DisplayMode ==
@@ -156,9 +159,6 @@ namespace Popup.Managers
             ShowNextSequentialPopup();
         }
 
-        /*
-         * 같은 DisplayOrder의 동시 팝업을 한꺼번에 표시한다.
-         */
         private void ShowSimultaneousGroup(
             IReadOnlyList<PopupOptions> group)
         {
@@ -180,10 +180,6 @@ namespace Popup.Managers
             }
         }
 
-        /*
-         * 동시 그룹의 창 하나가 닫힐 때마다 남은 창 수를 확인한다.
-         * 마지막 창이 닫혀야 다음 우선순위 그룹으로 이동한다.
-         */
         private void SimultaneousPopupWindow_Closed(
             object? sender,
             EventArgs e)
@@ -207,9 +203,6 @@ namespace Popup.Managers
             CompleteCurrentGroup();
         }
 
-        /*
-         * 순차 그룹에서 다음 팝업 한 개를 표시한다.
-         */
         private void ShowNextSequentialPopup()
         {
             if (_sequentialGroupQueue.Count == 0)
@@ -247,25 +240,39 @@ namespace Popup.Managers
             ShowNextSequentialPopup();
         }
 
-        /*
-         * 현재 DisplayOrder 그룹의 처리를 종료하고
-         * 다음 우선순위 그룹을 시작한다.
-         */
         private void CompleteCurrentGroup()
         {
             _isGroupActive = false;
+
+            /*
+             * 다음 DisplayOrder 그룹이 있으면 Overlay는 유지한다.
+             * 모든 그룹이 끝난 시점에만 닫아서 순차 팝업 사이의 깜빡임과
+             * SIMULTANEOUS Overlay 중첩을 방지한다.
+             */
+            if (_popupGroupQueue.Count == 0)
+            {
+                _backgroundOverlayManager.Close();
+                return;
+            }
+
             ShowNextGroup();
         }
 
-        /*
-         * PopupWindow 생성과 공통 이벤트 연결을 한 곳에서 처리한다.
-         */
         private PopupWindow CreatePopupWindow(
             PopupOptions popupOptions)
         {
             PopupWindow popupWindow =
                 new PopupWindow(
                     popupOptions);
+
+            /*
+             * Overlay가 Topmost이므로 실제 팝업도 그 위에 유지한다.
+             * Overlay가 비활성화된 경우에는 기존 PopupWindow 동작을 유지한다.
+             */
+            if (_backgroundOverlayManager.IsVisible)
+            {
+                popupWindow.Topmost = true;
+            }
 
             AttachContentEvents(
                 popupWindow,
@@ -333,10 +340,6 @@ namespace Popup.Managers
                 + (openedPopupIndex * 30);
         }
 
-        /*
-         * 팝업 콘텐츠에서 발생하는 완료 이벤트를
-         * 해당 PopupWindow와 연결한다.
-         */
         private void AttachContentEvents(
             PopupWindow popupWindow,
             PopupOptions popupOptions)
@@ -426,9 +429,6 @@ namespace Popup.Managers
             }
         }
 
-        /*
-         * Window가 실제 표시/닫힌 시점의 서버 이벤트를 연결한다.
-         */
         private static void AttachLifecycleEvents(
             PopupWindow popupWindow,
             PopupOptions popupOptions)
