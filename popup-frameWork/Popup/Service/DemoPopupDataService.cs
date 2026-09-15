@@ -25,7 +25,7 @@ namespace Popup.Services
                   {
                     "popupId": "DEMO-TEXT-001",
                     "popupType": "TEXT",
-                    "title": "서비스 이용 안내",
+                    "title": "공지사항",
                     "displayMode": "SEQUENTIAL",
                     "sizeMode": "VIEWPORT_RATIO",
                     "widthRatio": 0.58,
@@ -39,14 +39,14 @@ namespace Popup.Services
                     "showFooter": true,
                     "showDoNotShowAgain": false,
                     "content": {
-                      "contentTitle": "팝업 시스템 화면 시연",
-                      "description": "현재 EXE는 WPF 전용 Demo Mode로 실행 중입니다.",
-                      "leftSectionTitle": "시연 내용",
-                      "leftSectionBody": "TEXT, IMAGE, VIDEO, SURVEY, QUIZ 팝업을 순서대로 확인할 수 있습니다.",
-                      "highlightText": "Java API와 PostgreSQL은 실행하지 않아도 됩니다.",
-                      "rightSectionTitle": "운영 모드 전환",
-                      "rightSectionBody": "appsettings.json의 DemoMode를 false로 변경하면 실제 API 조회 모드로 실행됩니다.",
-                      "additionalDescription": "팝업을 닫으면 다음 샘플 화면이 자동으로 표시됩니다."
+                      "showContentHeader": false,
+                      "showPlainText": false,
+                      "showLeftSection": false,
+                      "showRightSection": false,
+                      "showHighlight": false,
+                      "showBottomDescription": false,
+                      "markdownMode": true,
+                      "markdownContent": "# 사내 업무시스템 정기 점검 안내\n\n안녕하세요. IT운영팀입니다.\n안정적인 서비스 제공과 보안 강화를 위해 사내 업무시스템 정기 점검을 진행합니다. 임직원 여러분께서는 아래 내용을 확인하시어 업무에 참고해 주시기 바랍니다.\n\n## 점검 일정\n- **일시:** 2026년 9월 12일 22:00 ~ 9월 13일 02:00 (한국시간)\n- **대상:** 사내 포털, 전자결재, 문서관리 시스템\n- **영향:** 점검 시간 동안 서비스 접속 및 이용이 일시 중단됩니다.\n\n## 주요 작업\n- 서버 보안 업데이트 및 안정화\n- 전자결재 조회 성능 개선\n- 문서 저장소 백업 및 복구 상태 확인\n\n## 사전 확인 사항\n- 작업 중인 문서와 결재 내용은 **점검 시작 전 반드시 저장**해 주세요.\n- 긴급 결재 및 자료 다운로드는 점검 전에 완료해 주세요.\n- 점검 종료 후 접속이 원활하지 않으면 브라우저를 닫은 뒤 다시 실행해 주세요.\n\n**작업 상황에 따라 종료 시간이 변경될 수 있으며, 변경 시 별도 안내드리겠습니다.**\n\n## 문의 안내\n- **담당:** IT운영팀 서비스데스크\n- **문의:** 사내 포털의 `IT 지원 요청` 메뉴\n\n이용에 불편을 드려 양해 부탁드립니다. 더 안정적인 업무 환경을 제공하기 위해 노력하겠습니다.\n감사합니다.\n\nIT운영팀 드림"
                     }
                   },
                   {
@@ -55,17 +55,17 @@ namespace Popup.Services
                     "title": "이미지 팝업 시연",
                     "displayMode": "SEQUENTIAL",
                     "sizeMode": "FIXED",
-                    "width": 720,
-                    "height": 760,
-                    "showHeader": true,
+                    "width": 400,
+                    "height": 700,
+                    "showHeader": false,
                     "showCloseButton": true,
                     "showFooter": true,
-                    "showDoNotShowAgain": false,
+                    "showDoNotShowAgain": true,
                     "content": {
-                      "imageTitle": "이미지 콘텐츠",
+                      "imageTitle": "HYUNDAI CARD",
                       "imageUrl": "LOCAL_DEMO_IMAGE",
                       "description": "폐쇄망 Media 폴더의 로컬 이미지를 표시하는 팝업입니다.",
-                      "showDescription": true,
+                      "showDescription": false,
                       "imageSizeMode": "ADAPTIVE",
                       "imageWidth": 620,
                       "imageHeight": 520

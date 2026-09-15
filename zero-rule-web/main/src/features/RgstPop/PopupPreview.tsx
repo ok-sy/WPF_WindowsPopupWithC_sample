@@ -13,7 +13,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import type { ReactNode } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface PopupPreviewProps {
   popup: AdminPopupDetail;
@@ -33,37 +34,43 @@ function titleKey(type: AdminPopupDetail['popupType']): string {
   return 'contentTitle';
 }
 
-function inlineMarkdown(value: string): ReactNode[] {
-  return value.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean).map((part, index) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={index}>{part.slice(2, -2)}</strong>;
-    }
-    if (part.startsWith('`') && part.endsWith('`')) {
-      return <Box component="code" key={index} sx={{ px: 0.5, bgcolor: '#eef1f5', borderRadius: 0.5 }}>{part.slice(1, -1)}</Box>;
-    }
-    return part;
-  });
-}
-
 function MarkdownView({ value }: { value: string }) {
   return (
-    <Stack spacing={1}>
-      {value.split(/\r?\n/).map((line, index) => {
-        if (!line.trim()) return <Box key={index} sx={{ height: 6 }} />;
-        const heading = line.match(/^(#{1,3})\s+(.+)$/);
-        if (heading) {
-          const variant = heading[1].length === 1 ? 'h5' : heading[1].length === 2 ? 'h6' : 'subtitle1';
-          return <Typography key={index} variant={variant} fontWeight={700}>{inlineMarkdown(heading[2])}</Typography>;
-        }
-        if (/^[-*]\s+/.test(line)) {
-          return <Typography key={index} sx={{ pl: 2 }}>• {inlineMarkdown(line.replace(/^[-*]\s+/, ''))}</Typography>;
-        }
-        return <Typography key={index}>{inlineMarkdown(line)}</Typography>;
-      })}
-    </Stack>
+    <Box sx={{
+      overflowWrap: 'anywhere',
+      '& > :first-child': { mt: 0 },
+      '& > :last-child': { mb: 0 },
+      '& h1': { fontSize: 24 },
+      '& h2': { fontSize: 20 },
+      '& h3': { fontSize: 17 },
+      '& h4, & h5, & h6': { fontSize: 15 },
+      '& h1, & h2, & h3, & h4, & h5, & h6': { fontWeight: 700, lineHeight: 1.4, mt: 2, mb: 1 },
+      '& p, & ul, & ol, & blockquote, & pre': { my: 1 },
+      '& ul, & ol': { pl: 3 },
+      '& ul': { listStyleType: 'disc' },
+      '& ol': { listStyleType: 'decimal' },
+      '& strong': { fontWeight: 700 },
+      '& em': { fontStyle: 'italic' },
+      '& a': { color: 'primary.main', textDecoration: 'underline' },
+      '& blockquote': { ml: 0, pl: 2, borderLeft: '3px solid', borderColor: 'divider', color: 'text.secondary' },
+      '& code': { fontFamily: 'monospace', bgcolor: '#eef1f5', px: 0.5, borderRadius: 0.5 },
+      '& pre': { p: 1.5, bgcolor: '#eef1f5', borderRadius: 1, overflowX: 'auto' },
+      '& pre code': { p: 0 },
+      '& table': { display: 'block', maxWidth: '100%', overflowX: 'auto', borderCollapse: 'collapse', my: 1.5 },
+      '& th, & td': { border: '1px solid', borderColor: 'divider', px: 1.5, py: 1 },
+      '& th': { bgcolor: '#f4f6fa', fontWeight: 700 },
+      '& img': { maxWidth: '100%', height: 'auto' },
+      '& .contains-task-list': { listStyle: 'none', pl: 1 },
+    }}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{ a: ({ children, href }) => <a href={href} target="_blank" rel="noreferrer">{children}</a> }}
+      >
+        {value}
+      </ReactMarkdown>
+    </Box>
   );
 }
-
 function previewSize(popup: AdminPopupDetail) {
   if (popup.sizeMode === 'FULLSCREEN') return { width: '100%', height: 520 };
   if (popup.sizeMode === 'RATIO') {

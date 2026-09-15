@@ -540,7 +540,8 @@
                         PreviewMouseMove=
                             "ProgressSlider_PreviewMouseMove"
                         PreviewMouseLeftButtonUp=
-                            "ProgressSlider_PreviewMouseLeftButtonUp"/>     
+                            "ProgressSlider_PreviewMouseLeftButtonUp"
+                        LostMouseCapture="ProgressSlider_LostMouseCapture"/>
 
                         <!-- 전체 시간 -->
                         <TextBlock

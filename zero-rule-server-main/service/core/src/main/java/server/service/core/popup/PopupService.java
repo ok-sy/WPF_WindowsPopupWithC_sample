@@ -38,7 +38,18 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** 팝업 조회 결과를 기존 WPF 응답 형식으로 조립한다. */
+/**
+ * 관리자 팝업 편집과 WPF 클라이언트의 조회·응답 처리를 담당한다.
+ *
+ * <p>DB 조회와 갱신은 PopupMapper에 위임하고, 이 클래스는 입력 검증,
+ * 문항·선택지 조립, 서버 기준 채점, 콘텐츠 JSON 변환을 담당한다.
+ * 관리자 조회는 편집을 위해 비활성 팝업과 정답도 반환하지만,
+ * 사용자 조회는 노출 대상 필터를 적용하고 정답을 제외한다.</p>
+ *
+ * <p>여러 테이블을 변경하는 공개 메서드는 하나의 트랜잭션으로 실행한다.
+ * 저장 도중 예외가 발생하면 문항, 콘텐츠, 대상 조건 또는 응답 중
+ * 일부만 저장되지 않도록 함께 롤백한다.</p>
+ */
 @Service
 public class PopupService {
 
@@ -91,6 +102,11 @@ public class PopupService {
         return toResponseDto(popup, questions);
     }
 
+    /**
+     * DB의 그룹·조건 조인 행을 편집 화면의 그룹별 조건 목록으로 복원한다.
+     * LinkedHashMap으로 조회된 그룹 순서를 유지하며, 각 그룹의 이름과 설명은
+     * 해당 그룹 첫 행에서 가져온다.
+     */
     public List<AdminPopupTargetGroup> getAdminTargetGroups(String popupId) {
         if (popupId == null || popupId.isBlank()) {
             throw new IllegalArgumentException("팝업 ID는 필수입니다.");
@@ -111,7 +127,9 @@ public class PopupService {
 
     /**
      * 팝업 공통 설정과 유형별 콘텐츠를 하나의 트랜잭션으로 저장한다.
-     * popupId가 없으면 등록되고, 이미 존재하면 해당 행이 수정된다.
+     * popupId는 필수이며, 해당 ID의 DB 행이 없으면 등록하고 있으면 수정한다.
+     * 문항 템플릿을 먼저 확정한 뒤 공통 설정·콘텐츠·대상 조건을 저장하고,
+     * DB에 반영된 값을 관리자 응답 형식으로 다시 조회해 반환한다.
      */
     @Transactional
     public PopupResponseDto saveAdminPopup(
@@ -134,6 +152,8 @@ public class PopupService {
             throw new IllegalStateException("팝업 저장에 실패했습니다.");
         }
 
+        // 대상 조건은 부분 수정하지 않고 요청 목록 전체로 교체한다.
+        // 화면의 배열 순서를 1부터 시작하는 저장 순서로 변환한다.
         popupMapper.deleteAdminPopupTargets(command.popupId());
         for (int groupIndex = 0; groupIndex < normalizedGroups.size(); groupIndex++) {
             AdminPopupTargetGroup group = normalizedGroups.get(groupIndex);
@@ -156,6 +176,12 @@ public class PopupService {
         return getAdminPopup(command.popupId());
     }
 
+    /**
+     * 설문·퀴즈의 문항 구성을 검증하고 저장할 템플릿 ID를 결정한다.
+     * 기존 유형과 문항 목록이 같으면 템플릿을 재사용한다. 변경되면 새 템플릿과
+     * 문항·선택지를 생성하여 기존 제출 답안 및 다른 팝업의 참조를 보존한다.
+     * 설문·퀴즈 이외의 유형은 문항 템플릿을 연결하지 않는다.
+     */
     private Long saveAdminQuestions(PopupResponseDto popup, String auditUser) {
         String type = normalizeUpper(popup.popupType());
         if (!Set.of("SURVEY", "QUIZ").contains(type)) return null;
@@ -168,7 +194,7 @@ public class PopupService {
                         .getOrDefault(existing.questionTemplateId(), List.of()))) {
             return existing.questionTemplateId();
         }
-        // New snapshots preserve submitted answers and templates shared by other popups.
+        // 기존 문항을 덮어쓰지 않아 과거 답안이 참조하는 문항과 정답이 유지된다.
         Long templateId = popupMapper.insertQuestionTemplate(popup.title().trim(), type, auditUser);
         if (templateId == null) throw new IllegalStateException("문항 템플릿 저장에 실패했습니다.");
         for (int i = 0; i < popup.questions().size(); i++) {
@@ -185,6 +211,10 @@ public class PopupService {
         return templateId;
     }
 
+    /**
+     * 그룹 누락과 빈 조건 목록은 거절하고 이름·설명 누락은 기본 문구로 채운다.
+     * 빈 그룹 배열의 허용 여부는 호출부에서 활성 상태와 함께 판단한다.
+     */
     private List<AdminPopupTargetGroup> normalizeTargetGroups(
             List<AdminPopupTargetGroup> groups) {
         if (groups == null) {
@@ -210,6 +240,11 @@ public class PopupService {
         return normalized;
     }
 
+    /**
+     * 대상 유형별 허용 연산자와 값 형식을 검사한다.
+     * 입사일은 날짜 비교를 허용하고, 부서·직급·사번은 일치/불일치만 허용한다.
+     * 하위 부서 포함 옵션은 부서 조건에서만 유효하다.
+     */
     private AdminPopupTargetCondition normalizeTargetCondition(
             AdminPopupTargetCondition condition) {
         if (condition == null) {
@@ -282,7 +317,11 @@ public class PopupService {
         return getAdminPopup(normalizedPopupId);
     }
 
-    /** 사용자별 기간·대상·숨김 조건을 통과한 팝업을 조회한다. */
+    /**
+     * 사용자별 기간·대상·숨김 조건을 통과한 팝업을 조회한다.
+     * 노출 판정은 Mapper 쿼리에 맡기고, 중복 제거한 템플릿 ID로 문항과 선택지를
+     * 일괄 조회한다. 팝업마다 문항 조회 쿼리를 반복하지 않고 결과를 재사용한다.
+     */
     @Transactional(readOnly = true)
     public List<PopupResponseDto> getPopups(String userId) {
         if (userId == null || userId.isBlank()) {
@@ -338,6 +377,7 @@ public class PopupService {
                             + normalizedUserId + ", popupId=" + normalizedPopupId);
         }
 
+        // DB가 계산한 실제 만료 일시를 반환하여 클라이언트와 서버의 시간 차이를 피한다.
         OffsetDateTime hiddenUntil = popupMapper.selectHiddenUntil(
                 normalizedUserId, normalizedPopupId);
         if (hiddenUntil == null) {
@@ -351,7 +391,9 @@ public class PopupService {
     }
 
     /**
-     * 설문 답안을 서버의 문항·정답과 대조해 채점하고 관련 응답 테이블에 저장한다.
+     * 설문·퀴즈 답안을 서버의 문항·정답과 대조해 채점하고 응답 테이블에 저장한다.
+     * 제출 시점의 노출 자격, 문항 소속, 중복 제출, 필수 답안을 검사한 후 채점한다.
+     * 요청 ID를 응답 upsert에 전달하고 반환된 응답 ID의 하위 답안을 교체한다.
      * 모든 저장은 한 트랜잭션이므로 중간 실패 시 일부 답안만 남지 않는다.
      */
     @Transactional
@@ -378,6 +420,7 @@ public class PopupService {
         String normalizedRequestId = clientRequestId.trim();
         String normalizedUserId = userId.trim();
 
+        // 화면을 연 뒤 기간이나 대상 설정이 바뀔 수 있으므로 제출 시점에 다시 검사한다.
         boolean eligible = popupMapper.selectAvailablePopups(normalizedUserId).stream()
                 .anyMatch(popup -> normalizedPopupId.equals(popup.popupId()));
         if (!eligible) {
@@ -435,6 +478,7 @@ public class PopupService {
                 : popupMapper.selectOptionsByQuestionIds(questionIds).stream()
                 .collect(Collectors.groupingBy(PopupOptionEntity::questionId));
 
+        // 클라이언트가 보낸 점수가 아니라 DB의 배점과 정답으로 모든 답안을 먼저 검증·채점한다.
         List<GradedAnswer> gradedAnswers = answers.stream()
                 .map(answer -> gradeAnswer(
                         questionById.get(answer.questionId()),
@@ -446,6 +490,7 @@ public class PopupService {
                 .map(GradedAnswer::earnedScore)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // 비채점 문항의 null 점수는 합산에서 제외하며, 통과 점수 미설정은 0점으로 본다.
         BigDecimal passingScore = context.passingScore() == null
                 ? BigDecimal.ZERO : context.passingScore();
         String passedYn = totalScore.compareTo(passingScore) >= 0 ? "Y" : "N";
@@ -457,6 +502,7 @@ public class PopupService {
         if (responseId == null) {
             throw new IllegalStateException("설문 응답 저장에 실패했습니다.");
         }
+        // 같은 응답을 갱신할 때 이전 선택지가 남지 않도록 상세 답안을 다시 구성한다.
         popupMapper.deleteResponseAnswers(responseId);
 
         for (GradedAnswer graded : gradedAnswers) {
@@ -484,6 +530,7 @@ public class PopupService {
                 "Y".equals(passedYn), OffsetDateTime.now());
     }
 
+    /** 서술형은 공백이 아닌 텍스트, 선택형은 하나 이상의 선택지 제출을 필수 답안으로 본다. */
     private boolean hasRequiredAnswer(
             PopupQuestionEntity question,
             List<PopupSubmitAnswer> answers) {
@@ -494,6 +541,12 @@ public class PopupService {
                         : !answer.optionIds().isEmpty());
     }
 
+    /**
+     * 문항 유형에 맞는 답안인지 검사하고 저장에 필요한 채점 결과를 만든다.
+     * 서술형 정답 비교는 PopupQuestionRules의 일치 모드에 위임한다.
+     * 선택형은 해당 문항의 선택지만 허용하며 정답 집합과 완전히 같을 때만
+     * 전체 배점을 부여한다. 부분 점수는 없고 비채점 문항은 점수·정오답을 null로 둔다.
+     */
     private GradedAnswer gradeAnswer(
             PopupQuestionEntity question,
             PopupSubmitAnswer answer,
@@ -575,7 +628,12 @@ public class PopupService {
     ) {
     }
 
-    /** 영상 누적 시청시간을 기준으로 진행률과 완료 여부를 계산해 저장한다. */
+    /**
+     * 전달받은 누적 시청시간을 기준으로 진행률과 완료 여부를 계산해 저장한다.
+     * 현재 위치나 최대 도달 위치는 저장용이며 완료율의 분자로 사용하지 않는다.
+     * 누적 시청시간은 영상 길이로 제한하고 비율은 소수점 4자리에서 내림한다.
+     * 완료 기준 미설정 시 100%를 적용하고 진행률과 팝업 완료 상태를 함께 갱신한다.
+     */
     @Transactional
     public VideoProgressResponseDto saveVideoProgress(
             String popupId,
@@ -640,7 +698,11 @@ public class PopupService {
                 completed, completedAt);
     }
 
-    /** 팝업이 실제 표시되거나 닫힌 이벤트를 사용자 상태에 누적한다. */
+    /**
+     * DISPLAYED(표시) 또는 CLOSED(닫기) 이벤트를 사용자 상태에 반영한다.
+     * 활성 사용자·팝업의 존재를 확인하며, 답안 제출과 달리 노출 목록을 재조회하지 않는다.
+     * 응답 시각은 이 메서드에서 생성한 서버 현재 시각이다.
+     */
     @Transactional
     public PopupEventResponseDto recordPopupEvent(
             String popupId,
@@ -705,6 +767,11 @@ public class PopupService {
         return loadQuestions(templateIds, false);
     }
 
+    /**
+     * 템플릿들의 문항과 선택지를 각각 일괄 조회한 뒤 템플릿 ID별로 묶는다.
+     * 빈 ID 목록에는 쿼리를 실행하지 않는다. admin 플래그는 응답에 정답 정보를
+     * 포함할지 결정하며 사용자 조회의 기본값은 false다.
+     */
     private Map<Long, List<PopupQuestionDto>> loadQuestions(List<Long> templateIds, boolean admin) {
         if (templateIds.isEmpty()) {
             return Map.of();
@@ -734,6 +801,11 @@ public class PopupService {
                         Collectors.toList())));
     }
 
+    /**
+     * 공통 설정의 필수값, 지원 유형, 날짜 순서, 크기 및 점수 범위를 검사한다.
+     * 문항 규칙은 saveAdminQuestions, 대상 조건 규칙은 normalizeTargetGroups에서
+     * 별도로 검사한다. 크기는 유한한 양수인지와 최소·최대의 순서를 검사한다.
+     */
     private void validateAdminPopup(
             PopupResponseDto popup,
             Boolean active,
@@ -805,6 +877,11 @@ public class PopupService {
         }
     }
 
+    /**
+     * API 값을 DB 저장 형식(대문자 코드, Y/N, BigDecimal)으로 변환한다.
+     * 문항은 별도 테이블로 관리하므로 콘텐츠 JSON의 questions는 제거한다.
+     * 유형별 제목·미디어 URL은 개별 컬럼으로 추출하고 나머지 콘텐츠 설정도 JSON에 보관한다.
+     */
     private AdminPopupSaveCommand toAdminSaveCommand(
             PopupResponseDto popup,
             boolean active,
@@ -902,6 +979,10 @@ public class PopupService {
         return value == null ? null : BigDecimal.valueOf(value);
     }
 
+    /**
+     * 문항과 선택지를 API 구조로 조립한다. 관리자에게만 선택지 정답 여부,
+     * 서술형 정답 및 일치 모드를 제공하고 사용자 응답에는 해당 값을 null로 내려준다.
+     */
     private PopupQuestionDto toQuestionDto(
             PopupQuestionEntity question,
             List<PopupOptionEntity> options,
@@ -929,6 +1010,11 @@ public class PopupService {
                 admin ? question.answerMatchMode() : null);
     }
 
+    /**
+     * DB의 숫자·Y/N 값과 콘텐츠 JSON을 웹 및 WPF 공용 응답으로 변환한다.
+     * 크기 설정의 DB null 값에는 기본값을 적용하고, 선택 설정인 완료율·통과 점수는
+     * null을 유지한다. 설문·퀴즈 문항은 최상위와 content.questions에 함께 제공한다.
+     */
     private PopupResponseDto toResponseDto(
             PopupEntity popup,
             List<PopupQuestionDto> questions) {
@@ -964,6 +1050,10 @@ public class PopupService {
                 questions, content);
     }
 
+    /**
+     * 미설정 콘텐츠는 빈 맵으로 취급한다. JSON이 손상된 경우에는 빈 내용으로 숨기지 않고
+     * 팝업 ID와 원인 예외를 포함해 실패시켜 어떤 데이터가 잘못됐는지 추적할 수 있게 한다.
+     */
     private Map<String, Object> parseContentJson(String popupId, String contentJson) {
         if (contentJson == null || contentJson.isBlank()) {
             return Map.of();

@@ -775,6 +775,7 @@ namespace Popup.Views.Contents
 
             _isSeeking = true;
 
+            _progressTimer.Stop();
             _controlHideTimer.Stop();
             _progressSaveTimer.Stop();
 
@@ -865,30 +866,42 @@ namespace Popup.Views.Contents
         object sender,
         MouseButtonEventArgs e)
         {
-            if (!_isMediaOpened)
+            if (!_isSeeking)
             {
-                _isSeeking = false;
-
-                ProgressSlider.ReleaseMouseCapture();
-
                 return;
             }
 
-            /*
-             * 마우스를 놓은 최종 위치로
-             * 실제 영상 시간을 한 번만 이동한다.
-             */
-            PopupVideo.Position =
-                TimeSpan.FromSeconds(
-                    ProgressSlider.Value);
+            MoveProgressSliderByMouse(e);
+            FinishSeeking();
+            e.Handled = true;
+        }
 
-            CurrentTimeText.Text =
-                FormatTime(
-                    PopupVideo.Position);
+        private void ProgressSlider_LostMouseCapture(
+            object sender,
+            MouseEventArgs e)
+        {
+            // 창 전환 등으로 MouseUp을 받지 못해도 일시정지 상태에 갇히지 않게 한다.
+            if (_isSeeking)
+            {
+                FinishSeeking();
+            }
+        }
 
+        private void FinishSeeking()
+        {
+            TimeSpan targetPosition = TimeSpan.FromSeconds(ProgressSlider.Value);
             _isSeeking = false;
-
             ProgressSlider.ReleaseMouseCapture();
+
+            if (!_isMediaOpened)
+            {
+                return;
+            }
+
+            // 탐색 직후 Position은 아직 이전 위치일 수 있으므로 선택값으로 표시한다.
+            // 짧게 건너뛴 구간도 실제 시청시간에 합산하지 않도록 측정 기준을 옮긴다.
+            CurrentTimeText.Text = FormatTime(targetPosition);
+            _lastObservedPositionSeconds = targetPosition.TotalSeconds;
 
             /*
              * 드래그 전 영상이 재생 중이었던 경우에만
@@ -900,11 +913,12 @@ namespace Popup.Views.Contents
              */
             if (_wasPlayingBeforeSeeking)
             {
-                PlayVideo();
+                PlayVideo(targetPosition);
             }
             else
             {
                 PopupVideo.Pause();
+                PopupVideo.Position = targetPosition;
 
                 _isPlaying = false;
 
@@ -929,7 +943,6 @@ namespace Popup.Views.Contents
                 ShowVideoControls();
             }
 
-            e.Handled = true;
         }
         /*
          * 영상 영역에 마우스가 들어오면
@@ -1636,7 +1649,7 @@ namespace Popup.Views.Contents
             }
         }
 
-        private void PlayVideo()
+        private void PlayVideo(TimeSpan? targetPosition = null)
         {
             if (!_isMediaOpened)
             {
@@ -1646,7 +1659,8 @@ namespace Popup.Views.Contents
             /*
              * 영상이 끝난 상태라면 처음부터 다시 재생한다.
              */
-            if (PopupVideo.NaturalDuration.HasTimeSpan
+            if (!targetPosition.HasValue
+                && PopupVideo.NaturalDuration.HasTimeSpan
                 && PopupVideo.Position
                     >= PopupVideo.NaturalDuration.TimeSpan)
             {
@@ -1655,6 +1669,13 @@ namespace Popup.Views.Contents
             }
 
             PopupVideo.Play();
+
+            // 명시적 탐색은 '끝났으면 처음부터' 처리와 분리한다.
+            // 재생 상태를 복원한 뒤 선택한 위치를 적용하고 즉시 Position을 재조회하지 않는다.
+            if (targetPosition.HasValue)
+            {
+                PopupVideo.Position = targetPosition.Value;
+            }
 
             _isPlaying = true;
 

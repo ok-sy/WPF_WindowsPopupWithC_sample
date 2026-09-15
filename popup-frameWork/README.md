@@ -22,13 +22,14 @@ VIDEO, SURVEY, QUIZ 버튼으로 원하는 화면을 하나씩 열거나, `전�
 
 ### 폐쇄망 Demo 미디어
 
-다음 파일명으로 미디어를 추가하면 빌드와 publish 결과의 `Media` 폴더로
-자동 복사된다.
+다음 파일명으로 미디어를 추가하면 빌드 시 내장 리소스로 포함된다.
+단일 EXE 배포에서는 별도 `Media` 폴더 없이 이미지·영상 데모를 실행할 수 있다.
 
 ```text
 Popup/Media/demo-image.jpg
 Popup/Media/demo-video.mp4
 ```
 
-실행할 때는 특정 PC의 경로를 사용하지 않고 `Popup.exe`가 있는 폴더를 기준으로
-`Media/demo-image.jpg`, `Media/demo-video.mp4`를 찾는다.
+실행 시 `%LOCALAPPDATA%/Popup/DemoMedia/<콘텐츠 해시>/`에 내장 미디어를 추출한다.
+캐시 파일의 해시가 일치하면 재사용하며, EXE 옆 `Media/demo-image.jpg` 또는
+`Media/demo-video.mp4`가 있으면 해당 외부 파일을 우선 사용한다.
