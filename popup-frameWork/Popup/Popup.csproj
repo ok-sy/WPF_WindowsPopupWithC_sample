@@ -34,8 +34,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!--
+		운영 PC의 WebView2 Runtime 134 계열과 개발 SDK 버전을 맞춘다.
+		폐쇄망 운영 환경에서 Runtime보다 새로운 SDK API를 실수로 사용하는
+		호환성 문제를 방지하기 위해 Runtime 134 대응 Release SDK를 사용한다.
+		-->
 		<PackageReference Include="Microsoft.Web.WebView2"
-						  Version="1.0.4078.44" />
+						  Version="1.0.3124.44" />
 	</ItemGroup>
 
 	<!--
