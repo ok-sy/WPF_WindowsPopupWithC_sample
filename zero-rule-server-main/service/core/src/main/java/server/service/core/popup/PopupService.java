@@ -924,7 +924,7 @@ public class PopupService {
                 toYn(popup.allowCloseBeforeComplete()),
                 contentText(content, contentTitleKey(popupType)),
                 contentText(content, "description"),
-                contentText(content, "leftSectionBody"),
+                contentText(content, "plainText"),
                 contentText(content, mediaUrlKey(popupType)),
                 contentText(content, "linkUrl"),
                 writeContentJson(popup.popupId(), content),

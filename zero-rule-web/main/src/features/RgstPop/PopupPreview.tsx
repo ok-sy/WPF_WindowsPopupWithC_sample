@@ -1,3 +1,4 @@
+import normalizePopupLink from './normalizePopupLink';
 import type { AdminPopupDetail } from '@local/domain';
 import CloseIcon from '@mui/icons-material/Close';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
@@ -20,6 +21,7 @@ interface PopupPreviewProps {
   popup: AdminPopupDetail;
   standalone?: boolean;
   fitContainer?: boolean;
+  showBackground?: boolean;
   onClose?: () => void;
 }
 
@@ -242,29 +244,33 @@ function PopupBody({ popup }: PopupPreviewProps) {
   const markdownMode = content.markdownMode === true;
   const showContentHeader = content.showContentHeader !== false;
   const showPlainText = content.showPlainText !== false;
-  const showLeftSection =
-    content.showLeftSection == null
-      ? Boolean(content.leftSectionTitle || content.leftSectionBody)
-      : content.showLeftSection === true;
-  const showRightSection =
-    content.showRightSection == null
-      ? Boolean(content.rightSectionTitle || content.rightSectionBody || content.additionalDescription)
-      : content.showRightSection === true;
   const showHighlight =
     content.showHighlight == null ? Boolean(content.highlightText) : content.showHighlight === true;
 
   const showBottomDescription =
     content.showBottomDescription == null
-      ? Boolean(content.bottomDescription)
+      ? Boolean(content.bottomDescription || content.bottomDescriptionUrl)
       : content.showBottomDescription === true;
 
+  const bottomUrl = normalizePopupLink(content.bottomDescriptionUrl);
+  const bottomLabel = String(content.bottomDescription ?? '').trim() || bottomUrl;
+  const bottomDescription = showBottomDescription && bottomLabel && (
+    bottomUrl ? <Paper component="a" href={bottomUrl} target="_blank" rel="noopener noreferrer"
+      variant="outlined" title={bottomUrl}
+      sx={{ display: 'block', p: 2, bgcolor: '#f8f9fc', whiteSpace: 'pre-wrap', color: '#2563eb',
+        cursor: 'pointer', textDecoration: 'underline', overflowWrap: 'anywhere',
+        '&:hover, &:focus-visible': { color: '#1d4ed8', bgcolor: '#eff6ff' } }}>
+      {bottomLabel}
+    </Paper> : <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8f9fc', whiteSpace: 'pre-wrap' }}>
+      {bottomLabel}
+    </Paper>
+  );
   if (markdownMode) {
-    return (
-      <Stack spacing={2}>
-        {showContentHeader && <Typography color="text.secondary">{description}</Typography>}
-        <MarkdownView value={text(content.markdownContent, 'Markdown 내용을 입력해 주세요.')} />
-      </Stack>
-    );
+    return <Stack spacing={2}>
+      {showContentHeader && <Typography color="text.secondary">{description}</Typography>}
+      <MarkdownView value={text(content.markdownContent, 'Markdown 내용을 입력해 주세요.')} />
+      {bottomDescription}
+    </Stack>;
   }
 
   return (
@@ -275,41 +281,20 @@ function PopupBody({ popup }: PopupPreviewProps) {
           {String(content.plainText ?? '')}
         </Typography>
       )}
-      {(showLeftSection || showRightSection) && (
-      <Box sx={{ display: 'grid', gridTemplateColumns: showLeftSection && showRightSection ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: 2 }}>
-        {showLeftSection && <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
-          <Typography fontWeight={700} sx={{ mb: 1 }}>
-            {text(content.leftSectionTitle, '왼쪽 카드 제목')}
-          </Typography>
-          <Typography>{text(content.leftSectionBody, '왼쪽 카드 본문')}</Typography>
-        </Paper>}
-        {showRightSection && <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fff', whiteSpace: 'pre-wrap' }}>
-          <Typography fontWeight={700} sx={{ mb: 1 }}>
-            {text(content.rightSectionTitle, '오른쪽 카드 제목')}
-          </Typography>
-          <Typography>{text(content.rightSectionBody, '오른쪽 카드 본문')}</Typography>
-          <Divider sx={{ my: 2 }} />
-          <Typography color="text.secondary">
-            {text(content.additionalDescription, '추가 설명')}
-          </Typography>
-        </Paper>}
-      </Box>
-      )}
       {showHighlight && (
         <Box sx={{ p: 1.5, border: '1px solid #93c5fd', borderRadius: 1, bgcolor: '#eff6ff', color: '#1d4ed8' }}>
           {text(content.highlightText, '강조 문구')}
         </Box>
       )}
-      {showBottomDescription && (
-        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8f9fc', whiteSpace: 'pre-wrap' }}>
-          {String(content.bottomDescription)}
-        </Paper>
-      )}
+      {bottomDescription}
     </Stack>
   );
 }
 
-export default function PopupPreview({ popup, standalone = false, fitContainer = false, onClose }: PopupPreviewProps) {
+export default function PopupPreview({ popup, standalone = false, fitContainer = false, showBackground = !standalone, onClose }: PopupPreviewProps) {
+  const overlayEnabled = popup.content.useBackgroundOverlay !== false;
+  const requestedOpacity = Number(popup.content.backgroundOverlayOpacity ?? 0.45);
+  const overlayOpacity = Number.isFinite(requestedOpacity) ? Math.max(0, Math.min(1, requestedOpacity)) : 0.45;
   const size = standalone
     ? { width: '100%', height: '100vh' }
     : fitContainer
@@ -326,7 +311,15 @@ export default function PopupPreview({ popup, standalone = false, fitContainer =
       sx={{
         minHeight: standalone ? '100vh' : fitContainer ? 0 : 570,
         height: fitContainer ? '100%' : undefined,
-        p: standalone || fitContainer ? 0 : 2,
+        p: showBackground ? 2 : 0,
+        flex: fitContainer ? 1 : undefined,
+        boxSizing: 'border-box',
+        position: 'relative',
+        isolation: 'isolate',
+        '&::before': showBackground && overlayEnabled ? {
+          content: '""', position: 'absolute', inset: 0,
+          bgcolor: `rgba(0, 0, 0, ${overlayOpacity})`, zIndex: -1,
+        } : undefined,
         overflow: 'hidden',
         borderRadius: 1,
         bgcolor: '#e9edf4',

@@ -97,23 +97,15 @@ namespace Popup.Factories
             return new TextPopupView(
                 contentDto.ContentTitle,
                 contentDto.Description,
-                contentDto.LeftSectionTitle,
-                contentDto.LeftSectionBody,
                 contentDto.HighlightText,
-                contentDto.RightSectionTitle,
-                contentDto.RightSectionBody,
-                contentDto.AdditionalDescription,
                 contentDto.ShowHighlight ?? !string.IsNullOrWhiteSpace(contentDto.HighlightText),
-                contentDto.ShowRightSection ?? (!string.IsNullOrWhiteSpace(contentDto.RightSectionTitle)
-                    || !string.IsNullOrWhiteSpace(contentDto.RightSectionBody)
-                    || !string.IsNullOrWhiteSpace(contentDto.AdditionalDescription)),
                 contentDto.BottomDescription,
+                contentDto.BottomDescriptionUrl,
                 contentDto.ShowContentHeader,
                 contentDto.ShowPlainText,
                 contentDto.PlainText,
-                contentDto.ShowLeftSection ?? (!string.IsNullOrWhiteSpace(contentDto.LeftSectionTitle)
-                    || !string.IsNullOrWhiteSpace(contentDto.LeftSectionBody)),
-                contentDto.ShowBottomDescription ?? !string.IsNullOrWhiteSpace(contentDto.BottomDescription),
+                contentDto.ShowBottomDescription ?? (!string.IsNullOrWhiteSpace(contentDto.BottomDescription)
+                    || !string.IsNullOrWhiteSpace(contentDto.BottomDescriptionUrl)),
                 contentDto.MarkdownMode,
                 contentDto.MarkdownContent);
         }

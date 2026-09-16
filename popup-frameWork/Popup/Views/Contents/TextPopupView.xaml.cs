@@ -27,19 +27,13 @@ namespace Popup.Views.Contents
         public TextPopupView(
             string contentTitle,
             string description,
-            string leftSectionTitle,
-            string leftSectionBody,
             string highlightText,
-            string rightSectionTitle,
-            string rightSectionBody,
-            string additionalDescription,
             bool showHighlight,
-            bool showRightSection,
             string bottomDescription,
+            string bottomDescriptionUrl,
             bool showContentHeader,
             bool showPlainText,
             string plainText,
-            bool showLeftSection,
             bool showBottomDescription,
             bool? markdownMode,
             string markdownContent)
@@ -76,63 +70,41 @@ namespace Popup.Views.Contents
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
-                LeftSectionTitleText.Text =
-                    leftSectionTitle;
-
-                LeftSectionBodyText.Text =
-                    leftSectionBody;
-
-                HighlightTextBlock.Text =
-                    highlightText;
-
-                RightSectionTitleText.Text =
-                    rightSectionTitle;
-
-                RightSectionBodyText.Text =
-                    rightSectionBody;
-
-                AdditionalDescriptionText.Text =
-                    additionalDescription;
-
-                HighlightContainer.Visibility = showHighlight
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-
-                RightSectionCard.Visibility = showRightSection
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-
-                RightSectionSpacerColumn.Width = showRightSection
-                    ? new GridLength(18)
-                    : new GridLength(0);
-
-                RightSectionColumn.Width = showRightSection
-                    ? new GridLength(1, GridUnitType.Star)
-                    : new GridLength(0);
-                RightSectionColumn.MinWidth = showRightSection
-                    ? 260
-                    : 0;
-
-                LeftSectionCard.Visibility = showLeftSection
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-                LeftSectionColumn.Width = showLeftSection
-                    ? new GridLength(1, GridUnitType.Star)
-                    : new GridLength(0);
-                LeftSectionColumn.MinWidth = showLeftSection ? 260 : 0;
-
-                RightSectionSpacerColumn.Width = showLeftSection && showRightSection
-                    ? new GridLength(18)
-                    : new GridLength(0);
-                ContentColumnsGrid.Visibility = !useMarkdown && (showLeftSection || showRightSection)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-
+                HighlightTextBlock.Text = highlightText;
                 HighlightContainer.Visibility = !useMarkdown && showHighlight
                     ? Visibility.Visible
                     : Visibility.Collapsed;
 
-                BottomDescriptionText.Text = bottomDescription;
+                if (string.IsNullOrWhiteSpace(bottomDescription)) bottomDescription = bottomDescriptionUrl;
+                BottomDescriptionText.Inlines.Clear();
+                if (Uri.TryCreate(bottomDescriptionUrl?.Trim(), UriKind.Absolute, out Uri? linkUri)
+                    && (linkUri.Scheme == Uri.UriSchemeHttp || linkUri.Scheme == Uri.UriSchemeHttps))
+                {
+                    var link = new Hyperlink(new Run(bottomDescription))
+                    {
+                        NavigateUri = linkUri,
+                        ToolTip = linkUri.AbsoluteUri
+                    };
+                    link.RequestNavigate += (_, args) =>
+                    {
+                        args.Handled = true;
+                        try
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = linkUri.AbsoluteUri,
+                                UseShellExecute = true
+                            });
+                        }
+                        catch (Exception)
+                        {
+                            MessageBox.Show("링크를 열지 못했습니다. 기본 브라우저 설정을 확인해 주세요.", "링크 오류",
+                                MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }
+                    };
+                    BottomDescriptionText.Inlines.Add(link);
+                }
+                else BottomDescriptionText.Inlines.Add(new Run(bottomDescription));
                 BottomDescriptionText.Visibility =
                     !showBottomDescription || string.IsNullOrWhiteSpace(bottomDescription)
                         ? Visibility.Collapsed

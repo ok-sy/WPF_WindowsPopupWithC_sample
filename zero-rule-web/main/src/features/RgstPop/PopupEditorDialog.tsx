@@ -1,3 +1,4 @@
+import normalizePopupLink from './normalizePopupLink';
 import handleError from '@/lib/handle-error';
 import { useApi } from '@/provider';
 import type {
@@ -56,9 +57,9 @@ function createDefaultPopup(): AdminPopupDetail {
     questions: [],
     content: {
       contentTitle: '', description: '', showContentHeader: true, plainText: '',
-      showPlainText: true, leftSectionTitle: '', leftSectionBody: '', showLeftSection: false,
-      highlightText: '', showHighlight: false, rightSectionTitle: '', rightSectionBody: '',
-      additionalDescription: '', showRightSection: false, bottomDescription: '',
+      showPlainText: true,
+      highlightText: '', showHighlight: false,
+      bottomDescription: '', bottomDescriptionUrl: '',
       showBottomDescription: false, markdownMode: false, markdownContent: '',
       showDescription: true, imageSizeMode: 'FIXED', imageWidth: 0, imageHeight: 0,
       linkUrl: '', showControls: true, allowFullScreen: true,
@@ -167,10 +168,15 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
     }
     if (!popup.popupId.trim() || !popup.title.trim()) { toast.warn('팝업 ID와 제목을 입력해 주세요.'); return; }
     if (!Number.isInteger(popup.displayOrder) || popup.displayOrder < 1) { toast.warn('표시 우선순위는 1 이상의 정수로 입력해 주세요.'); return; }
+    const bottomUrl = contentValue(popup, 'bottomDescriptionUrl').trim();
+    if (popup.popupType === 'TEXT' && bottomUrl && !normalizePopupLink(bottomUrl)) {
+      toast.warn('하단 설명 연결 URL을 확인해 주세요. http 또는 https 주소만 사용할 수 있습니다.'); return;
+    }
     try {
       setLoading(true);
       const requestPopup: AdminPopupDetail = {
         ...popup, popupId: popup.popupId.trim(), title: popup.title.trim(),
+        content: popup.popupType === 'TEXT' ? { ...popup.content, bottomDescriptionUrl: normalizePopupLink(bottomUrl) ?? '' } : popup.content,
         displayStartAt: toApiDate(toDateTimeLocal(popup.displayStartAt)),
         displayEndAt: toApiDate(toDateTimeLocal(popup.displayEndAt)),
       };
@@ -198,16 +204,11 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
   const isMedia = popup.popupType === 'IMAGE' || popup.popupType === 'VIDEO';
   const isSurvey = popup.popupType === 'SURVEY' || popup.popupType === 'QUIZ';
   const imageFillMode = popup.popupType === 'IMAGE' && contentValue(popup, 'imageSizeMode').toUpperCase() === 'FILL';
-  const showTextRightSection = popup.content.showRightSection == null
-    ? Boolean(contentValue(popup, 'rightSectionTitle') || contentValue(popup, 'rightSectionBody') || contentValue(popup, 'additionalDescription'))
-    : popup.content.showRightSection === true;
   const showTextHighlight = popup.content.showHighlight == null ? Boolean(contentValue(popup, 'highlightText')) : popup.content.showHighlight === true;
   const showTextContentHeader = popup.content.showContentHeader !== false;
   const showTextPlainText = popup.content.showPlainText !== false;
-  const showTextLeftSection = popup.content.showLeftSection == null
-    ? Boolean(contentValue(popup, 'leftSectionTitle') || contentValue(popup, 'leftSectionBody')) : popup.content.showLeftSection === true;
   const showTextBottomDescription = popup.content.showBottomDescription == null
-    ? Boolean(contentValue(popup, 'bottomDescription')) : popup.content.showBottomDescription === true;
+    ? Boolean(contentValue(popup, 'bottomDescription') || contentValue(popup, 'bottomDescriptionUrl')) : popup.content.showBottomDescription === true;
   const markdownMode = popup.content.markdownMode === true;
   const useBackgroundOverlay = popup.content.useBackgroundOverlay !== false;
   const backgroundOverlayOpacity = Math.max(0, Math.min(1, Number(popup.content.backgroundOverlayOpacity ?? 0.45)));
@@ -319,23 +320,15 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
                 <FormControlLabel control={<Switch checked={showTextContentHeader} onChange={(_, v) => updateContent('showContentHeader', v)} />} label="콘텐츠 제목·설명" />
                 <FormControlLabel control={<Switch checked={markdownMode} onChange={(_, v) => updateContent('markdownMode', v)} />} label="Markdown 모드" />
                 {!markdownMode && <FormControlLabel control={<Switch checked={showTextPlainText} onChange={(_, v) => updateContent('showPlainText', v)} />} label="일반 텍스트" />}
-                {!markdownMode && <FormControlLabel control={<Switch checked={showTextLeftSection} onChange={(_, v) => updateContent('showLeftSection', v)} />} label="왼쪽 카드" />}
-                {!markdownMode && <FormControlLabel control={<Switch checked={showTextRightSection} onChange={(_, v) => updateContent('showRightSection', v)} />} label="오른쪽 카드 사용" />}
                 {!markdownMode && <FormControlLabel control={<Switch checked={showTextHighlight} onChange={(_, v) => updateContent('showHighlight', v)} />} label="강조 문구 사용" />}
-                {!markdownMode && <FormControlLabel control={<Switch checked={showTextBottomDescription} onChange={(_, v) => updateContent('showBottomDescription', v)} />} label="하단 설명" />}
+                {<FormControlLabel control={<Switch checked={showTextBottomDescription} onChange={(_, v) => updateContent('showBottomDescription', v)} />} label="하단 설명" />}
               </Stack>
               {markdownMode ? <TextField label="Markdown 내용" value={contentValue(popup, 'markdownContent')} multiline minRows={14} placeholder={'# 제목\n\n일반 문장과 **강조 문장**\n\n- 목록 1\n- 목록 2'} onChange={(e) => updateContent('markdownContent', e.target.value)} /> : <Stack spacing={2}>
                 <TextField label="일반 텍스트" disabled={!showTextPlainText} value={contentValue(popup, 'plainText')} multiline minRows={4} onChange={(e) => updateContent('plainText', e.target.value)} />
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <TextField label="왼쪽 카드 제목" disabled={!showTextLeftSection} value={contentValue(popup, 'leftSectionTitle')} onChange={(e) => updateContent('leftSectionTitle', e.target.value)} />
-                  <TextField label="오른쪽 카드 제목" disabled={!showTextRightSection} value={contentValue(popup, 'rightSectionTitle')} onChange={(e) => updateContent('rightSectionTitle', e.target.value)} />
-                  <TextField label="왼쪽 카드 본문" disabled={!showTextLeftSection} value={contentValue(popup, 'leftSectionBody')} multiline minRows={4} onChange={(e) => updateContent('leftSectionBody', e.target.value)} />
-                  <TextField label="오른쪽 카드 본문" disabled={!showTextRightSection} value={contentValue(popup, 'rightSectionBody')} multiline minRows={4} onChange={(e) => updateContent('rightSectionBody', e.target.value)} />
-                </Box>
                 <TextField label="강조 문구" disabled={!showTextHighlight} value={contentValue(popup, 'highlightText')} onChange={(e) => updateContent('highlightText', e.target.value)} />
-                <TextField label="추가 설명" disabled={!showTextRightSection} value={contentValue(popup, 'additionalDescription')} multiline minRows={2} onChange={(e) => updateContent('additionalDescription', e.target.value)} />
-                <TextField label="하단 설명" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescription')} multiline minRows={2} onChange={(e) => updateContent('bottomDescription', e.target.value)} />
               </Stack>}
+                <TextField label="하단 설명" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescription')} multiline minRows={2} onChange={(e) => updateContent('bottomDescription', e.target.value)} />
+                <TextField label="하단 설명 연결 URL" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescriptionUrl')} placeholder="https://example.com" helperText="https:// 생략 시 자동으로 붙입니다. 설명이 없으면 URL을 표시하며, 클릭하면 새 창으로 이동합니다." onChange={(e) => updateContent('bottomDescriptionUrl', e.target.value)} />
             </Stack>}
 
             {isMedia && <TextField label={popup.popupType === 'IMAGE' ? '이미지 URL' : '영상 URL'} value={contentValue(popup, popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl')} onChange={(e) => updateContent(popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl', e.target.value)} />}
@@ -381,9 +374,16 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
         </Box>
       </DialogContent>
       <DialogActions><Button onClick={onClose} disabled={loading}>취소</Button><Button variant="contained" onClick={savePopup} disabled={loading}>저장</Button></DialogActions>
-      <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} fullScreen={popup.sizeMode === 'FULLSCREEN'} maxWidth={false}
+      <Dialog open={previewOpen} onClose={(_, reason) => {
+        if (reason !== 'backdropClick' || !useBackgroundOverlay) setPreviewOpen(false);
+      }} BackdropProps={{ sx: { backgroundColor: useBackgroundOverlay ? `rgba(0, 0, 0, ${backgroundOverlayOpacity})` : 'transparent' } }} fullScreen={popup.sizeMode === 'FULLSCREEN'} maxWidth={false}
         PaperProps={popup.sizeMode === 'FULLSCREEN' ? undefined : { sx: { width: modalPreviewSize.width, height: modalPreviewSize.height, maxWidth: '96vw', maxHeight: '96vh', m: 1, overflow: 'hidden' } }}>
-        <DialogContent sx={{ p: 0, overflow: 'hidden' }}><PopupPreview popup={popup} fitContainer onClose={() => setPreviewOpen(false)} /></DialogContent>
+        <Button variant="contained" color="primary" aria-label="실제 크기 미리보기 종료"
+          onClick={() => setPreviewOpen(false)}
+          sx={{ position: 'fixed', top: 12, right: 12, zIndex: (theme) => theme.zIndex.modal + 1, boxShadow: 3 }}>
+          미리보기 종료 (Esc)
+        </Button>
+        <DialogContent sx={{ p: 0, overflow: 'hidden' }}><PopupPreview popup={popup} fitContainer showBackground={false} onClose={() => setPreviewOpen(false)} /></DialogContent>
       </Dialog>
     </Dialog>
   );

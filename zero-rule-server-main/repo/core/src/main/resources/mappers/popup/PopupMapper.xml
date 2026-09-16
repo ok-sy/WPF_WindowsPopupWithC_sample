@@ -113,7 +113,7 @@
                     WHEN 'TEXT' THEN JSONB_BUILD_OBJECT(
                         'contentTitle', content.content_title,
                         'description', content.description,
-                        'leftSectionBody', content.content_body
+                        'plainText', content.content_body
                     )
                     WHEN 'IMAGE' THEN JSONB_BUILD_OBJECT(
                         'imageTitle', content.content_title,
@@ -610,7 +610,7 @@
                     WHEN 'TEXT' THEN JSONB_BUILD_OBJECT(
                         'contentTitle', content.content_title,
                         'description', content.description,
-                        'leftSectionBody', content.content_body
+                        'plainText', content.content_body
                     )
                     WHEN 'IMAGE' THEN JSONB_BUILD_OBJECT(
                         'imageTitle', content.content_title,

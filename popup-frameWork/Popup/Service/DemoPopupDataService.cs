@@ -41,8 +41,6 @@ namespace Popup.Services
                     "content": {
                       "showContentHeader": false,
                       "showPlainText": false,
-                      "showLeftSection": false,
-                      "showRightSection": false,
                       "showHighlight": false,
                       "showBottomDescription": false,
                       "markdownMode": true,

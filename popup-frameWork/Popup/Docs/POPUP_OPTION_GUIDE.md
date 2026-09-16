@@ -115,21 +115,15 @@ WPF 런타임 `PopupSizeMode`는 다음 네 가지를 가진다.
 | `showContentHeader` | bool | 콘텐츠 제목/설명 영역 사용 여부 |
 | `plainText` | string | 일반 텍스트 본문 |
 | `showPlainText` | bool | 일반 텍스트 영역 사용 여부 |
-| `leftSectionTitle` | string | 왼쪽 카드 제목 |
-| `leftSectionBody` | string | 왼쪽 카드 본문 |
-| `showLeftSection` | bool/null | 왼쪽 카드 표시 여부 |
 | `highlightText` | string | 강조 문구 |
 | `showHighlight` | bool/null | 강조 영역 표시 여부 |
-| `rightSectionTitle` | string | 오른쪽 카드 제목 |
-| `rightSectionBody` | string | 오른쪽 카드 본문 |
-| `additionalDescription` | string | 오른쪽 카드 추가 설명 |
-| `showRightSection` | bool/null | 오른쪽 카드 표시 여부 |
-| `bottomDescription` | string | 카드 아래 하단 설명 |
+| `bottomDescription` | string | 본문 하단 설명 |
+| `bottomDescriptionUrl` | string | 하단 설명 클릭 시 열 HTTP/HTTPS URL. 비우면 일반 설명. 호버 시 색상·밑줄 변경 |
 | `showBottomDescription` | bool/null | 하단 설명 표시 여부 |
 | `markdownMode` | bool/null | Markdown 렌더링 모드 |
 | `markdownContent` | string | Markdown 본문 |
 
-Markdown 모드에서는 일반 텍스트/좌우 카드/강조 영역 대신 Markdown 본문을 중심으로 사용한다.
+Markdown 모드에서는 일반 텍스트/강조 영역 대신 Markdown 본문을 중심으로 사용한다. 하단 설명과 연결 URL은 Markdown 모드에서도 표시한다.
 
 ---
 
