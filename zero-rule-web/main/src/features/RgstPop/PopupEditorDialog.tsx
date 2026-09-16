@@ -226,9 +226,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
           setTargetGroups(groups ?? []); setTemplateOpen(false); toast.info('템플릿을 불러왔습니다. 저장하면 반영됩니다.');
         }} />
       {loading && <LinearProgress />}
-      <DialogContent dividers sx={{ p: 0, overflow: 'hidden' }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(520px, 1fr) minmax(520px, 1fr)', height: 'calc(100vh - 150px)' }}>
-          <Box sx={{ overflowY: 'auto', p: 3 }}><Stack spacing={2}>
+      <DialogContent dividers sx={{ p: 0, overflowY: { xs: 'auto', lg: 'hidden' } }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'minmax(0, 1.1fr) minmax(0, 1fr)' }, height: { xs: 'auto', lg: 'calc(100vh - 180px)' }, minHeight: 0 }}>
+          <Box sx={{ minWidth: 0, minHeight: 0, overflowY: { xs: 'visible', lg: 'auto' }, p: 2.5 }}><Stack spacing={2}>
             <Typography variant="subtitle1" fontWeight={700}>기본 정보</Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2 }}>
               <TextField required label="팝업 ID" value={popup.popupId} disabled={editing} inputProps={{ maxLength: 50 }} onChange={(e) => updatePopup('popupId', e.target.value)} />
@@ -246,6 +246,40 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
               <TextField type="datetime-local" label="노출 종료" value={toDateTimeLocal(popup.displayEndAt)} InputLabelProps={{ shrink: true }} onChange={(e) => updatePopup('displayEndAt', e.target.value)} />
             </Box>
 
+            <Divider /><Typography variant="subtitle1" fontWeight={700}>콘텐츠</Typography>
+            {!imageFillMode && <><TextField label="콘텐츠 제목" disabled={popup.popupType === 'TEXT' && !showTextContentHeader} value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" disabled={popup.popupType === 'TEXT' && !showTextContentHeader} value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
+            {imageFillMode && <Typography variant="caption" color="text.secondary">꽉 채우기 모드는 이미지와 클릭 링크만 사용합니다. 기존 제목·설명 값은 삭제하지 않고 다른 이미지 모드로 돌아가면 다시 사용됩니다.</Typography>}
+
+            {popup.popupType === 'TEXT' && <Stack spacing={2}>
+              {markdownMode ? <TextField label="Markdown 내용" value={contentValue(popup, 'markdownContent')} multiline minRows={14} placeholder={'# 제목\n\n일반 문장과 **강조 문장**\n\n- 목록 1\n- 목록 2'} onChange={(e) => updateContent('markdownContent', e.target.value)} /> : <Stack spacing={2}>
+                <TextField label="일반 텍스트" disabled={!showTextPlainText} value={contentValue(popup, 'plainText')} multiline minRows={4} onChange={(e) => updateContent('plainText', e.target.value)} />
+                <TextField label="강조 문구" disabled={!showTextHighlight} value={contentValue(popup, 'highlightText')} onChange={(e) => updateContent('highlightText', e.target.value)} />
+              </Stack>}
+                <TextField label="하단 설명" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescription')} multiline minRows={2} onChange={(e) => updateContent('bottomDescription', e.target.value)} />
+                <TextField label="하단 설명 연결 URL" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescriptionUrl')} placeholder="https://example.com" helperText="https:// 생략 시 자동으로 붙입니다. 설명이 없으면 URL을 표시하며, 클릭하면 새 창으로 이동합니다." onChange={(e) => updateContent('bottomDescriptionUrl', e.target.value)} />
+            </Stack>}
+
+            {isMedia && <TextField label={popup.popupType === 'IMAGE' ? '이미지 URL' : '영상 URL'} value={contentValue(popup, popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl')} onChange={(e) => updateContent(popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl', e.target.value)} />}
+            {popup.popupType === 'IMAGE' && <Stack spacing={2}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: imageFillMode ? '1fr' : 'repeat(3, 1fr)', gap: 2 }}>
+                <TextField select label="이미지 크기 모드" value={contentValue(popup, 'imageSizeMode') || 'FIXED'} onChange={(e) => updateContent('imageSizeMode', e.target.value)}>
+                  <MenuItem value="FIXED">고정 영역</MenuItem><MenuItem value="FIT_TO_IMAGE">원본에 맞춤</MenuItem><MenuItem value="ADAPTIVE">화면에 맞춤</MenuItem><MenuItem value="FILL">꽉 채우기 (이미지만)</MenuItem>
+                </TextField>
+                {!imageFillMode && <TextField type="number" label="이미지 너비" value={contentValue(popup, 'imageWidth')} onChange={(e) => updateContent('imageWidth', Number(e.target.value))} />}
+                {!imageFillMode && <TextField type="number" label="이미지 높이" value={contentValue(popup, 'imageHeight')} onChange={(e) => updateContent('imageHeight', Number(e.target.value))} />}
+              </Box>
+              <TextField label="클릭 연결 URL" value={contentValue(popup, 'linkUrl')} onChange={(e) => updateContent('linkUrl', e.target.value)} />
+            </Stack>}
+
+            {isSurvey && <PopupQuestionTemplatePicker popupType={popup.popupType} disabled={loading} onBusy={setLoading}
+              onChange={(questions, templateId) => setPopup((current) => ({ ...current, questions, questionTemplateId: templateId }))} />}
+            {isSurvey && <PopupQuestionEditor questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore} onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
+            {popup.popupType === 'VIDEO' && <Stack spacing={2}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                <TextField type="number" label="완료 비율" value={popup.completionRatio ?? ''} inputProps={{ min: 0, max: 1, step: 0.05 }} onChange={(e) => updatePopup('completionRatio', e.target.value ? Number(e.target.value) : null)} />
+                <TextField type="number" label="기본 음량" value={contentValue(popup, 'defaultVolume')} inputProps={{ min: 0, max: 1, step: 0.1 }} onChange={(e) => updateContent('defaultVolume', Number(e.target.value))} />
+              </Box>
+            </Stack>}
             <Divider /><Typography variant="subtitle1" fontWeight={700}>노출 대상</Typography>
             <Typography variant="caption" color="text.secondary">같은 그룹의 조건은 모두 충족(AND), 그룹 사이는 하나만 충족(OR)하면 노출됩니다.</Typography>
             {targetGroups.map((group, groupIndex) => <Box key={`target-group-${groupIndex}`} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
@@ -280,6 +314,67 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             </Box>)}
             <Button variant="outlined" startIcon={<AddIcon />} onClick={addTargetGroup} sx={{ alignSelf: 'flex-start' }}>OR 대상 그룹 추가</Button>
 
+          </Stack></Box>
+
+          <Box sx={{ minWidth: 0, minHeight: 0, p: 2, bgcolor: '#f3f5f9', borderLeft: { lg: '1px solid' }, borderColor: 'divider',
+            display: 'grid', gridTemplateRows: { xs: '360px auto', lg: 'minmax(220px, 1fr) minmax(200px, 1fr)' }, gap: 2 }}>
+            <Stack spacing={1.5} sx={{ minHeight: 0 }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Typography variant="subtitle1" fontWeight={700}>팝업 미리보기</Typography>
+                <Button size="small" variant="outlined" startIcon={<PreviewIcon />} onClick={() => setPreviewOpen(true)}>실제 크기로 보기</Button>
+              </Stack>
+              <PopupPreview popup={popup} fitContainer />
+            </Stack>
+            <Box sx={{ minHeight: 0, overflowY: { xs: 'visible', lg: 'auto' }, bgcolor: 'background.paper', borderRadius: 1, p: 2,
+              '& .MuiFormControlLabel-root': { m: 0 }, '& .MuiFormControlLabel-label': { fontSize: 13 } }}>
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle1" fontWeight={700}>표시 옵션</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}>
+              <FormControlLabel control={<Switch size="small" checked={active} onChange={(_, value) => setActive(value)} />} label="팝업 활성화" />
+              <FormControlLabel control={<Switch size="small" checked={popup.showHeader} onChange={(_, value) => updatePopup('showHeader', value)} />} label="헤더 표시" />
+              <FormControlLabel control={<Switch size="small" checked={popup.showCloseButton} onChange={(_, value) => updatePopup('showCloseButton', value)} />} label="닫기 표시" />
+              <FormControlLabel control={<Switch size="small" checked={popup.showFooter} onChange={(_, value) => updateFooter(value)} />} label="푸터 표시" />
+              <FormControlLabel control={<Switch size="small" checked={popup.showDoNotShowAgain} disabled={!popup.showFooter} onChange={(_, value) => updatePopup('showDoNotShowAgain', value)} />} label="다시 보지 않기" />
+            </Box>
+
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle2" fontWeight={700}>배경 클릭 차단</Typography>
+                <Typography variant="caption" color="text.secondary">팝업이 열려 있는 동안 모든 모니터의 배경 클릭을 막고 배경을 어둡게 표시합니다. 키보드 전환은 차단하지 않습니다.</Typography>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <FormControlLabel control={<Switch size="small" checked={useBackgroundOverlay} onChange={(_, value) => updateContent('useBackgroundOverlay', value)} />} label="사용" />
+                  <TextField size="small" type="number" label="배경 어둡기 (%)" value={Math.round(backgroundOverlayOpacity * 100)} disabled={!useBackgroundOverlay}
+                    inputProps={{ min: 0, max: 100, step: 5 }} helperText="0% 투명 · 100% 완전 불투명"
+                    onChange={(e) => updateContent('backgroundOverlayOpacity', Math.max(0, Math.min(100, Number(e.target.value))) / 100)} sx={{ width: 220 }} />
+                </Stack>
+              </Stack>
+            </Box>
+
+
+                {popup.popupType === 'TEXT' && <>
+                  <Divider /><Typography variant="subtitle2" fontWeight={700}>텍스트 표시</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}>
+                <FormControlLabel control={<Switch size="small" checked={showTextContentHeader} onChange={(_, v) => updateContent('showContentHeader', v)} />} label="콘텐츠 제목·설명" />
+                <FormControlLabel control={<Switch size="small" checked={markdownMode} onChange={(_, v) => updateContent('markdownMode', v)} />} label="Markdown 모드" />
+                {!markdownMode && <FormControlLabel control={<Switch size="small" checked={showTextPlainText} onChange={(_, v) => updateContent('showPlainText', v)} />} label="일반 텍스트" />}
+                {!markdownMode && <FormControlLabel control={<Switch size="small" checked={showTextHighlight} onChange={(_, v) => updateContent('showHighlight', v)} />} label="강조 문구 사용" />}
+                {<FormControlLabel control={<Switch size="small" checked={showTextBottomDescription} onChange={(_, v) => updateContent('showBottomDescription', v)} />} label="하단 설명" />}
+              </Box>
+                </>}
+                {popup.popupType === 'IMAGE' && !imageFillMode && <>
+                  <Divider /><Typography variant="subtitle2" fontWeight={700}>이미지 표시</Typography>
+              {!imageFillMode && <FormControlLabel control={<Switch checked={popup.content.showDescription !== false} onChange={(_, value) => updateContent('showDescription', value)} />} label="이미지 설명 표시" />}
+                </>}
+                {popup.popupType === 'VIDEO' && <>
+                  <Divider /><Typography variant="subtitle2" fontWeight={700}>영상 재생</Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}>
+                {[
+                  ['showDescription', '영상 설명 표시'], ['showControls', '컨트롤 표시'], ['allowFullScreen', '전체화면 허용'],
+                  ['allowPlaybackRateChange', '배속 변경 허용'], ['autoPlay', '자동 재생'], ['isLoop', '반복 재생'],
+                ].map(([key, label]) => <FormControlLabel key={key} control={<Switch size="small" checked={popup.content[key] == null ? key !== 'autoPlay' && key !== 'isLoop' : popup.content[key] === true} onChange={(_, value) => updateContent(key, value)} />} label={label} />)}
+                <FormControlLabel control={<Switch size="small" checked={popup.allowCloseBeforeComplete} onChange={(_, value) => updatePopup('allowCloseBeforeComplete', value)} />} label="완료 전 닫기 허용" />
+              </Box>
+                </>}
             <Divider /><Typography variant="subtitle1" fontWeight={700}>크기 설정</Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 2 }}>
               <TextField select label="크기 모드" value={popup.sizeMode} onChange={(e) => updatePopup('sizeMode', e.target.value as PopupSizeMode)}>
@@ -290,86 +385,9 @@ export default function PopupEditorDialog({ open, popupId, initialActive, onClos
             </Box>
             {popup.sizeMode !== 'FULLSCREEN' && <Typography variant="caption" color="text.secondary">미리보기 최대 크기: {popup.maximumWidth}px × {popup.maximumHeight}px</Typography>}
 
-            <Stack direction="row" flexWrap="wrap" gap={1}>
-              <FormControlLabel control={<Switch checked={active} onChange={(_, value) => setActive(value)} />} label={<Box><Typography variant="body2">팝업 활성화</Typography><Typography variant="caption" color="text.secondary">켜면 사용자 팝업 조회 대상에 포함됩니다.</Typography></Box>} />
-              <FormControlLabel control={<Switch checked={popup.showHeader} onChange={(_, value) => updatePopup('showHeader', value)} />} label="헤더 표시" />
-              <FormControlLabel control={<Switch checked={popup.showCloseButton} onChange={(_, value) => updatePopup('showCloseButton', value)} />} label="닫기 표시" />
-              <FormControlLabel control={<Switch checked={popup.showFooter} onChange={(_, value) => updateFooter(value)} />} label="푸터 표시" />
-              <FormControlLabel control={<Switch checked={popup.showDoNotShowAgain} disabled={!popup.showFooter} onChange={(_, value) => updatePopup('showDoNotShowAgain', value)} />} label="다시 보지 않기" />
-            </Stack>
 
-            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
-              <Stack spacing={1.5}>
-                <Typography variant="subtitle2" fontWeight={700}>배경 클릭 차단</Typography>
-                <Typography variant="caption" color="text.secondary">팝업이 열려 있는 동안 모든 모니터의 배경 클릭을 막고 배경을 어둡게 표시합니다. 키보드 전환은 차단하지 않습니다.</Typography>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <FormControlLabel control={<Switch checked={useBackgroundOverlay} onChange={(_, value) => updateContent('useBackgroundOverlay', value)} />} label="사용" />
-                  <TextField size="small" type="number" label="배경 어둡기 (%)" value={Math.round(backgroundOverlayOpacity * 100)} disabled={!useBackgroundOverlay}
-                    inputProps={{ min: 0, max: 100, step: 5 }} helperText="0% 투명 · 100% 완전 불투명"
-                    onChange={(e) => updateContent('backgroundOverlayOpacity', Math.max(0, Math.min(100, Number(e.target.value))) / 100)} sx={{ width: 220 }} />
-                </Stack>
               </Stack>
             </Box>
-
-            <Divider /><Typography variant="subtitle1" fontWeight={700}>콘텐츠</Typography>
-            {!imageFillMode && <><TextField label="콘텐츠 제목" disabled={popup.popupType === 'TEXT' && !showTextContentHeader} value={contentValue(popup, titleKey)} onChange={(e) => updateContent(titleKey, e.target.value)} /><TextField label="설명" disabled={popup.popupType === 'TEXT' && !showTextContentHeader} value={contentValue(popup, 'description')} multiline minRows={2} onChange={(e) => updateContent('description', e.target.value)} /></>}
-            {imageFillMode && <Typography variant="caption" color="text.secondary">꽉 채우기 모드는 이미지와 클릭 링크만 사용합니다. 기존 제목·설명 값은 삭제하지 않고 다른 이미지 모드로 돌아가면 다시 사용됩니다.</Typography>}
-
-            {popup.popupType === 'TEXT' && <Stack spacing={2}>
-              <Stack direction="row" flexWrap="wrap" gap={1}>
-                <FormControlLabel control={<Switch checked={showTextContentHeader} onChange={(_, v) => updateContent('showContentHeader', v)} />} label="콘텐츠 제목·설명" />
-                <FormControlLabel control={<Switch checked={markdownMode} onChange={(_, v) => updateContent('markdownMode', v)} />} label="Markdown 모드" />
-                {!markdownMode && <FormControlLabel control={<Switch checked={showTextPlainText} onChange={(_, v) => updateContent('showPlainText', v)} />} label="일반 텍스트" />}
-                {!markdownMode && <FormControlLabel control={<Switch checked={showTextHighlight} onChange={(_, v) => updateContent('showHighlight', v)} />} label="강조 문구 사용" />}
-                {<FormControlLabel control={<Switch checked={showTextBottomDescription} onChange={(_, v) => updateContent('showBottomDescription', v)} />} label="하단 설명" />}
-              </Stack>
-              {markdownMode ? <TextField label="Markdown 내용" value={contentValue(popup, 'markdownContent')} multiline minRows={14} placeholder={'# 제목\n\n일반 문장과 **강조 문장**\n\n- 목록 1\n- 목록 2'} onChange={(e) => updateContent('markdownContent', e.target.value)} /> : <Stack spacing={2}>
-                <TextField label="일반 텍스트" disabled={!showTextPlainText} value={contentValue(popup, 'plainText')} multiline minRows={4} onChange={(e) => updateContent('plainText', e.target.value)} />
-                <TextField label="강조 문구" disabled={!showTextHighlight} value={contentValue(popup, 'highlightText')} onChange={(e) => updateContent('highlightText', e.target.value)} />
-              </Stack>}
-                <TextField label="하단 설명" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescription')} multiline minRows={2} onChange={(e) => updateContent('bottomDescription', e.target.value)} />
-                <TextField label="하단 설명 연결 URL" disabled={!showTextBottomDescription} value={contentValue(popup, 'bottomDescriptionUrl')} placeholder="https://example.com" helperText="https:// 생략 시 자동으로 붙입니다. 설명이 없으면 URL을 표시하며, 클릭하면 새 창으로 이동합니다." onChange={(e) => updateContent('bottomDescriptionUrl', e.target.value)} />
-            </Stack>}
-
-            {isMedia && <TextField label={popup.popupType === 'IMAGE' ? '이미지 URL' : '영상 URL'} value={contentValue(popup, popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl')} onChange={(e) => updateContent(popup.popupType === 'IMAGE' ? 'imageUrl' : 'videoUrl', e.target.value)} />}
-            {popup.popupType === 'IMAGE' && <Stack spacing={2}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: imageFillMode ? '1fr' : 'repeat(3, 1fr)', gap: 2 }}>
-                <TextField select label="이미지 크기 모드" value={contentValue(popup, 'imageSizeMode') || 'FIXED'} onChange={(e) => updateContent('imageSizeMode', e.target.value)}>
-                  <MenuItem value="FIXED">고정 영역</MenuItem><MenuItem value="FIT_TO_IMAGE">원본에 맞춤</MenuItem><MenuItem value="ADAPTIVE">화면에 맞춤</MenuItem><MenuItem value="FILL">꽉 채우기 (이미지만)</MenuItem>
-                </TextField>
-                {!imageFillMode && <TextField type="number" label="이미지 너비" value={contentValue(popup, 'imageWidth')} onChange={(e) => updateContent('imageWidth', Number(e.target.value))} />}
-                {!imageFillMode && <TextField type="number" label="이미지 높이" value={contentValue(popup, 'imageHeight')} onChange={(e) => updateContent('imageHeight', Number(e.target.value))} />}
-              </Box>
-              <TextField label="클릭 연결 URL" value={contentValue(popup, 'linkUrl')} onChange={(e) => updateContent('linkUrl', e.target.value)} />
-              {!imageFillMode && <FormControlLabel control={<Switch checked={popup.content.showDescription !== false} onChange={(_, value) => updateContent('showDescription', value)} />} label="이미지 설명 표시" />}
-            </Stack>}
-
-            {isSurvey && <PopupQuestionTemplatePicker popupType={popup.popupType} disabled={loading} onBusy={setLoading}
-              onChange={(questions, templateId) => setPopup((current) => ({ ...current, questions, questionTemplateId: templateId }))} />}
-            {isSurvey && <PopupQuestionEditor questions={popup.questions} quiz={popup.popupType === 'QUIZ'} passingScore={popup.passingScore} onPassingScoreChange={(score) => updatePopup('passingScore', score)} onChange={(questions) => updatePopup('questions', questions)} />}
-            {popup.popupType === 'VIDEO' && <Stack spacing={2}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                <TextField type="number" label="완료 비율" value={popup.completionRatio ?? ''} inputProps={{ min: 0, max: 1, step: 0.05 }} onChange={(e) => updatePopup('completionRatio', e.target.value ? Number(e.target.value) : null)} />
-                <TextField type="number" label="기본 음량" value={contentValue(popup, 'defaultVolume')} inputProps={{ min: 0, max: 1, step: 0.1 }} onChange={(e) => updateContent('defaultVolume', Number(e.target.value))} />
-              </Box>
-              <Stack direction="row" flexWrap="wrap" gap={1}>
-                {[
-                  ['showDescription', '영상 설명 표시'], ['showControls', '컨트롤 표시'], ['allowFullScreen', '전체화면 허용'],
-                  ['allowPlaybackRateChange', '배속 변경 허용'], ['autoPlay', '자동 재생'], ['isLoop', '반복 재생'],
-                ].map(([key, label]) => <FormControlLabel key={key} control={<Switch checked={popup.content[key] == null ? key !== 'autoPlay' && key !== 'isLoop' : popup.content[key] === true} onChange={(_, value) => updateContent(key, value)} />} label={label} />)}
-                <FormControlLabel control={<Switch checked={popup.allowCloseBeforeComplete} onChange={(_, value) => updatePopup('allowCloseBeforeComplete', value)} />} label="완료 전 닫기 허용" />
-              </Stack>
-            </Stack>}
-          </Stack></Box>
-
-          <Box sx={{ minWidth: 0, overflow: 'hidden', p: 2, bgcolor: '#f3f5f9', borderLeft: '1px solid', borderColor: 'divider' }}>
-            <Stack spacing={1.5} sx={{ height: '100%' }}>
-              <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Typography variant="subtitle1" fontWeight={700}>팝업 미리보기</Typography>
-                <Button size="small" variant="outlined" startIcon={<PreviewIcon />} onClick={() => setPreviewOpen(true)}>실제 크기로 보기</Button>
-              </Stack>
-              <PopupPreview popup={popup} fitContainer />
-            </Stack>
           </Box>
         </Box>
       </DialogContent>
